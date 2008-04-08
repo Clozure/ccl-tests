@@ -140,10 +140,10 @@
 		 for writers = (collect-properties slot-option :writer)
 		 for accessors = (collect-properties slot-option :accessor)
 		 for documentation = (getf slot-option :documentation)
-		 for initarg-list in initargs
+		 ;; for initarg-list in initargs
 		 for type-list in types
 		 for initform-list in initforms
-		 for allocation in allocations
+	         ;; for allocation in allocations
 		 collect
 		 (make-my-slot
 		  :name name

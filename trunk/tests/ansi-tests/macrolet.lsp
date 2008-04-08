@@ -333,6 +333,7 @@
   (1 2))
 
 ;;; &whole is followed by a destructuring pattern (see 3.4.4.1.2)
+#+known-bug-269
 (deftest macrolet.36
   (macrolet ((%m (&whole (m a b) c d) `(quote (,m ,a ,b ,c ,d))))
     (%m 1 2))
@@ -422,6 +423,7 @@
 
 ;;; Free declarations in macrolet
 
+#+bogus-test
 (deftest macrolet.47
   (let ((x :good))
     (declare (special x))

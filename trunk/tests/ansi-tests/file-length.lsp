@@ -133,6 +133,7 @@
 	collect i)
   nil)
 
+#+known-bug-280
 (deftest file-length.4
   (loop for i from 33 to 100
 	for etype = `(unsigned-byte ,i)
@@ -147,6 +148,7 @@
 	do (close os))
   nil)
 
+#+known-bug-280
 (deftest file-length.5
   (loop for i from 33 to 100
 	for etype = `(unsigned-byte ,i)

@@ -226,6 +226,7 @@
    :allow-other-keys nil :a 1 :b 2)
   (nil 1 2))
 
+#+bogus-test
 (deftest lambda.47
   ((lambda (&key a b allow-other-keys) (list allow-other-keys a b))
    :c 10 :allow-other-keys t :a 1 :b 2 :d 20)
@@ -243,6 +244,7 @@
    :d 40 :a 1 :b 2 :c 20)
   (nil 1 2))
 
+#+bogus-test
 (deftest lambda.50
   ((lambda (&key a b ((:allow-other-keys aok)))
      (list aok a b))

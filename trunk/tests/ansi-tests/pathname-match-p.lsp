@@ -33,6 +33,7 @@
     (pathname-match-p pn1 pn2))
   nil)
 
+#+bogus-test
 (deftest pathname-match-p.5
   (let ((pn1 (make-pathname :directory '(:relative :wild)))
 	(pn2 (make-pathname :directory nil)))

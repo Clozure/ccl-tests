@@ -155,13 +155,14 @@
     (fmakunbound 'load-file-test-fun.2)
     (values
      (notnot (load file))
+     #+bogus-test
      (let ((p1 (pathname (merge-pathnames file)))
 	   (p2 (funcall 'load-file-test-fun.1)))
        (equalpt-or-report p1 p2))
      (let ((p1 (truename file))
 	   (p2 (funcall 'load-file-test-fun.2)))
        (equalpt-or-report p1 p2))))
-  t t t)
+  t #+bogus-test t t)
 
 ;;; Test that the load pathname/truename variables are bound
 ;;; properly when loading compiled files
@@ -175,13 +176,14 @@
     (makunbound '*load-test-var.2*)
     (load target)
     (values
+     #+bogus-test
      (let ((p1 (pathname (merge-pathnames target)))
 	   (p2 *load-test-var.1*))
        (equalpt-or-report p1 p2))
      (let ((p1 (truename target))
 	   (p2 *load-test-var.2*))
        (equalpt-or-report p1 p2))))
-  t t)
+  #+bogus-test t t)
 
 (deftest load.19
   (let ((file (logical-pathname "CLTEST:LDTEST.LSP"))

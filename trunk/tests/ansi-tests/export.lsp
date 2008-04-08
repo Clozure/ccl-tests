@@ -93,7 +93,7 @@
 	   (handler-case
 	    (export sym "TEST1")
 	    (error (c)
-		   (format t "Caught error in EXPORT.5: ~A~%" c)
+	           (when *test-verbose* (format t "Caught error in EXPORT.5: ~A~%" c))
 		   'caught)))
 	 (error (c) c))
       (delete-package "TEST2")

@@ -284,6 +284,7 @@
   :pathname (logical-pathname "CLTEST:TMP.DAT"))
 
 ;;; It works on recognizable subtypes.
+#+known-bug-281
 (deftest open.65
   (let ((type '(or (integer 0 1) (integer 100 200)))
 	(pn #p"tmp.dat")
@@ -529,6 +530,7 @@
   (#(0 1 2 3 4 5 6 7 8 9))
   :element-type (unsigned-byte 64))
 
+#+known-bug-280
 (def-open-output-test open.output.19 ()
   (progn (close s) (with-open-file (is #p"tmp.dat"
 				       :element-type '(unsigned-byte 100))
@@ -866,6 +868,7 @@
   (#(0 1 2 3 4 5 6 7 8 9))
   :element-type (unsigned-byte 64))
 
+#+known-bug-280
 (def-open-io-test open.io.19 ()
   (progn (file-position s :start)
 	 (let ((seq (make-array 10)))

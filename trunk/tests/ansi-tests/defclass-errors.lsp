@@ -93,6 +93,7 @@
    program-error)
   t)
 
+#+known-bug-271
 (deftest defclass.error.13
   (signals-error
    (defclass erroneous-class.13 ()
@@ -159,6 +160,7 @@
    program-error)
   t)
 
+#+known-bug-271
 (deftest defclass.error.22
   (let ((option (gentemp "UNKNOWN-OPTION" (symbol-package :foo))))
     (eval

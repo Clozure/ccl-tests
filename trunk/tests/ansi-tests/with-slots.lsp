@@ -145,7 +145,7 @@
 
 (defmethod slot-unbound ((class t)
 			 (instance with-slots-class-01)
-			 slot-name)
+			 (slot-name t))
   'missing)
 
 (deftest with-slots.18

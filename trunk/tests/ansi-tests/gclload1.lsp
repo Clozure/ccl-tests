@@ -17,23 +17,23 @@
 
 #+clisp (setq custom::*warn-on-floating-point-contagion* nil)
 
-(let (*load-verbose* *load-print* *compile-verbose* *compile-print*)
+(let (#-openmcl *load-verbose* *load-print* *compile-verbose* *compile-print*)
   (load "compile-and-load.lsp"))
 
-(let (*load-verbose* *load-print* *compile-verbose* *compile-print*)
+(let (#-openmcl *load-verbose* *load-print* *compile-verbose* *compile-print*)
   (load "rt-package.lsp")
-  (compile-and-load "rt.lsp")
+  (compile-and-load "rt.lsp" :force t)
   ;; (unless (probe-file "rt.o") (compile-file "rt.lsp"))
   ;; (load "rt.o")
   (load "cl-test-package.lsp")
   (in-package :cl-test)
-  (compile-and-load "ansi-aux-macros.lsp")
+  (compile-and-load "ansi-aux-macros.lsp" :force t)
   (handler-bind
    #-sbcl ()
    #+sbcl ((sb-ext:code-deletion-note #'muffle-warning))
    (load "universe.lsp"))
-  (compile-and-load "random-aux.lsp")
-  (compile-and-load "ansi-aux.lsp")
+  (compile-and-load "random-aux.lsp" :force t)
+  (compile-and-load "ansi-aux.lsp" :force t)
   ;; (unless (probe-file "ansi-aux.o") (compile-file "ansi-aux.lsp"))
   ;; (load "ansi-aux.o")
   

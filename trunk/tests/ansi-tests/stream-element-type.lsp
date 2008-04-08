@@ -15,6 +15,7 @@
 	collect s)
   nil)
 
+#+known-bug-280
 (deftest stream-element-type.2
   (let ((pn "foo.txt"))
     (loop for i from 1 to 100
@@ -30,6 +31,7 @@
 	  collect i))
   nil)
 
+#+known-bug-280
 (deftest stream-element-type.3
   (let ((pn "foo.txt"))
     (loop for i from 1 to 100

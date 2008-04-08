@@ -254,7 +254,7 @@ do the defstruct."
 	 ;; a list of initial values
 	 (initial-value-alist
 	  (loop
-	   for slot-desc in slot-descriptions
+	   ;;for slot-desc in slot-descriptions
 	   for slot-name in slot-names
 	   for type      in slot-types
 	   for i from 1
@@ -341,7 +341,7 @@ do the defstruct."
 	 (remove nil
 		 (list
 		  ,@(loop
-		     for (slot-name . initval) in initial-value-alist
+		     for (slot-name . nil) in initial-value-alist
 		     for field-fn in field-fns
 		     collect
 		     `(multiple-value-bind
@@ -355,7 +355,7 @@ do the defstruct."
 	 (remove nil
 		 (list
 		  ,@(loop
-		     for (slot-name . initval) in initial-value-alist
+		     for (slot-name . nil) in initial-value-alist
 		     for field-fn in field-fns
 		     collect
 		     `(multiple-value-bind
@@ -377,9 +377,9 @@ do the defstruct."
 		 (var2 (defstruct-maketemp name "TEMP-7-2"))
 		 (tests
 		  (loop
-		   for (slot-name . initval) in initial-value-alist
+		   for (nil . initval) in initial-value-alist
 		   for read-only-p in slot-read-only
-		   for slot-desc in slot-descriptions
+		   ;;for slot-desc in slot-descriptions
 		   for field-fn in field-fns
 		   unless read-only-p
 		   collect
@@ -426,7 +426,7 @@ do the defstruct."
 			(not (eqlt ,var ,var3))
 			(not (eqlt ,var2 ,var3))
 			,@(loop
-			   for (slot-name . nil) in initial-value-alist
+			   for (nil . nil) in initial-value-alist
 			   for fn in field-fns
 			   collect
 			   `(and (eqlt (,fn ,var) (,fn ,var2))
@@ -457,7 +457,7 @@ do the defstruct."
        ,@(when (loop for x in slot-read-only thereis x)
 	   `((deftest ,(make-struct-test-name name 12)
 	       (and
-		,@(loop for slot-name in slot-names
+		,@(loop for nil in slot-names
 			for read-only in slot-read-only
 			for field-fn in field-fns
 			when read-only
@@ -543,7 +543,7 @@ do the defstruct."
 		       (and
 			(not (eqlt ,var ,var2))
 			,@(loop
-			   for (slot-name . nil) in initial-value-alist
+			   for (nil . nil) in initial-value-alist
 			   for fn in field-fns
 			   collect
 			   `(eqlt (,fn ,var) (,fn ,var2)))

@@ -78,7 +78,7 @@
    for p in (list-all-packages) count
    (handler-case
     (progn
-      (format t "Package ~S~%" p)
+      (when *test-verbose* (format t "Package ~S~%" p))
       (not (with-package-iterator-internal (list p))))
     (error (c)
 	   (format "Error ~S on package ~A~%" c p)
@@ -90,7 +90,7 @@
    for p in (list-all-packages) count
    (handler-case
     (progn
-      (format t "Package ~S~%" p)
+      (when *test-verbose* (format t "Package ~S~%" p))
       (not (with-package-iterator-external (list p))))
     (error (c)
 	   (format "Error ~S on package ~A~%" c p)
@@ -102,7 +102,7 @@
    for p in (list-all-packages) count
    (handler-case
     (progn
-      (format t "Package ~S~%" p)
+      (when *test-verbose* (format t "Package ~S~%" p))
       (not (with-package-iterator-inherited (list p))))
     (error (c)
 	   (format t "Error ~S on package ~S~%" c p)

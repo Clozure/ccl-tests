@@ -102,6 +102,7 @@
 ;;; Test that explicit calls to macroexpand in subforms
 ;;; are done in the correct environment
 
+#+bogus-test  ;; first arg to ctypecase must be a "place"
 (deftest ctypecase.15
   (macrolet
    ((%m (z) z))
@@ -115,10 +116,11 @@
 (deftest ctypecase.16
   (macrolet
    ((%m (z) z))
-   (ctypecase :foo
-    (integer (expand-in-current-env (%m :bad1)))
-    (keyword (expand-in-current-env (%m :good)))
-    (symbol (expand-in-current-env (%m :bad2)))))
+    (let ((place :foo))
+      (ctypecase place
+	(integer (expand-in-current-env (%m :bad1)))
+	(keyword (expand-in-current-env (%m :good)))
+	(symbol (expand-in-current-env (%m :bad2))))))
   :good)
 
 (deftest ctypecase.error.1
