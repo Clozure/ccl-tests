@@ -42,6 +42,7 @@
 (defvar *catch-errors* t "When true, causes errors in a test to be caught.")
 (defvar *print-circle-on-failure* nil
   "Failure reports are printed with *PRINT-CIRCLE* bound to this value.")
+(defvar *test-verbose* t "When true, print each test name as executed")
 
 (defvar *compile-tests* nil "When true, compile the tests before running them.")
 (defvar *expanded-eval* nil "When true, convert the tests into a form that is less likely to have compiler optimizations.")
@@ -149,6 +150,7 @@
 			    :vals ',vals))))
 
 (defun add-entry (entry)
+  #+openmcl (ccl:record-source-file (name entry) 'deftest)
   (setq entry (copy-entry entry))
   (let* ((pred (gethash (name entry) *entries-table*)))
     (cond
@@ -248,13 +250,14 @@
 								    (muffle-warning c)))))
 			   (cond
 			    (*compile-tests*
-			     (multiple-value-list
-			      (funcall (compile
+			     (let ((fn (compile
 					nil
 					`(lambda ()
 					   (declare
 					    (optimize ,@*optimization-settings*))
-					   ,(form entry))))))
+					   ,(form entry)))))
+			       #+openmcl (ccl::lfun-name fn (name entry))
+			       (multiple-value-list (funcall fn))))
 			    (*expanded-eval*
 			     (multiple-value-list
 			      (expanded-eval (form entry))))
@@ -269,6 +272,8 @@
 			    (error #'(lambda (c)
 				       (setf aborted t)
 				       (setf r (list c))
+				       (when (eq *catch-errors* :break)
+					 (break "Error ~s: ~a" (type-of c) c))
 				       (return-from aborted nil))))
 		     (%do))
 		  (%do)))))
@@ -279,7 +284,7 @@
       
       (when (pend entry)
 	(let ((*print-circle* *print-circle-on-failure*))
-	  (format s "~&Test ~:@(~S~) failed~
+	  (format s "~2&Test ~:@(~S~) failed~
                    ~%Form: ~S~
                    ~%Expected value~P: ~
                       ~{~S~^~%~17t~}~%"
@@ -337,6 +342,7 @@
       (do-entries *standard-output*)))
 
 (defun do-tests (&key (out *standard-output*)
+                      ((:verbose *test-verbose*) *test-verbose*)
 		      ((:catch-errors *catch-errors*) *catch-errors*)
 		      ((:compile *compile-tests*) *compile-tests*))
   (setq *failed-tests* nil
@@ -362,7 +368,8 @@
 	(if success?
 	  (push (name entry) *passed-tests*)
 	  (push (name entry) *failed-tests*))
-	(format s "~@[~<~%~:; ~:@(~S~)~>~]" success?))
+       (when *test-verbose*
+	(format s "~@[~<~%~:; ~:@(~S~)~>~]" success?)))
       (finish-output s)
       ))
   (let ((pending (pending-tests))

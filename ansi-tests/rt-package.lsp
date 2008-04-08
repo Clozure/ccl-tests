@@ -50,6 +50,7 @@
 			       #:defnote
 			       #:my-aref
 			       #:*catch-errors*
+			       #:*test-verbose*
 			       #:*passed-tests*
 			       #:*failed-tests*
 			       #:disable-note))))))

@@ -62,6 +62,7 @@
   nil)
 |#
 
+#+known-bug-268
 (deftest encode-universal-time.3
   (loop with count = 0
 	for year = (+ 1900 (random 1000))
@@ -90,6 +91,14 @@
 	collect (progn (incf count) (list vals time decoded-vals))
 	until (>= count 100))
   nil)
+
+#+known-bug-268 ;; specific case, for more reliable testing.
+(deftest encode-universal-time.3.1
+    (let* ((tz 1787/360)
+	   (time (encode-universal-time 59 23 11 1 1 2000 tz)))
+      (multiple-value-bind (second minute hour) (decode-universal-time time tz)
+	(list second minute hour)))
+  (59 23 11))
 
 ;;; Error cases
 

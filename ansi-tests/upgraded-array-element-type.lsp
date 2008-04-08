@@ -95,6 +95,12 @@
 ;;; Tests that if Tx is a subtype of Ty, then UAET(Tx) is a subtype
 ;;;  of UAET(Ty)  (see section 15.1.2.1, paragraph 3)
 
+#+bogus-test ;; This requirement is unsatisfiable in any implementation that
+;; has two upgraded array element types U1 and U2, not subtypes of each
+;; other and with a non-empty intersection. Given an object x in the
+;; intersection, the UAET of `(eql ,x) is either U1 or U2, say U1.
+;; Then `(eql ,x) is a subtype of U2 but its UAET is not a subtype of U2.
+;; Example: U1 = (unsigned-byte 8), U2 = (signed-byte 8)
 (deftest upgraded-array-element-type.8
   (let ((upgraded-types (mapcar #'upgraded-array-element-type
 				*upgraded-array-types-to-check*)))
@@ -110,6 +116,7 @@
 
 ;;; Tests of upgrading NIL (it should be type equivalent to NIL)
 
+#+bogus-test
 (deftest upgraded-array-element-type.nil.1
   (let ((uaet-nil (upgraded-array-element-type nil)))
     (check-predicate (typef `(not ,uaet-nil))))

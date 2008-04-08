@@ -195,7 +195,7 @@
 	      (unintern sym1 ph)
 	      nil)
 	    (error (c) 
-		   (format t "Properly threw an error: ~S~%" c)
+	           (when *test-verbose* (format t "Properly threw an error: ~S~%" c))
 		   t)))))))
   t)
 

@@ -53,11 +53,12 @@
 		     (incf fail-count)
 		     (return-from fail nil))
 		   (unless  (eqt access access2)
-		     (unless (> fail-count +fail-count-limit+)
-		       (format t "Not same access type: ~S ~S ~S~%"
-			       sym access access2))
-		     (when (= fail-count +fail-count-limit+)
-		       (format t "Further messages suppressed~%"))
+		     (when *test-verbose*
+		       (unless (> fail-count +fail-count-limit+)
+			 (format t "Not same access type: ~S ~S ~S~%"
+				 sym access access2))
+		       (when (= fail-count +fail-count-limit+)
+			 (format t "Further messages suppressed~%")))
 		     (incf fail-count)
 		     (return-from fail nil)))))))
 	 ;; now, check that each symbol in each package has

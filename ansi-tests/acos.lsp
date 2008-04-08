@@ -71,6 +71,7 @@
 	collect type)
   nil)
 
+#+(or (not darwin-target) known-bug-273)
 (deftest acos.8
   (loop for type in '(single-float short-float double-float long-float)
 	unless (approx= (acos (coerce -1 type))

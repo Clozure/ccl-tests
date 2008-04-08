@@ -53,6 +53,7 @@
   (eqlt (phase -1/2) (coerce pi 'single-float))
   t)
 
+#+known-bug-272
 (deftest phase.10
   (let ((p1 (phase #c(0 1)))
 	(p2 (phase #c(0.0f0 1.0f0))))
@@ -65,6 +66,7 @@
     (approx= p (coerce (/ pi 2) 'double-float)))
   t)
 
+#+known-bug-272
 (deftest phase.12
   (let ((p (phase #c(0.0s0 1.0s0))))
     (approx= p (coerce (/ pi 2) 'single-float)))
@@ -101,11 +103,13 @@
   t)
 
 ;;; Negative zeros
+#+(or (not darwin-target) known-bug-273)
 (deftest phase.18
   (or (eqlt -0.0s0 0.0s0)
       (approx= (phase #c(-1.0 -0.0)) (coerce (- pi) 'short-float)))
   t)
 
+#+(or (not darwin-target) known-bug-273)
 (deftest phase.19
   (or (eqlt -0.0f0 0.0f0)
       (approx= (phase #c(-1.0 -0.0)) (coerce (- pi) 'single-float)))

@@ -40,8 +40,9 @@
       (destructuring-bind
 	  (output-truename warnings-p failure-p)
 	  vals
-	(print (namestring (truename target-pathname)))
-	(print (namestring output-truename))
+	(when *test-verbose*
+	  (print (namestring (truename target-pathname)))
+	  (print (namestring output-truename)))
 	(values
 	 (let ((v1 (or print verbose
 		       (and (not print-p) *compile-print*)

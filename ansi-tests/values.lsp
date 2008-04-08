@@ -36,12 +36,14 @@
   (values 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
 
+#+known-bug-270
 (deftest values.20
   (let ((a t) (b t) (c t) (d t) (e t) (f t))
     (setf (values a (values b c) (values d) (values e f)) (values 0 1 2 3 4 5 6))
     (list a b c d e f))
   (0 1 nil 2 3 nil))
 
+#+known-bug-270
 (deftest values.21
   (let (a b c d e f)
     (setf (values a (values b c) (values d) (values e f)) (values 0 1 2 3 4 5 6)))

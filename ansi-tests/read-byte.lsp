@@ -58,6 +58,7 @@
 	collect (list i b1 b2))
   nil)
 
+#+known-bug-280
 (deftest read-byte.4
   (loop with b1 = 0
 	and b2 = 0

@@ -35,6 +35,8 @@ contain the object, not just to some builtin type that contains the object.")
 (defnote :make-condition-with-compound-name
   "The spec says MAKE-CONDITION should work on any subtype of CONDITION, but this causes all sorts of problems.  They probably meant only non-compound names.")
 
+#+openmcl (rt::disable-note :make-condition-with-compound-name)
+
 (defnote :ansi-spec-problem
   "A catch-all for tests that illustrate problems in the ANSI spec.")
 

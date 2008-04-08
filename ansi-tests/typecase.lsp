@@ -115,7 +115,8 @@
      for form = `(typecase ',val
 		   ,@(loop for i from 0 for type in my-types collect `(,type ,i))
 		   (otherwise nil))
-     for j = (eval form)
+     for j = (handler-bind ((warning #'muffle-warning))
+	       (eval form))
      repeat 1000
      unless (eql i j)
      collect (list n my-types val i form j)))

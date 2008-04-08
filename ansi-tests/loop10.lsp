@@ -510,13 +510,13 @@
    (loop for x from 1 to 10 count (expand-in-current-env (%m (< x 5)))))
   4)
 
-(deftest loop.10.106
+(deftest loop.10.106.a
   (macrolet
    ((%m (z) z))
    (loop for x from 1 to 10 counting (expand-in-current-env (%m t))))
   10)
 
-(deftest loop.10.106
+(deftest loop.10.106.b
   (macrolet
    ((%m (z) z))
    (loop for x from 1 to 10 count (expand-in-current-env (%m nil))))

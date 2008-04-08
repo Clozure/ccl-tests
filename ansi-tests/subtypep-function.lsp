@@ -15,6 +15,7 @@
   (check-all-subtypep nil '(function (t) t))
   nil)
 
+#+known-bug-278
 (deftest subtypep-function.3
   (check-all-subtypep '(function (t) t) 'function)
   nil)

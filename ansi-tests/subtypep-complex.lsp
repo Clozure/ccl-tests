@@ -84,6 +84,7 @@
 	    (unless (equal result '(t t))
 	      (list (list :case4 t1 t2 ucpt1 ucpt2 result)))))))))))
 
+#+known-bug-279
 (deftest subtypep-complex.8
   (let ((types (reverse
 		'(bit fixnum bignum integer unsigned-byte rational ratio

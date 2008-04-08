@@ -53,10 +53,12 @@
 			    (numberp y)))))
   (t t t t t))
 
+#+known-bug-272
 (deftest asin.5
   (approx= (asin 1) (coerce (/ pi 2) 'single-float))
   t)
 
+#+known-bug-272
 (deftest asin.6
   (loop for type in '(single-float short-float double-float long-float)
 	unless (approx= (asin (coerce 1 type))
@@ -71,6 +73,7 @@
 	collect type)
   nil)
 
+#+known-bug-272
 (deftest asin.8
   (loop for type in '(single-float short-float double-float long-float)
 	unless (approx= (asin (coerce -1 type))

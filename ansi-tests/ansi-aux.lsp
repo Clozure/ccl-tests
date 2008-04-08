@@ -53,9 +53,7 @@
   (declare (type fixnum expected-number))
   (let ((n expected-number))
     (declare (type fixnum n))
-    (dolist (e results)
-      (declare (ignore e))
-      (decf n))
+    (decf n (length results))
     (unless (= n 0)
       (error "Expected ~A results from ~A, got ~A results instead.~%~
 Results: ~A~%" expected-number form n results))))
@@ -301,6 +299,7 @@ the condition to go uncaught if it cannot be classified."
 					  ,form))))
 	       (t `(eval ',form)))))
      (,error-name (c)
+       (declare (ignorable c))
 		  (cond
 		   ,@(case error-name
 		       (type-error

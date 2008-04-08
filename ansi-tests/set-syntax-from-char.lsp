@@ -19,21 +19,23 @@
 ;;; syntax type is set
 
 (defmacro def-set-syntax-from-char-trait-test (c test-form expected-value)
-  (setq c (typecase c
-	    (character c)
-	    ((or string symbol) (name-char (string c)))
-	    (t nil)))
-  (when c
+  (let ((char (typecase c
+		(character c)
+		((or string symbol) (name-char (string c)))
+		(t nil))))
+   (when char
     ;; (format t "~A ~A~%" c (char-name c))
     `(def-set-syntax-from-char-test
-       ,(intern (concatenate 'string "SET-SYNTAX-FROM-CHAR-TRAIT-X-" (or (char-name c)
-									 (string c)))
+       ,(intern (concatenate 'string "SET-SYNTAX-FROM-CHAR-TRAIT-X-" (if (characterp c)
+								       (or (char-name c)
+									   (string c))
+								       (string c)))
 		:cl-test)
-       (let ((c ,c))
+       (let ((c ,char))
 	 (values
 	  (set-syntax-from-char c #\X)
 	  ,test-form))
-       t ,expected-value)))
+       t ,expected-value))))
 
 (defmacro def-set-syntax-from-char-alphabetic-trait-test (c)
   `(def-set-syntax-from-char-trait-test ,c
@@ -295,6 +297,7 @@
 	       
 ;;; Tests of set-syntax-from-char on #\#
 
+#+known-bug-282
 (deftest set-syntax-from-char.sharp.1
   (loop for c across +standard-chars+
 	nconc

@@ -539,21 +539,24 @@
 	    (safely-delete-package "G3")
 	    (let ((pg1 
 		   (progn
-		     (format t "Making G1...~%")
+		     (when *test-verbose*
+		       (format t "Making G1...~%"))
 		     (eval '(defpackage "G1"
 			      (:use)
 			      (:export "A" "B" "C")
 			      (:intern "D" "E" "F")))))
 		  (pg2
 		   (progn
-		     (format t "Making G2...~%")
+		     (when *test-verbose*
+		       (format t "Making G2...~%"))
 		     (eval '(defpackage "G2" 
 			      (:use)
 			      (:export "A" "D" "G")
 			      (:intern "E" "H" "I")))))
 		  (pg3 
 		   (progn
-		     (format t "Making G3...~%")
+		     (when *test-verbose*
+		       (format t "Making G3...~%"))
 		     (eval '(defpackage "G3" 
 			      (:use)
 			      (:export "J" "K" "L")

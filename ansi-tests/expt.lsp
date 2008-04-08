@@ -35,18 +35,22 @@
   (signals-error (expt most-positive-long-float 2) floating-point-overflow)
   t)
 
+#+bogus-test
 (deftest expt.error.8
   (signals-error (expt least-positive-short-float 2) floating-point-underflow)
   t)
 
+#+bogus-test
 (deftest expt.error.9
   (signals-error (expt least-positive-single-float 2) floating-point-underflow)
   t)
 
+#+bogus-test
 (deftest expt.error.10
   (signals-error (expt least-positive-double-float 2) floating-point-underflow)
   t)
 
+#+bogus-test
 (deftest expt.error.11
   (signals-error (expt least-positive-long-float 2) floating-point-underflow)
   t)

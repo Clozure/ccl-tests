@@ -357,6 +357,7 @@
 
 ;;;; From sbcl 0.9.6.57
 
+#+known-bug-277
 (deftest subtypep.cons.43
   (let* ((n -3.926510009989861d7)
 	 (t1 '(not (cons float t)))

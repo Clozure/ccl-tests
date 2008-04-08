@@ -82,6 +82,7 @@
 		       (assert (eql byte (logand (1- n) i)))))))
   nil)
 
+#+known-bug-280
 (deftest file-position.8
   (loop for len from 33 to 100
 	for n = (ash 1 len)

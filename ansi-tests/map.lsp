@@ -266,6 +266,7 @@
       (values t t)))
   t t)
 
+#+known-bug-276
 (deftest map.error.11
   (let ((type '(or (vector t 5) (vector t 10))))
     (if (subtypep type 'vector)

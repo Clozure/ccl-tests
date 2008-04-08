@@ -102,7 +102,8 @@
 								   ',(cons 'or my-types))))
 				     (assert (null equiv) () "EQUIV = ~A" EQUIV)))
 				 nil))))
-     for j = (funcall (eval form) val)
+     for j = (let ((ccl::*suppress-compiler-warnings* t))
+	       (funcall (eval form) val))
      repeat 200
      unless (eql i j)
      collect (list n my-types val i form j)))
