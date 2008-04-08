@@ -32,6 +32,8 @@
 		     #'(lambda (c)
 			 (unless (typep c 'style-warning)
 			   (setf actual-warnings-p t))
+			 (when (and (typep c 'warning) (not *test-verbose*))
+			   (muffle-warning c))
 			 nil)))
 		   (with-output-to-string
 		     (*standard-output* str)
