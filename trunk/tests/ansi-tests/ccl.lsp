@@ -26,3 +26,11 @@
              (funcall slot obj))
         (eval `(untrace ,slot))))
   :good)
+
+(deftest ccl.40207  ;; fixed in r9163 and r9165
+    ;; Check that these compile-time errors don't abort compilation.
+    (and (typep (lambda (x) (setq x)) 'function)
+         (typep (lambda (x) (setf x)) 'function)
+         (typep (lambda (((foo))) foo) 'function)
+         :good)
+  :good)
