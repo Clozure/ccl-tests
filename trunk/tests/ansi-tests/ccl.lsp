@@ -34,3 +34,11 @@
          (typep (lambda (((foo))) foo) 'function)
          :good)
   :good)
+
+(deftest ccl.40927  ;; fixed in r9183 and r9184
+    (let ((s (make-string-output-stream))
+          (line1 "Line1
+")
+          (line2 "Line2"))
+      (count #\Newline (format nil "~a~&~a" line1 line2)))
+  1)
