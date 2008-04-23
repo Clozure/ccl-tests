@@ -42,3 +42,22 @@
           (line2 "Line2"))
       (count #\Newline (format nil "~a~&~a" line1 line2)))
   1)
+
+(defstruct ccl.40055 (a 0 :type integer))
+
+(deftest ccl.40055 ;; fixed in r9237 and r9240
+    (locally
+        (declare (optimize (safety 3)))
+      (and (signals-error (make-ccl.40055 :a nil) type-error)
+           (signals-error (setf (ccl.40055-a (make-ccl.40055)) nil) type-error)))
+  t)
+
+(defclass ccl.bug#285 () ())
+
+(defmethod initialize-instance ((c ccl.bug#285) &rest args)
+  (declare (optimize (safety 3)))
+  (apply #'call-next-method c args))
+
+(deftest ccl.bug#285
+    (typep (make-instance 'ccl.bug#285) 'ccl.bug#285)
+  t)
