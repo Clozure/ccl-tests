@@ -61,3 +61,9 @@
 (deftest ccl.bug#285
     (typep (make-instance 'ccl.bug#285) 'ccl.bug#285)
   t)
+
+(deftest ccl.bug#286
+    (and (typep (lambda () (typep nil '(or ccl.bug#286-unknown-type-1 null))) 'function)
+         (typep (lambda () (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null))) 'function)
+         :good)
+  :good)
