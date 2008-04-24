@@ -63,7 +63,12 @@
   t)
 
 (deftest ccl.bug#286
-    (and (typep (lambda () (typep nil '(or ccl.bug#286-unknown-type-1 null))) 'function)
-         (typep (lambda () (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null))) 'function)
+    (and (compile nil '(lambda ()
+                        (declare (optimize (speed 1) (safety 1)))
+                        (typep nil '(or ccl.bug#286-unknown-type-1 null))))
+         (compile nil '(lambda ()
+                        (declare (optimize (speed 1) (safety 1)))
+                        (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null))))
          :good)
   :good)
+
