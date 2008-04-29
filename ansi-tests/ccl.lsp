@@ -72,3 +72,36 @@
          :good)
   :good)
 
+
+(deftest ccl.bug#287
+    (progn
+      (defmethod ccl.bug#287 (x) x)
+      (trace ccl.bug#287)
+      (let ((*trace-output* (make-broadcast-stream))) ;; don't care about trace output
+        (prog1
+            (ccl.bug#287 :good)
+          (untrace))))
+  :good)
+
+
+(deftest ccl.41226
+    (let ((text "(defmacro ccl.41226 (x) (eq (caar x)))")
+          (file "temp.dat"))
+      (with-open-file (s file :direction :output :if-exists :supersede)
+        (write-string text s)
+        (terpri s))
+      (handler-bind ((warning #'muffle-warning)) ;; don't care about the warning
+        (compile-file file))
+      :good)
+  :good)
+
+(deftest ccl.bug#288
+    (let ((text "(prog1 (declare (ignore foo)))")
+          (file "temp.dat"))
+      (with-open-file (s file :direction :output :if-exists :supersede)
+        (write-string text s)
+        (terpri s))
+      (handler-bind ((warning #'muffle-warning)) ;; don't care about the warning
+        (compile-file file))
+      :good)
+  :good)
