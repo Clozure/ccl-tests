@@ -4,8 +4,26 @@
 
 (in-package :cl-test)
 
+(defun test-source-file (format-string &rest format-args)
+  (let ((file "temp.dat"))
+    (with-open-file (s file :direction :output :if-exists :supersede)
+      (apply #'format s format-string format-args)
+      (terpri s)
+      (truename s))))
 
-;;; Regression tests
+(defun test-compile (lambda-or-file &key suppress-warnings)
+  ;; Compile in a more-or-less standard environment
+  (let ((ccl::*suppress-compiler-warnings* suppress-warnings)
+        (ccl::*nx-speed* 1)
+        (ccl::*nx-space* 1)
+        (ccl::*nx-safety* 1)
+        (ccl::*nx-cspeed* 1)
+        (ccl::*nx-debug* 1))
+    (if (consp lambda-or-file)
+      (compile nil lambda-or-file)
+      (compile-file lambda-or-file))))
+
+;;; CCL-specific regression tests, for CCL-specific behavior.
 
 (deftest ccl.40199  ;; fixed in r9116 and r9121
     (when (equalp (let ((*print-pretty* t))
@@ -52,6 +70,15 @@
            (signals-error (setf (ccl.40055-a (make-ccl.40055)) nil) type-error)))
   t)
 
+(deftest ccl.bug#235
+    (handler-case
+        (test-compile '(lambda (x)
+                        (make-array x :element-type 'ccl.bug#235-unknown-type)))
+      (warning (c) (when (typep c 'ccl::compiler-warning)
+                     (ccl::compiler-warning-warning-type c))))
+  :unknown-type-declaration)
+
+
 (defclass ccl.bug#285 () ())
 
 (defmethod initialize-instance ((c ccl.bug#285) &rest args)
@@ -63,14 +90,14 @@
   t)
 
 (deftest ccl.bug#286
-    (and (compile nil '(lambda ()
-                        (declare (optimize (speed 1) (safety 1)))
-                        (typep nil '(or ccl.bug#286-unknown-type-1 null))))
-         (compile nil '(lambda ()
-                        (declare (optimize (speed 1) (safety 1)))
-                        (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null))))
-         :good)
-  :good)
+    (and (test-compile '(lambda ()
+                         (typep nil '(or ccl.bug#286-unknown-type-1 null)))
+                       :suppress-warnings t)
+         (test-compile '(lambda ()
+                         (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null)))
+                       :suppress-warnings t)
+         :no-crash)
+  :no-crash)
 
 
 (deftest ccl.bug#287
@@ -79,29 +106,62 @@
       (trace ccl.bug#287)
       (let ((*trace-output* (make-broadcast-stream))) ;; don't care about trace output
         (prog1
-            (ccl.bug#287 :good)
+            (ccl.bug#287 :no-crash)
           (untrace))))
-  :good)
+  :no-crash)
 
 
 (deftest ccl.41226
-    (let ((text "(defmacro ccl.41226 (x) (eq (caar x)))")
-          (file "temp.dat"))
-      (with-open-file (s file :direction :output :if-exists :supersede)
-        (write-string text s)
-        (terpri s))
-      (handler-bind ((warning #'muffle-warning)) ;; don't care about the warning
-        (compile-file file))
-      :good)
-  :good)
+    (let ((file (test-source-file "(defmacro ccl.41226 (x) (eq (caar x)))")))
+      (test-compile file :suppress-warnings t)
+      :no-crash)
+  :no-crash)
 
 (deftest ccl.bug#288
-    (let ((text "(prog1 (declare (ignore foo)))")
-          (file "temp.dat"))
-      (with-open-file (s file :direction :output :if-exists :supersede)
-        (write-string text s)
-        (terpri s))
-      (handler-bind ((warning #'muffle-warning)) ;; don't care about the warning
-        (compile-file file))
-      :good)
-  :good)
+    (let ((file (test-source-file "(prog1 (declare (ignore foo)))")))
+      (test-compile file :suppress-warnings t)
+      :no-crash)
+  :no-crash)
+
+(deftest ccl.40055-1
+    (let ((file (test-source-file "
+
+ (defclass ccl.40055-1-class () ())
+ (eval-when (eval compile load)
+  (defstruct ccl.40055-1-struct (slot nil :type (or ccl.40055-1-class null))))
+ (defun ccl.40055-1-fn ()
+   (make-array 0 :element-type 'ccl.40055-1-struct))
+ ")))
+      (handler-case
+          (progn (test-compile file) :no-warnings)
+        (warning (c) (format nil "~a" c))))
+  :no-warnings)
+
+(deftest ccl.40055-2
+    (let ((file (test-source-file "
+
+ (defclass ccl.40055-2-class () ())
+ (defstruct ccl.40055-2-struct (slot nil :type (or ccl.40055-2-class null)))
+ (defun ccl.40055-2-class-arr ()
+   (make-array 0 :element-type 'ccl.40055-2-class))
+ (defun ccl.40055-2-struct-arr ()
+   (make-array 0 :element-type 'ccl.40055-2-struct))
+ (defun ccl.40055-2-struct-arr ()
+   (make-array 0 :element-type '(or (member 17 32) ccl.40055-2-struct)))
+ (defun ccl.40055-2-fn (x) (setf (ccl.40055-2-struct-slot x) nil))
+ ")))
+      (handler-case
+          (progn (test-compile file) :no-warnings)
+        (warning (c) c)))
+  :no-warnings)
+
+
+(deftest ccl.40055-3
+    (let ((file (test-source-file "
+ (defclass ccl.40055-3-class () ())
+ (defun ccl.40055-3-cfn () (require-type nil '(or ccl.40055-3-class null)))
+ (defstruct ccl.40055-3-struct () ())
+ (defun ccl.40055-3-rfn () (require-type nil '(or ccl.40055-3-struct null)))")))
+      (test-compile file)
+      :no-crash)
+  :no-crash)
