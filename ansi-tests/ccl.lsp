@@ -11,12 +11,12 @@
       (terpri s)
       (truename s))))
 
-(defun test-compile (lambda-or-file &key suppress-warnings)
+(defun test-compile (lambda-or-file &key suppress-warnings (safety 1))
   ;; Compile in a more-or-less standard environment
   (let ((ccl::*suppress-compiler-warnings* suppress-warnings)
         (ccl::*nx-speed* 1)
         (ccl::*nx-space* 1)
-        (ccl::*nx-safety* 1)
+        (ccl::*nx-safety* safety)
         (ccl::*nx-cspeed* 1)
         (ccl::*nx-debug* 1))
     (if (consp lambda-or-file)
@@ -165,3 +165,15 @@
       (test-compile file)
       :no-crash)
   :no-crash)
+
+
+(deftest ccl.bug#295
+    (let ((file (test-source-file "
+  (defun outer-fun ()
+     (defun inner-fun () nil)
+     (inner-fun))")))
+      (handler-case (progn (test-compile file :safety 3) :no-warnings)
+        (warning (c) (format t "~a" c)
+          c)))
+  :no-warnings)
+
