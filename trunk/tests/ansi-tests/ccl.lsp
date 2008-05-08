@@ -146,7 +146,7 @@
    (make-array 0 :element-type 'ccl.40055-2-class))
  (defun ccl.40055-2-struct-arr ()
    (make-array 0 :element-type 'ccl.40055-2-struct))
- (defun ccl.40055-2-struct-arr ()
+ (defun ccl.40055-2-struct-arr-2 ()
    (make-array 0 :element-type '(or (member 17 32) ccl.40055-2-struct)))
  (defun ccl.40055-2-fn (x) (setf (ccl.40055-2-struct-slot x) nil))
  ")))
@@ -162,10 +162,10 @@
  (defun ccl.40055-3-cfn () (require-type nil '(or ccl.40055-3-class null)))
  (defstruct ccl.40055-3-struct () ())
  (defun ccl.40055-3-rfn () (require-type nil '(or ccl.40055-3-struct null)))")))
-      (test-compile file)
-      :no-crash)
-  :no-crash)
-
+      (handler-case
+          (progn (test-compile file) :no-warnings)
+        (warning (c) c)))
+  :no-warnings)
 
 (deftest ccl.bug#295
     (let ((file (test-source-file "
@@ -173,7 +173,15 @@
      (defun inner-fun () nil)
      (inner-fun))")))
       (handler-case (progn (test-compile file :safety 3) :no-warnings)
-        (warning (c) (format t "~a" c)
-          c)))
+        (warning (c) c)))
+  :no-warnings)
+
+
+(deftest ccl.41836  ;; fixed in r9391
+    (let ((file (test-source-file "
+  (defvar *a* 1)
+  (defvar *b* (load-time-value *a*))")))
+      (handler-case (progn (test-compile file) :no-warnings)
+        (warning (c) c)))
   :no-warnings)
 
