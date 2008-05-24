@@ -185,3 +185,11 @@
         (warning (c) c)))
   :no-warnings)
 
+
+(deftest ccl.42698  ;; fixed in r9589/r9590
+    (handler-case (schar "abc" -1) ;; used to crash hard
+      (error () :error))
+  :error)
+
+
+  
