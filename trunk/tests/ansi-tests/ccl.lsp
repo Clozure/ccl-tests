@@ -191,6 +191,22 @@
       (error () :error))
   :error)
 
+(deftest ccl.42232-1
+    (let ((file (test-source-file "
+  (defun ccl.42232-1 (foo)
+    (declare (ignore foo))
+    foo)")))
+      (handler-case (progn (test-compile file) :no-warnings)
+        (warning (c) :warning)))
+  :warning)
+
+(deftest ccl.42232-2
+    (let ((file (test-source-file "
+  (defun ccl.42232-2 ()
+    (declare (ignore bar)))")))
+      (handler-case (progn (test-compile file) :no-warnings)
+        (warning (c) :warning)))
+  :warning)
 
 (deftest ccl.42830
     (let ((*standard-output* (make-broadcast-stream)))
