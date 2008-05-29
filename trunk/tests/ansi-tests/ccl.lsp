@@ -192,4 +192,15 @@
   :error)
 
 
-  
+(deftest ccl.42830
+    (let ((*standard-output* (make-broadcast-stream)))
+      (defun cl-user::ccl.42830 (stream int colon-p at-sign-p)
+        (declare (ignore at-sign-p colon-p))
+        (check-type int integer)
+        (write int :stream stream))
+      (defun test-ccl.42830 (a b stream)
+        (format stream "~A ~/ccl.42830/" a b))
+      (and (eq (test-ccl.42830 "a" 1 t) nil)
+           (string-equal (test-ccl.42830 "a" 1 nil) "a 1")
+           :no-errors))
+  :no-errors)
