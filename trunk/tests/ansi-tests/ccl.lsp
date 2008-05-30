@@ -220,3 +220,22 @@
            (string-equal (test-ccl.42830 "a" 1 nil) "a 1")
            :no-errors))
   :no-errors)
+
+
+(deftest ccl.bug#350
+    (let* ((file (test-source-file "
+  (in-package :cl-test)
+  (defclass ccl.bug#350-inner () ((ccl.bug#350-inner-slot :accessor ccl.bug#350-inner-slot)))
+  (macrolet ((generator ()
+               `(defclass ccl.bug#350 (ccl.bug#350-inner)
+                  ,(loop for i from 0 to 600
+                         for slot = (intern (format nil \"CCL.BUG#350-SLOT-~~A\" i) :cl-user)
+                         collect `(,slot :initform ,i)))))
+    (generator))
+  (defmethod initialize-instance :after ((x ccl.bug#350-inner) &key)
+    (setf (ccl.bug#350-inner-slot x) 42))
+  (defun ccl.bug#350-test () (make-instance 'ccl.bug#350))"))
+           (fasl (test-compile file)))
+      (load fasl :verbose nil)
+      (ccl.bug#350-inner-slot (ccl.bug#350-test)))
+  42)
