@@ -222,20 +222,34 @@
   :no-errors)
 
 
-(deftest ccl.bug#350
+(deftest ccl.bug#305
     (let* ((file (test-source-file "
   (in-package :cl-test)
-  (defclass ccl.bug#350-inner () ((ccl.bug#350-inner-slot :accessor ccl.bug#350-inner-slot)))
+  (defclass ccl.bug#305-inner () ((ccl.bug#305-inner-slot :accessor ccl.bug#305-inner-slot)))
   (macrolet ((generator ()
-               `(defclass ccl.bug#350 (ccl.bug#350-inner)
+               `(defclass ccl.bug#305 (ccl.bug#305-inner)
                   ,(loop for i from 0 to 600
-                         for slot = (intern (format nil \"CCL.BUG#350-SLOT-~~A\" i) :cl-user)
+                         for slot = (intern (format nil \"CCL.BUG#305-SLOT-~~A\" i) :cl-user)
                          collect `(,slot :initform ,i)))))
     (generator))
-  (defmethod initialize-instance :after ((x ccl.bug#350-inner) &key)
-    (setf (ccl.bug#350-inner-slot x) 42))
-  (defun ccl.bug#350-test () (make-instance 'ccl.bug#350))"))
+  (defmethod initialize-instance :after ((x ccl.bug#305-inner) &key)
+    (setf (ccl.bug#305-inner-slot x) 42))
+  (defun ccl.bug#305-test () (make-instance 'ccl.bug#305))"))
            (fasl (test-compile file)))
       (load fasl :verbose nil)
-      (ccl.bug#350-inner-slot (ccl.bug#350-test)))
+      (ccl.bug#305-inner-slot (ccl.bug#305-test)))
   42)
+
+(deftest ccl.42923
+    (progn
+      (fmakunbound 'ccl.42923)
+      (defmethod ccl.42923 ((x (eql 'x)) &key y &allow-other-keys)
+        (list x y) 'x)
+      (defmethod ccl.42923 ((x (eql 'foo)) &key y &allow-other-keys)
+        (list x y) 'foo)
+      (defmethod ccl.42923 ((x (eql 'bar)) &key y z a b c)
+        (list x y z (list a b c)) 'bar)
+      (ccl::maybe-hack-eql-methods #'ccl.42923)
+      (ccl:advise ccl.42923 'advise)
+      (ccl.42923 'foo :y 1 :z 2 :a 1 :b 2 :c 3))
+  foo)
