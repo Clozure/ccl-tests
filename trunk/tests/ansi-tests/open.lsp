@@ -284,7 +284,6 @@
   :pathname (logical-pathname "CLTEST:TMP.DAT"))
 
 ;;; It works on recognizable subtypes.
-#+known-bug-281
 (deftest open.65
   (let ((type '(or (integer 0 1) (integer 100 200)))
 	(pn #p"tmp.dat")
