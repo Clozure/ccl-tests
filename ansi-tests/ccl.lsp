@@ -11,7 +11,7 @@
       (terpri s)
       (truename s))))
 
-(defun test-compile (lambda-or-file &key suppress-warnings (safety 1))
+(defun test-compile (lambda-or-file &key suppress-warnings (safety 1) load)
   ;; Compile in a more-or-less standard environment
   (let ((ccl::*suppress-compiler-warnings* suppress-warnings)
         (ccl::*nx-speed* 1)
@@ -21,7 +21,7 @@
         (ccl::*nx-debug* 1))
     (if (consp lambda-or-file)
       (compile nil lambda-or-file)
-      (compile-file lambda-or-file))))
+      (compile-file lambda-or-file :load load))))
 
 ;;; CCL-specific regression tests, for CCL-specific behavior.
 
@@ -123,6 +123,14 @@
       :no-crash)
   :no-crash)
 
+(deftest ccl.bug#288-1 ;; follow-on bug, not really the same
+    (let ((file (test-source-file "(defun cl-test::ccl.bug#288-1-fn ((x integer)) x)")))
+      (test-compile file :suppress-warnings t :load t)
+      (handler-case
+	  (progn (ccl.bug#288-1-fn 17) :no-warnings)
+	(program-error (c) (if (search "(X INTEGER)" (princ-to-string c)) :lambda-list-error c))))
+  :lambda-list-error)
+
 (deftest ccl.40055-1
     (let ((file (test-source-file "
 
@@ -166,6 +174,14 @@
           (progn (test-compile file) :no-warnings)
         (warning (c) c)))
   :no-warnings)
+
+(deftest ccl.bug#289
+    (let ((file (test-source-file "
+ (defclass ccl.bug#289-meta (standard-class) ())
+ (defclass ccl.bug#289-class () () (:metaclass ccl.bug#289-meta))")))
+      (test-compile file)
+      :no-crash)
+  :no-crash)
 
 (deftest ccl.bug#295
     (let ((file (test-source-file "
@@ -253,3 +269,4 @@
       (ccl:advise ccl.42923 'advise)
       (ccl.42923 'foo :y 1 :z 2 :a 1 :b 2 :c 3))
   foo)
+
