@@ -531,7 +531,7 @@
     (eval '(defmethod generic-function-to-advise.18 ((x symbol)(y symbol)) :bar))
     (ccl:advise generic-function-to-advise.18 (push 'advise.18-1 *advise-var*) :name test-1)
     (trace generic-function-to-advise.18)
-    (ccl:advise function-to-advise.18 (push 'advise.18-2 *advise-var*) :name test-2)
+    (ccl:advise generic-function-to-advise.18 (push 'advise.18-2 *advise-var*) :name test-2)
     (prog1
         (list (not (equal "" (with-output-to-string (*trace-output*)
                                (assert (eq :bar (generic-function-to-advise.18 'a 'b))))))
@@ -546,7 +546,7 @@
               *advise-var*)
       (ccl:unadvise t)
       (untrace)))
-  (t (advise.18-1 advise.18-2 none) ((function-to-advise :before test-1))
+  (t (advise.18-1 advise.18-2 none) ((generic-function-to-advise.18 :before test-1))
      t (advise.18-2 advise.18-1 advise.18-2 none) (generic-function-to-advise.18) "" 
      (advise.18-2 advise.18-2 advise.18-1 advise.18-2 none)))
 
