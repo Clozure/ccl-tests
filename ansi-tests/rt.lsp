@@ -48,6 +48,8 @@
 (defvar *expanded-eval* nil "When true, convert the tests into a form that is less likely to have compiler optimizations.")
 (defvar *optimization-settings* '((safety 3)))
 
+(defvar *warn-if-redefine-test* t)
+
 (defvar *failed-tests* nil "After DO-TESTS, becomes the list of names of tests that have failed")
 (defvar *passed-tests* nil "After DO-TESTS, becomes the list of names of tests that have passed")
 
@@ -156,9 +158,10 @@
     (cond
      (pred
       (setf (cadr pred) entry)
-      (report-error nil
-        "Redefining test ~:@(~S~)"
-        (name entry)))
+      (when *warn-if-redefine-test*
+	(report-error nil
+		      "Redefining test ~:@(~S~)"
+		      (name entry))))
      (t
       (setf (gethash (name entry) *entries-table*) *entries-tail*)
       (setf (cdr *entries-tail*) (cons entry nil))
