@@ -270,3 +270,284 @@
       (ccl.42923 'foo :y 1 :z 2 :a 1 :b 2 :c 3))
   foo)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ADVISE
+
+(defun function-to-advise (x) (car x))
+(defun another-function-to-advise (x) (cdr x))
+(defun (setf function-to-advise) (val arg) (setf (car arg) val))
+
+(declaim (notinline function-to-advise
+                    another-function-to-advise
+                    (setf function-to-advise)))
+
+(defvar *advise-var* nil)
+
+
+(deftest advise.1
+  (progn
+    (ccl:unadvise t)
+    (function-to-advise '(a)))
+  a)
+
+(deftest advise.2
+  (progn
+    (ccl:unadvise t)
+    (ccl:advise function-to-advise (return 'advise.2))
+    (function-to-advise '(b)))
+  advise.2)
+
+(deftest advise.3
+  (progn
+    (ccl:unadvise t)
+    (ccl:advise function-to-advise 'advised.3 :when :around :name test)
+    (assert (eq 'advised.3 (function-to-advise '(a))))
+    (prog1 (ccl:advisedp t)
+      (ccl:unadvise t)
+      (assert (null (ccl:advisedp t)))))
+  ((function-to-advise :around test)))
+
+
+(deftest advise.4
+  (progn
+    (ccl:unadvise t)
+    (ccl:advise function-to-advise (return 'advise.4) :name test)
+    (handler-bind ((warning #'muffle-warning))
+      (ccl:advise function-to-advise (return 'readvised) :name test))
+    (prog1 (ccl:advisedp t)
+      (ccl:unadvise t)
+      (assert (null (ccl:advisedp t)))))
+  ((function-to-advise :before test)))
+
+(deftest advise.4a
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise function-to-advise (push 'advise.4a *advise-var*) :name test)
+    (handler-bind ((warning #'muffle-warning))
+      (ccl:advise function-to-advise (push 'readvise.4a *advise-var*) :name test))
+    (assert (eq (function-to-advise '(c)) 'c))
+    *advise-var*)
+  (readvise.4a none))
+
+(deftest advise.5
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise (setf function-to-advise) (push 'advise.5 *advise-var*))
+    (prog1 (ccl:advisedp t)
+      (ccl:unadvise t)
+      (assert (null (ccl:advisedp t)))))
+  (((setf function-to-advise) :before nil)))
+
+(deftest advise.6
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise (setf function-to-advise) (push 'advise.6 *advise-var*))
+    (handler-bind ((warning #'muffle-warning))
+      (ccl:advise (setf function-to-advise) (push 'readvise.6 *advise-var*)))
+    (prog1 (ccl:advisedp t)
+      (ccl:unadvise t)
+      (assert (null (ccl:advisedp t)))))
+  (((setf function-to-advise) :before nil)))
+
+(deftest advise.6a
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise (setf function-to-advise) (push 'advise.6a *advise-var*) :when :after)
+    (handler-bind ((warning #'muffle-warning))
+      (ccl:advise (setf function-to-advise) (push 'readvise.6a *advise-var*) :when :after))
+    (let ((x (list nil)))
+      (list* (setf (function-to-advise x) 17)
+             (car x)
+             *advise-var*)))
+  (17 17 readvise.6a none))
+
+(deftest advise.7
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (let ((x (list nil)))
+      (assert (eql (setf (function-to-advise x) 'a) 'a))
+      (assert (equal x '(a)))
+      *advise-var*))
+  (none))
+
+(deftest advise.8
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise (setf function-to-advise) (push 'advise.8 *advise-var*))
+    (let ((x (list nil)))
+      (assert (eql (setf (function-to-advise x) 'a) 'a))
+      (assert (equal x '(a)))
+      *advise-var*))
+  (advise.8 none))
+
+(deftest advise.9
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise function-to-advise (push 'advise.9 *advise-var*))
+    (ccl:advise another-function-to-advise (push 'another-advise.9 *advise-var*))
+    (assert (eql (function-to-advise '(b)) 'b))
+    (assert (eql (another-function-to-advise '(c . d)) 'd))
+    (assert (equal *advise-var* '(another-advise.9 advise.9 none)))
+    (prog1
+	(sort (copy-list (ccl:advisedp t))
+              #'(lambda (k1 k2) (string< (princ-to-string k1)
+                                         (princ-to-string k2))))
+      (ccl:unadvise t)))
+  ((another-function-to-advise :before nil) (function-to-advise :before nil)))
+
+(deftest advise.10
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (assert (null (ccl:advisedp t)))
+    (ccl:advise function-to-advise (push 'advise.10 *advise-var*))
+    (ccl:unadvise function-to-advise)
+    (assert (null (ccl:advisedp t)))
+    (handler-bind ((warning #'muffle-warning)) (ccl:unadvise function-to-advise))
+    (assert (null (ccl:advisedp t)))
+    nil)
+  nil)
+
+(deftest advise.11
+  (progn
+    (ccl:unadvise t)
+    (ccl:advise function-to-advise  (return 17))
+    (ccl:advise another-function-to-advise (return 18))
+    (ccl:unadvise function-to-advise)
+    (ccl:unadvise another-function-to-advise)
+    (ccl:advisedp t))
+  nil)
+
+;;; advising a generic function
+
+(declaim (notinline generic-function-to-advise))
+
+(deftest advise.12
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (eval '(defgeneric generic-function-to-advise (x y)))
+    (ccl:advise generic-function-to-advise (push 'advise.12 *advise-var*))
+    (prog1 (ccl:advisedp t) (ccl:unadvise t)))
+  ((generic-function-to-advise :before nil)))
+
+(deftest advise.13
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (eval '(defgeneric generic-function-to-advise (x y)))
+    (ccl:advise generic-function-to-advise (push 'advise.13 *advise-var*))
+    (eval '(defmethod generic-function-to-advise ((x t)(y t)) nil))
+    (prog1 (ccl:advisedp t) (ccl:unadvise t)))
+  ((generic-function-to-advise :before nil)))
+
+(deftest advise.14
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (eval '(defgeneric generic-function-to-advise (x y)))
+    (ccl:advise generic-function-to-advise (push 'advise.14 *advise-var*))
+    (eval '(defmethod generic-function-to-advise ((x t)(y t)) nil))
+    (assert (null (generic-function-to-advise 'a 'b)))
+    (assert (equal *advise-var* '(advise.14 none)))
+    (prog1
+	(ccl:advisedp t)
+      (ccl:unadvise generic-function-to-advise)
+      (assert (null (ccl:advisedp t)))))
+  ((generic-function-to-advise :before nil)))
+
+(declaim (notinline generic-function-to-advise2))
+
+(deftest advise.15
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (let* ((gf (eval '(defgeneric generic-function-to-advise2 (x y))))
+	   (m (eval '(defmethod generic-function-to-advise2
+		       ((x integer)(y integer))
+		       :foo))))
+      (eval '(defmethod generic-function-to-advise2
+	       ((x symbol)(y symbol)) :bar))
+      (assert (eql (generic-function-to-advise2 1 2) :foo))
+      (assert (eql (generic-function-to-advise2 'a 'b) :bar))
+      (ccl:advise generic-function-to-advise2 (push 'advise.15 *advise-var*))
+      (assert (equal (ccl:advisedp t) '((generic-function-to-advise2 :before nil))))
+      (remove-method gf m)
+      (prog1 (ccl:advisedp t) (ccl:unadvise t))))
+  ((generic-function-to-advise2 :before nil)))
+
+
+(deftest advise.16
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (ccl:advise function-to-advise (push 'advise.16-1 *advise-var*) :name test-1)
+    (ccl:advise function-to-advise (push 'advise.16-2 *advise-var*) :name test-2)
+    (prog1 (cons (function-to-advise '(foo)) *advise-var*) (ccl:unadvise t)))
+  (foo advise.16-1 advise.16-2 none))
+
+(deftest advise.17
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (untrace)
+    (ccl:advise function-to-advise (push 'advise.17-1 *advise-var*) :name test-1)
+    (trace function-to-advise)
+    (ccl:advise function-to-advise (push 'advise.17-2 *advise-var*) :name test-2)
+    (prog1
+        (list (not (equal "" (with-output-to-string (*trace-output*)
+                               (function-to-advise '(foo)))))
+              *advise-var*
+              (ccl:unadvise function-to-advise :name test-1)
+              (not (equal "" (with-output-to-string (*trace-output*)
+                               (function-to-advise '(bar)))))
+              *advise-var*
+              (untrace)
+              (with-output-to-string (*trace-output*)
+                (function-to-advise '(bar)))
+              *advise-var*)
+      (ccl:unadvise t)
+      (untrace)))
+  (t (advise.17-1 advise.17-2 none) ((function-to-advise :before test-1))
+     t (advise.17-2 advise.17-1 advise.17-2 none) (function-to-advise) "" 
+     (advise.17-2 advise.17-2 advise.17-1 advise.17-2 none)))
+
+
+(deftest advise.18
+  (progn
+    (ccl:unadvise t)
+    (setq *advise-var* '(none))
+    (untrace)
+    (fmakunbound 'generic-function-to-advise.18)
+    (eval '(defgeneric generic-function-to-advise.18 (x y)))
+    (eval '(defmethod generic-function-to-advise.18 ((x integer)(y integer)) :foo))
+    (eval '(defmethod generic-function-to-advise.18 ((x symbol)(y symbol)) :bar))
+    (ccl:advise generic-function-to-advise.18 (push 'advise.18-1 *advise-var*) :name test-1)
+    (trace generic-function-to-advise.18)
+    (ccl:advise function-to-advise.18 (push 'advise.18-2 *advise-var*) :name test-2)
+    (prog1
+        (list (not (equal "" (with-output-to-string (*trace-output*)
+                               (assert (eq :bar (generic-function-to-advise.18 'a 'b))))))
+              *advise-var*
+              (ccl:unadvise generic-function-to-advise.18 :name test-1)
+              (not (equal "" (with-output-to-string (*trace-output*)
+                               (assert (eq :foo (generic-function-to-advise.18 1 2))))))
+              *advise-var*
+              (untrace)
+              (with-output-to-string (*trace-output*)
+                (generic-function-to-advise.18 'x 'y))
+              *advise-var*)
+      (ccl:unadvise t)
+      (untrace)))
+  (t (advise.18-1 advise.18-2 none) ((function-to-advise :before test-1))
+     t (advise.18-2 advise.18-1 advise.18-2 none) (generic-function-to-advise.18) "" 
+     (advise.18-2 advise.18-2 advise.18-1 advise.18-2 none)))
+
+
