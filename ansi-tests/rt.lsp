@@ -253,12 +253,13 @@
 								    (muffle-warning c)))))
 			   (cond
 			    (*compile-tests*
-			     (let ((fn (compile
-					nil
-					`(lambda ()
-					   (declare
-					    (optimize ,@*optimization-settings*))
-					   ,(form entry)))))
+			     (let* ((fn (let (#+openmcl (ccl::*suppress-compiler-warnings* t))
+                                          (compile
+                                           nil
+                                           `(lambda ()
+                                              (declare
+                                               (optimize ,@*optimization-settings*))
+                                              ,(form entry))))))
 			       #+openmcl (ccl::lfun-name fn (name entry))
 			       (multiple-value-list (funcall fn))))
 			    (*expanded-eval*
