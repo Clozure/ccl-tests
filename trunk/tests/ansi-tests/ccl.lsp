@@ -329,6 +329,21 @@
      warnings))
   (:program-error t))
 
+(deftest ccl.bug#315
+    (let* ((file (test-source-file
+                  "(defmethod ccl.bug#315-fn ((a sequence))
+                       (reduce #'or a :key #'identity))"))
+           (warning nil))
+      (handler-bind ((warning
+                      (lambda (c)
+                        (let ((s (princ-to-string c)))
+                          (setq warning
+                                (if (and (search "FUNCTION" s) (search "macro OR" s))
+                                  (or warning :macro-or)
+                                  c))))))
+        (test-compile file :hide-warnings t :break-on-program-errors nil :load t))
+      warning)
+  :macro-or)
 
 (deftest ccl.43101a
     (progn
