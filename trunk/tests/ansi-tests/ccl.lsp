@@ -56,7 +56,7 @@
                                           (typep (lambda (x) (setf x)) 'function)
                                           (typep (lambda (((foo))) foo) 'function)
                                           :good))")))
-      (test-compile test :hide-warnings t :load t)
+      (test-compile test :hide-warnings t :break-on-program-errors nil :load t)
       (funcall 'cl-test::ccl.40207-fn)))
   :good)
 
@@ -132,13 +132,13 @@
 
 (deftest ccl.bug#288
     (let ((file (test-source-file "(prog1 (declare (ignore foo)))")))
-      (test-compile file :hide-warnings t)
+      (test-compile file :hide-warnings t :break-on-program-errors nil)
       :no-crash)
   :no-crash)
 
 (deftest ccl.bug#288-1 ;; follow-on bug, not really the same
     (let ((file (test-source-file "(defun cl-test::ccl.bug#288-1-fn ((x integer)) x)")))
-      (test-compile file :hide-warnings t :load t)
+      (test-compile file :hide-warnings t :break-on-program-errors nil :load t)
       (handler-case
 	  (progn (ccl.bug#288-1-fn 17) :no-warnings)
 	(program-error (c) (if (search "(X INTEGER)" (princ-to-string c)) :lambda-list-error c))))
@@ -172,7 +172,7 @@
  (defun ccl.40055-2-fn (x) (setf (ccl.40055-2-struct-slot x) nil))
  ")))
       (handler-case
-          (progn (test-compile file) :no-warnings)
+          (progn (test-compile file :break-on-program-errors nil) :no-warnings)
         (warning (c) c)))
   :no-warnings)
 
@@ -184,7 +184,7 @@
  (defstruct ccl.40055-3-struct () ())
  (defun ccl.40055-3-rfn () (require-type nil '(or ccl.40055-3-struct null)))")))
       (handler-case
-          (progn (test-compile file) :no-warnings)
+          (progn (test-compile file :break-on-program-errors nil) :no-warnings)
         (warning (c) c)))
   :no-warnings)
 
@@ -210,7 +210,7 @@
     (let ((file (test-source-file "
   (defvar *a* 1)
   (defvar *b* (load-time-value *a*))")))
-      (handler-case (progn (test-compile file) :no-warnings)
+      (handler-case (progn (test-compile file :break-on-program-errors nil) :no-warnings)
         (warning (c) c)))
   :no-warnings)
 
@@ -233,7 +233,7 @@
     (let ((file (test-source-file "
   (defun ccl.42232-2 ()
     (declare (ignore bar)))")))
-      (handler-case (progn (test-compile file) :no-warnings)
+      (handler-case (progn (test-compile file :break-on-program-errors nil) :no-warnings)
         (warning (c) :warning)))
   :warning)
 
@@ -302,32 +302,32 @@
 (deftest ccl.buf#294-3
   (let* ((file (test-source-file
                 "(defun cl-test::ccl.bug#294-3 (x y) (eq x) y)"))
-         (warnings 0))
+         (warnings nil))
     (fmakunbound ' cl-test::ccl.bug#294-3)
     (list
      (let ((*error-output* (make-broadcast-stream)))
        (handler-case
-           (handler-bind ((warning (lambda (c) (incf warnings))))
+           (handler-bind ((warning (lambda (c) (setq warnings t))))
              (test-compile file :break-on-program-errors :defer))
          (error (c) :error)))
      warnings))
-  (:error 1))
+  (:error t))
 
 
 (deftest ccl.buf#294-4
   (let* ((file (test-source-file
                 "(defun cl-test::ccl.bug#294-4 (x y) (eq x) y)"))
-         (warnings 0))
+         (warnings nil))
     (fmakunbound 'cl-test::ccl.bug#294-4)
     (list
      (let ((*error-output* (make-broadcast-stream)))
-       (handler-bind ((warning (lambda (c) (incf warnings))))
+       (handler-bind ((warning (lambda (c) (setq warnings t))))
          (test-compile file :break-on-program-errors nil :load t))
        (handler-case (and (fboundp 'cl-test::ccl.bug#294-4)
                           (funcall 'cl-test::ccl.bug#294-4 1 2))
          (program-error (c) :program-error)))
      warnings))
-  (:program-error 1))
+  (:program-error t))
 
 
 (deftest ccl.43101a
