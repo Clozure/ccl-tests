@@ -12,94 +12,95 @@
 
 (declaim (special *s1* *s2* *s3* *s4* *s5* *s6* *s7* *s8*))
 
+(defun call-compiled (lambda &rest args)
+  (declare (dynamic-extent args))
+  (apply-compiled lambda args))
+
+(defun apply-compiled (lambda args)
+  (apply
+   (let ((*error-output* (make-broadcast-stream))) ;; hide warning output
+     (compile nil lambda))
+   args))
+
+
 (deftest misc.1
-  (funcall
-   (compile nil '(lambda (b)
-                   (declare (type (integer 8 22337) b))
-                   (+ b 2607688420)))
+  (call-compiled
+   '(lambda (b)
+     (declare (type (integer 8 22337) b))
+     (+ b 2607688420))
    100)
   2607688520)
 
 (deftest misc.2
-  (funcall (compile nil
-                    '(lambda (b) (integer-length (dpb b (byte 4 28) -1005))))
-           12800263)
+  (call-compiled
+   '(lambda (b) (integer-length (dpb b (byte 4 28) -1005)))
+   12800263)
   32)
 
 (deftest misc.3
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b)
        (declare (optimize (speed 3) (debug 1)))
        (let ((v7
               (let ((v2 (block b5 (return-from b5 (if t b -4)))))
                 a)))
-         -65667836)))
+         -65667836))
    1 2)
   -65667836)
 
 (deftest misc.4
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
            (declare (type (integer -629491 -333) a)
                     (type (integer -142 1) b)
                     (type (integer 0 12604) c)
                     (optimize (speed 3) (safety 1) (debug 1)))
            (let ((v6 (block b7 (return-from b7 (if (eql b 0) 1358159 a)))))
-                b)))
+                b))
    -1000 -17 6143)
   -17)
 
 (deftest misc.5
-  (funcall
-   (compile nil
+  (call-compiled
             '(lambda () (* 390 (- (signum (logeqv -8005440 -2310))
-                                  -10604863)))))
+                                  -10604863))))
   4135896180)
 
 (deftest misc.6
-  (funcall
-   (compile nil
+  (call-compiled
             '(lambda (a c)
                      (declare (optimize (speed 3) (debug 1)))
                      (flet ((%f14 () (if c a -486826646)))
                            (let ((v7 (flet ((%f18 () (%f14))) a)))
                                 (let ((v5 (%f14)))
-                                     0)))))
+                                     0))))
    10 20)
   0)
 
 (deftest misc.7
-  (funcall (compile nil
+  (call-compiled
                     '(lambda (c) (declare (optimize (speed 3) (debug 1)))
                        (flet ((%f18 () -36))
                          (flet ((%f13 ()
                                       (let () (block b8 (return-from b8 c)))))
-                           (%f18)))))
+                           (%f18))))
            10)
   -36)
 
 (deftest misc.8
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b)
        (declare (optimize (speed 3) (debug 1)))
        (let ((v3 (flet ((%f12 () (min b (block b2 (return-from b2 a)))))
                        a)))
             (block b7
                    (flet ((%f5 () (return-from b7 b)))
-                         (%f5))))))
+                         (%f5)))))
    10 20)
   20)
 
 (deftest misc.9
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda ()
              (declare (optimize (speed 3) (debug 1)))
              (block b6
@@ -110,13 +111,11 @@
                                                  (- (if nil (return-from b6 89627)
                                                         1160)
                                                     (return-from b1 22923)))))))
-                          1)))))
+                          1))))
   1)
 
 (deftest misc.10
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (optimize (speed 3) (debug 1))
                       (type (integer -15417757 5816) c))
@@ -128,14 +127,12 @@
                                                    (if (eql c v7)
                                                        (let ((v6 (%f3))) 4650813)
                                                        782))))
-                                    -4362540))))))
+                                    -4362540)))))
    -10000)
   782)
 
 (deftest misc.11
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (optimize (speed 3) (debug 1)))
              (block b8
@@ -146,14 +143,12 @@
                                         (flet ((%f10 () -1))
                                               c)))
                                   (flet ((%f3 () (let () (return-from b2 b))))
-                                        a)))))))
+                                        a))))))
    1 2 3)
   120789657)
 
 (deftest misc.12
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (optimize (speed 3) (safety 1) (debug 1))
                       (type (integer -171067 -5) c))
@@ -161,14 +156,12 @@
                           (flet ((%f12 () 439))
                                 3358)))
                    (flet ((%f14 () c))
-                         (if (%f14) -1 (%f14))))))
+                         (if (%f14) -1 (%f14)))))
    -100)
   -1)
 
 (deftest misc.13
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (b c)
              (declare (optimize (speed 3) (safety 1) (debug 1))
                       (type  (integer -1554410 36086789) b)
@@ -184,14 +177,12 @@
                            (let ((v3 (let ((v8 (%f9))) b))) b)
                            (if (= 1364001 (%f9))
                                (logeqv (block b5 -2713) -247)
-                               -19))))))
+                               -19)))))
    0 0)
   -2)
 
 (deftest misc.14
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (notinline logandc1))
              (block b6
@@ -199,14 +190,12 @@
                           (logandc1 (%f17)
                                     (if 1
                                         450967818
-                                        (let ((v1 (%f17))) -17)))))))
+                                        (let ((v1 (%f17))) -17))))))
    10)
   10)
 
 (deftest misc.15
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b)
              (declare (optimize (speed 3) (safety 1) (debug 1)))
              (flet ((%f6 () a))
@@ -214,14 +203,12 @@
                           (flet ((%f14 ()
                                        (min 17593 (block b1 (return-from b1 b)))))
                                 (block b7 (if (%f6) (return-from b7 28182012)
-                                              (return-from b5 0))))))))
+                                              (return-from b5 0)))))))
    3 5)
   28182012)
 
 (deftest misc.16
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a c)
              (flet ((%f14 ()
                           (block b6
@@ -230,14 +217,12 @@
                    (block b1
                           (flet ((%f18 () a))
                                 (logandc1 (return-from b1 -2781)
-                                          (if (%f14) 58647578 -396746)))))))
+                                          (if (%f14) 58647578 -396746))))))
    1 2)
   -2781)
 
 (deftest misc.17
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (optimize (speed 3) (safety 1) (debug 1))
                       (type (integer 4 23363) b)
@@ -247,14 +232,12 @@
                           (if nil c b)))
                    (if (if (> -71810514 a) 102077 465393)
                        (block b3 (if (%f18) (return-from b3 c) c))
-                       (%f18)))))
+                       (%f18))))
    0 10 1000)
   1000)
 
 (deftest misc.18
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (optimize (speed 3) (safety 1) (debug 1))
                       (type (integer 7 58010860) a)
@@ -262,14 +245,12 @@
                       (type (integer -920848 -819) c)
                       )
              (flet ((%f15 () (if (logbitp 5 a) a c)))
-                   (min (if (%f15) b -39) (if (> 0 -14756) b (%f15))))))
+                   (min (if (%f15) b -39) (if (> 0 -14756) b (%f15)))))
    8 -1000 -10000)
   -1000)
 
 (deftest misc.19
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer 54 3862515) a) (type (integer -961325 1539) b)
                       (type (integer 6 31455) c) (ignorable a b c)
@@ -278,14 +259,12 @@
               (flet ((%f13 () b)) (%f13))
               (flet ((%f1 () (return-from %f1 a)))
                     (labels ((%f3 () (%f1)))
-                            -428)))))
+                            -428))))
    100 0 200)
   427)
 
 (deftest misc.20
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer -1 31880308) a)
                       (type (integer -11374222037 5331202966) b)
@@ -295,14 +274,12 @@
              (labels ((%f6 () a))
                      (if (eql (let ((v9 (%f6))) -50072824) c)
                       28146341
-                      (if (< 119937 21304962) 21304962 (%f6))))))
+                      (if (< 119937 21304962) 21304962 (%f6)))))
    0 0 -1)
   21304962)
 
 (deftest misc.21
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer 398 3955) a) (type (integer 233 464963) b)
                       (type (integer -124477 16) c) (ignorable a b c)
@@ -315,14 +292,12 @@
                           (return-from %f1 c)))
                     (flet ((%f9 ()
                                 (if (%f1) 24181 7)))
-                          56048)))))
+                          56048))))
    400 300 0)
   -3547152)
 
 (deftest misc.22
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer -126378 -103) a)
                       (type (integer -1158604975 1) b)
@@ -336,14 +311,12 @@
                                     (block b6
                                            (max -73100
                                                 (if b (return-from b6 4935) (%f13)))))))
-                             (%f13)))))
+                             (%f13))))
    -200 0 1000)
   1000)
 
 (deftest misc.23
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer 1 18911480) a)
                       (type (integer -1 48333) b)
@@ -357,14 +330,12 @@
                                 (if (ldb-test (byte 27 1) -11337)
                                     (return-from b7 -2)
                                     246137101))
-                             (min (%f10) (return-from b7 -76114)))))))
+                             (min (%f10) (return-from b7 -76114))))))
    1 0 -2000000)
   -2)
 
 (deftest misc.24
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer -1477249397 -10697252) a)
                       (type (integer -7 54591) b)
@@ -377,14 +348,12 @@
                           (block b3
                                  (flet ((%f10 ()
                                               (min a (return-from b3 -1))))
-                                       16776220)))))))
+                                       16776220))))))
    -11000000 0 0)
   -11000000)
 
 (deftest misc.25
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer -944 111244) a)
                       (type (integer 100512 3286178) b)
@@ -395,14 +364,12 @@
                      (labels ((%f16 () a))
                              (if (if (logbitp 10 1029643) t 355)
                                  (if (equal (%f17) b) c a)
-                                 (if (= 1325844 (%f16)) -50285 (1- (%f17))))))))
+                                 (if (= 1325844 (%f16)) -50285 (1- (%f17)))))))
    0 200000 -200)
   0)
 
 (deftest misc.26
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (optimize speed))
              (block b5
@@ -410,14 +377,12 @@
                         (let ((v2 (block b8 -42484))) c)
                         (flet ((%f10 () (return-from b5 -785143)))
                               (let ((v3 (%f10)))
-                                   (%f10)))))))
+                                   (%f10))))))
    0)
   -785143)
 
 (deftest misc.27
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (optimize (speed 3) (debug 1)))
              (labels ((%f14 () c))
@@ -425,14 +390,12 @@
                              (labels ((%f15 () (logeqv (let ((v1 b)) c)
                                                        (return-from %f15 -1740))))
                                      (labels ((%f8 () (%f15)))
-                                             a))))))
+                                             a)))))
    5 2 3)
   1)
 
 (deftest misc.28
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
           (declare
            (type (integer 1948 12024) b)
@@ -441,14 +404,12 @@
     (flet ((%f18 () c))
       (logandc1 (if (eql b (%f18)) 0 a)
                 (if (ldb-test (byte 30 30) 1) (%f18) 1)
-                ))))
+                )))
    0 2000 -300)
   1)
 
 (deftest misc.29
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c)
              (declare (type (integer 661607 10451683348) a)
                       (type (integer -2 -2) b)
@@ -463,34 +424,28 @@
                                      (return-from b3 -5322045)
                                    (let ((v5 b))
                                      146099574)))))))
-                 (if (%f16) c c)))))
+                 (if (%f16) c c))))
    1000000 -2 6000000)
   6000000)
 
 (deftest misc.30
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (type (integer -253 -1) c)
                       (optimize (speed 3) (safety 1) (debug 1)))
              (flet ((%f8 () c))
-                   (if (= (%f8) 481) (%f8) 1779465))))
+                   (if (= (%f8) 481) (%f8) 1779465)))
    -100)
   1779465)
 
 (deftest misc.31
-  (funcall
-   (compile nil
-            '(lambda () (let ((v9 (labels ((%f13 () nil)) nil)))
+  (call-compiled '(lambda () (let ((v9 (labels ((%f13 () nil)) nil)))
                              (let ((v3 (logandc2 97 3)))
-                                  (* v3 (- 37391897 (logand v3 -66))))))))
+                                  (* v3 (- 37391897 (logand v3 -66)))))))
   3589619040)
 
 (deftest misc.32
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a d)
              (declare (type (integer -8507 26755) a)
                       (type (integer -393314538 2084485) d)
@@ -499,14 +454,12 @@
               (if (= 0 a) 10 (abs -1))
               (logxor -1
                       (min -7580
-                           (max (logand a 31365125) d))))))
+                           (max (logand a 31365125) d)))))
    1 1)
   1)
 
 (deftest misc.33
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a b c d)
              (declare (type (integer 240 100434465) a)
                       (optimize (speed 3) (safety 1) (debug 1)))
@@ -518,13 +471,12 @@
                (if (>= 0 b)
                    (if (> b c) (logandc2 c d) (if (> d 224002) 0 d))
                    (signum (logior c b)))
-               (logior a -1)))))
+               (logior a -1))))
    256 0 0 0)
   55546856)
 
 (deftest misc.34
-  (funcall
-   (compile nil
+  (call-compiled
             `(lambda (b c)
                      (declare (type (integer -23228343 2) b)
                               (type (integer -115581022 512244512) c)
@@ -532,14 +484,12 @@
                      (* (* (logorc2 3 (deposit-field 4667947 (byte 14 26) b))
                            (deposit-field b (byte 25 27) -30424886))
                         (dpb b (byte 23 29) c)
-                        )))
+                        ))
    0 0)
   0)
 
 (deftest misc.35
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (c)
              (declare (type (integer -5945502333 12668542) c)
                       (optimize (speed 3)))
@@ -547,13 +497,12 @@
                   (- (max (if (/= 109335113 v2) -26479 v2)
                           (deposit-field 311
                                          (byte 14 28)
-                                         (min (max 521326 c) -51)))))))
+                                         (min (max 521326 c) -51))))))
    12668542)
   26479)
 
 (deftest misc.36
-  (funcall
-   (compile nil
+  (call-compiled
             '(lambda ()
                (declare (notinline + logand)
                         (optimize (speed 0)))
@@ -563,130 +512,108 @@
                                    (return-from b5 -220)))
                              (let ((v7 (%f1)))
                                   (+ 359749 35728422))))
-                -24076))))
+                -24076)))
   -24284)
 
 (deftest misc.37
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (b)
        (declare (notinline -) (optimize (speed 0)))
        (- (block b4
                  (flet ((%f4 ()
                              (return-from b4 b)))
-                       (%f4))))))
+                       (%f4)))))
    10)
   -10)
 
 (deftest misc.38
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (x) (declare (type (integer 0 100) x)
                           (optimize (speed 3) (safety 1)))
-       (logandc1 x x)))
+       (logandc1 x x))
    79)
   0)
 
 (deftest misc.39
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (x) (declare (type (integer 0 100) x)
                           (optimize (speed 3) (safety 1)))
-       (logandc2 x x)))
+       (logandc2 x x))
    79)
   0)
 
 (deftest misc.40
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (x) (declare (type (integer 0 100) x)
                           (optimize (speed 3) (safety 1)))
-       (logorc1 x x)))
+       (logorc1 x x))
    79)
   -1)
 
 (deftest misc.41
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (x) (declare (type (integer 0 100) x)
                           (optimize (speed 3) (safety 1)))
-       (logorc2 x x)))
+       (logorc2 x x))
    79)
   -1)
 
 (deftest misc.42
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (x)
        (declare (type (integer -100 100) x))
-       (ldb (byte 1 32) x)))
+       (ldb (byte 1 32) x))
    -1)
   1)
 
 (deftest misc.43
-  (funcall (compile nil
+  (call-compiled
         '(lambda () (flet ((%f2 () 288213285))
-                      (+ (%f2) (* 13 (%f2)))))))
+                      (+ (%f2) (* 13 (%f2))))))
   4034985990)
   
 
 (deftest misc.44
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a)
              (declare (type (integer -917858 964754309) a)
                       (optimize (speed 3)))
-             (* 25 (min (max a 171625820) 171626138))))
+             (* 25 (min (max a 171625820) 171626138)))
    861929141)
   4290653450)
 
 (deftest misc.45
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (b)
              (declare (type (integer 21 9673) b)
                       (optimize (speed 3)))
-             (* (integer-length -198435631) (+ b 137206182))))
+             (* (integer-length -198435631) (+ b 137206182)))
    6027)
   3841941852)
 
 (deftest misc.46
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (b c)
              (declare (type (integer 0 1) b) (optimize (speed 3)))
              (flet ((%f2 () (lognor (block b5 138) c)))
                    (if (not (or (= -67399 b) b))
                        (deposit-field (%f2) (byte 11 8) -3)
-                       c))))
+                       c)))
    0 0)
   0)
 
 (deftest misc.47
-  (funcall
-   (compile
-    nil
+  (call-compiled
     '(lambda (a)
              (declare (type (integer -4005718822 -50081775) a)
                       (optimize (speed 3) (safety 1) (debug 1)))
-             (lognor (ash a (min 0 a)) a)))
+             (lognor (ash a (min 0 a)) a))
    -2878148992)
   0)
 
 (deftest misc.48
-  (funcall
-   (compile
-    nil
-    '(lambda (a) (declare (notinline ash min)) (lognor (ash a (min 0 a)) a)))
+  (call-compiled
+    '(lambda (a) (declare (notinline ash min)) (lognor (ash a (min 0 a)) a))
    -2878148992)
   0)
 
@@ -694,54 +621,51 @@
   (let ((body '(truncate (logorc1 -996082 C) -2))
         (arg 25337234))
     (values
-     (funcall (compile nil `(lambda (c) ,body)) arg)
-     (funcall (compile nil `(lambda (c) (declare (notinline truncate))
-                              ,body)) arg)))
+     (call-compiled `(lambda (c) ,body) arg)
+     (call-compiled `(lambda (c) (declare (notinline truncate))
+                              ,body) arg)))
   -13099001
   -13099001)
 
 (deftest misc.50
-  (funcall (compile nil `(lambda (c)
+  (call-compiled `(lambda (c)
                            (declare (optimize (speed 3))
                                     (type (integer 23062188 149459656) c))
-                           (mod c (min -2 0))))
+                           (mod c (min -2 0)))
            95019853)
   -1)
 
 (deftest misc.51
-  (funcall (compile nil `(lambda (b)
+  (call-compiled   `(lambda (b)
                            (declare (optimize (speed 3))
                                     (type (integer 2 152044363) b))
-                            (rem b (min -16 0))))
+                            (rem b (min -16 0)))
            108251912)
   8)
   
 (deftest misc.53
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (let (x)
                      (block nil
                        (flet ((%f (y z) (if (> y z) (setq x y) (setq x z))))
                          (%f 1 2)
                          (%f (return 14) 2)))
-                     x))))
+                     x)))
   2)
 
 (deftest misc.54
-  (funcall
-   (compile nil '(lambda (a c)
+  (call-compiled '(lambda (a c)
                    (declare (type (integer 8 117873977) a)
                             (type (integer -131828754 234037511) c)
                             (optimize (speed 3) (safety 1) (debug 1)))
                    (* (mod (signum a) (max 50 -358301))
                       (* -2320445737132
-                         (* (* a (deposit-field a (byte 32 19) a)) c)))))
+                         (* (* a (deposit-field a (byte 32 19) a)) c))))
    11386 165297671)
   -49725654774521915007942373712)
 
 (deftest misc.55
-  (funcall
-   (compile nil '(lambda (a b c)
+  (call-compiled '(lambda (a b c)
                    (declare (type (integer -5498929 389890) a)
                             (type (integer -5029571274946 48793670) b)
                             (type (integer 9221496 260169518304) c)
@@ -752,60 +676,55 @@
                        (block b2
                          (mod c (min -49 (if t (return-from b2 1582) b))))
                        (labels ((%f14 () (mod a (max 76 8))))
-                         b)))))
+                         b))))
    -1893077 -2965238893954 30902744890)
   2965238894454)
 
 (deftest misc.56
-  (funcall
-   (compile nil '(lambda (a c)
+  (call-compiled '(lambda (a c)
                    (declare (type (integer -8691408487404 -9) a)
                             (type (integer 266003133 2112105962) c)
                             (optimize (speed 3) (safety 1) (debug 1)))
-                   (truncate (max (round a) c) (* (* a a) a))))
+                   (truncate (max (round a) c) (* (* a a) a)))
    -10 266003133)
   -266003
   133)
 
 (deftest misc.57
-  (funcall
-   (compile nil '(lambda (a b c)
+  (call-compiled '(lambda (a b c)
                          (declare (type (integer -1907 58388940297) a)
                                   (type (integer -646968358 294016) b)
                                   (type (integer -708435313 89383896) c)
                                   (optimize (speed 3) (safety 1) (debug 1)))
                          (let ((v6 (abs (min a (signum c)))))
-                              (if (ceiling v6 (max 77 v6)) b 2))))
+                              (if (ceiling v6 (max 77 v6)) b 2)))
    50005747335 -363030456 17382819)
   -363030456)
 
 (deftest misc.58
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -23 66141285) a)
                             (optimize (speed 3)))
-                   (logorc2 (setq a 35191330) (* a 107))))
+                   (logorc2 (setq a 35191330) (* a 107)))
    4099241)
   -3764388885)
 
 (deftest misc.59
-  (funcall
-   (compile nil '(lambda (a b c)
+  (call-compiled '(lambda (a b c)
                    (declare (type (integer -3966039360 -879349) a)
                             (type (integer -62642199164 -8993827395) b)
                             (type (integer -8065934654337 223) c)
                             (optimize (speed 3) (safety 1) (debug 1)))
                    (floor (* (ceiling c) c)
-                          (max 78 (* b (* a (* a b)))))))
+                          (max 78 (* b (* a (* a b))))))
    -1000000 -10000000000 0)
   0 0)
 
 (deftest misc.60
-  (funcall
-    (compile nil
+  (call-compiled 
              '(lambda ()
                 (let ((v5 46660))
-                  (setq v5 (signum (rem v5 (max 53 v5))))))))
+                  (setq v5 (signum (rem v5 (max 53 v5)))))))
   0)
 
 (deftest misc.61
@@ -821,10 +740,10 @@
   :good)
 
 (deftest misc.62
-  (funcall (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                 (if (and (if a t nil) nil)
                     a
-                  (min (block b5 -1) a))))
+                  (min (block b5 -1) a)))
            100)
   -1)
 
@@ -837,8 +756,8 @@
                    ,form))
          (form2 `(lambda (b c) ,form))
          (vals '(-696742851945 686256271)))
-    (eqlt (apply (compile nil form1) vals)
-          (apply (compile nil form2) vals)))
+    (eqlt (apply-compiled form1 vals)
+          (apply-compiled form2 vals)))
   t)
 
 ;;; sbcl bug (probably #233)
@@ -853,8 +772,8 @@
          (form2 `(lambda (c) ,form))
          (vals '(11292))
          )
-    (eqlt (apply (compile nil form1) vals)
-          (apply (compile nil form2) vals)))
+    (eqlt (apply-compiled form1 vals)
+          (apply-compiled form2 vals)))
   t)
 
 ;;; sbcl bug (probably #233)
@@ -865,8 +784,8 @@
         (form2 '(lambda (b c)
                   (logandc2 c (if (< b (setq b -25647585550)) b 0))))
         (vals '(-297090677547 -20121092)))
-    (eqlt (apply (compile nil form1) vals)
-          (apply (compile nil form2) vals)))
+    (eqlt (apply-compiled form1 vals)
+          (apply-compiled form2 vals)))
   t)
 
 (deftest misc.66
@@ -879,52 +798,47 @@
                    ,form))
          (form2 `(lambda (a b) ,form))
          (vals '(-2095414787 -256985442)))
-    (eqlt (apply (compile nil form1) vals)
-          (apply (compile nil form2) vals)))
+    (eqlt (apply-compiled form1 vals)
+          (apply-compiled form2 vals)))
   t)
 
 ;;; sbcl/cmucl bug (on sparc)
 (deftest misc.67
-  (funcall
-    (compile nil '(lambda (x)
+  (call-compiled '(lambda (x)
                     (declare (type (integer 10604862 10604862) x)
                              (optimize speed))
-                    (* x 390)))
+                    (* x 390))
     10604862)
   4135896180)
 
 ;;; cmucl bug (cvs, 10/10/2003)
 (deftest misc.68
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (flet ((%f8 () (rem b (identity (return-from %f8 0)))))
-                 (lognor (%f8) 0))))
+                 (lognor (%f8) 0)))
    0)
   -1)
 
 (deftest misc.69
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (flet ((%f11 () (logorc2 (block b1 (let () (return-from b1 b)))
                                         -1984)))
-                 b)))
+                 b))
    0)
   0)
 
 (deftest misc.70
-  (funcall
-   (compile nil '(lambda (c)
+  (call-compiled '(lambda (c)
                    (declare (type (integer 46156191457 126998564334) c))
-                   (truncate c (min -16 186196583))))
+                   (truncate c (min -16 186196583)))
    87723029763)
   -5482689360
   3)
 
 (deftest misc.71
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda ()
                (block b8
                  (if (identity (return-from b8 30))
@@ -932,82 +846,75 @@
                    (identity
                     (block b5
                       (labels ((%f10 () (min -52 (return-from b5 10))))
-                        20))))))))
+                        20)))))))
   30)
 
 (deftest misc.72
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (flet ((%f13 () (rem 1 (min 0 (return-from %f13 17)))))
-                     (%f13)))))
+                     (%f13))))
   17)
 
 (deftest misc.73
-  (funcall
-   (compile nil '(lambda (c)
+  (call-compiled '(lambda (c)
                    (declare (type (integer 46156191457 126998564334) c))
-                   (rem c (min -1 0))))
+                   (rem c (min -1 0)))
    87723029763)
   0)
 
 (deftest misc.74
-  (funcall (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                            (declare (optimize (safety 3) (speed 0) (debug 0)))
-                           (ash 6916244 (min 42 -185236061640)))))
+                           (ash 6916244 (min 42 -185236061640))))
   0)
 
 ;;; Unwind-protect bug, from sbcl:
 ;;; "The value NIL is not of type SB-C::NODE."
 
 (deftest misc.75
-  (funcall (compile nil '(lambda () (flet ((%f12 () (unwind-protect 1))) 0))))
+  (call-compiled '(lambda () (flet ((%f12 () (unwind-protect 1))) 0)))
   0)
 
 
 ;;; cmucl (2003-10-12), "NIL is not of type C::REF"
 (deftest misc.76
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a c)
                 (if nil (unwind-protect (max 521739 (unwind-protect c)))
-                  (logandc2 3942 a))))
+                  (logandc2 3942 a)))
    0 0)
   3942)
 
 ;;; gcl (2003-10-11)  Miscomputation of (mod 0 -53) in compiled code
 (deftest misc.77
-  (funcall (compile nil '(lambda () (mod 0 -53))))
+  (call-compiled '(lambda () (mod 0 -53)))
   0)
 
 
 ;;; cmucl (2003-10-12)  "NIL is not of type C::BYTE-LAMBDA-INFO"
 (deftest misc.78
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (speed 0) (debug 0)))
                    (let ((v4
                           (case 227
                             ((-11113 -106126) (unwind-protect 8473))
                             (t 43916))))
-                     -12))))
+                     -12)))
   -12)
 
 ;;; Same as misc.78, but with no declarations
 ;;; In cmucl (2003-10-12)  "NIL is not of type C::ENVIRONMENT"
 (deftest misc.79
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (let ((v4
                           (case 227
                             ((-11113 -106126) (unwind-protect 8473))
                             (t 43916))))
-                     -12))))
+                     -12)))
   -12)
 
 (deftest misc.79a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 72504 351460) a))
        (declare (type (integer 2383 108330) b))
@@ -1015,15 +922,14 @@
                           (debug 2) (compilation-speed 1)))
        (if (or (or (/= b 0) (logbitp 0 0)) (logbitp 0 a))
            0
-         (funcall (constantly 0) b 0 (catch 'ct4 b)))))
+         (funcall (constantly 0) b 0 (catch 'ct4 b))))
    132318 12238)
   0)
 
 
 ;;; cmucl (2003-10-12) "Invalid number of arguments: 2"
 (deftest misc.80
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b c)
                (declare (notinline > logior imagpart))
                (declare (optimize (speed 0) (debug 0)))
@@ -1032,79 +938,74 @@
                                (block b3
                                  (logeqv (logior -122516 (if (> -1 0) (return-from b3 c) b))
                                          (return-from %f16 32186310))))))
-                 (lognor (%f16) b))))
+                 (lognor (%f16) b)))
    -123886 -1656)
   57385)
 
 ;;; cmucl (2003-10-12) "NIL is not of type C::REF"
 (deftest misc.81
-  (funcall
-   (compile nil '(lambda (b)
+  (call-compiled '(lambda (b)
                    (block b7
                      (let ((v3 (return-from b7 b)))
-                       (unwind-protect b)))))
+                       (unwind-protect b))))
    17)
   17)
 
 ;;; cmucl (2003-10-12) "The assertion C::SUCC failed"
 (deftest misc.82
-  (funcall
-   (compile nil '(lambda (c)
+  (call-compiled '(lambda (c)
                    (labels ((%f15 ()
                                   (* (unwind-protect c)
                                      (max -5726369
                                           (return-from %f15 3099206)))))
-                     c)))
+                     c))
    0)
   0)
 
 ;;; cmucl (2003-10-13) "The assertion (NOT (C::BLOCK-DELETE-P BLOCK)) failed."
 (deftest misc.83
-  (funcall
-   (compile nil '(lambda (a c)
+  (call-compiled '(lambda (a c)
                    (flet ((%f8 () (min c (min a (return-from %f8 c)))))
-                     c)))
+                     c))
    0 -10)
   -10)
 
 (deftest misc.84
-  (funcall
-   (compile nil '(lambda (a b)
+  (call-compiled '(lambda (a b)
                    (flet ((%f18 ()
                                 (let ()
                                   (let ()
                                     (if (ldb-test (byte 20 23) b) a
                                       (return-from %f18 431))))))
-                     -674)))
+                     -674))
    0 0)
   -674)
 
 (deftest misc.85
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (labels ((%f14 ()
                               (let ()
                                 (logandc1 (min -32 (return-from %f14 -69793))
                                           c))))
-                     156)))
+                     156))
    0)
   156)
 
 ;;; Two tests showing bug(s) in clisp (2.31)
 (deftest misc.86
-  (funcall (compile nil '(lambda (b)
+  (call-compiled '(lambda (b)
                            (flet ((%f10 nil :bad))
                              (let ((v7 (let ((v2 (%f10))) b)))
-                               (unwind-protect b)))))
+                               (unwind-protect b))))
            :good)
   :good)
 
 (deftest misc.87
-  (apply (compile nil '(lambda (a b c)
+  (apply-compiled '(lambda (a b c)
                          (let ((v9 a))
                            (let ((v2 (setq v9 c)))
-                             (unwind-protect c)))))
+                             (unwind-protect c))))
          '(x y z))
   z)
 
@@ -1125,20 +1026,17 @@
 
 ;;; Here, the function were the problem occurs is -
 (deftest misc.89
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (declare (type (integer 0 130304) c))
                (- (rem -26 (max 25 (load-time-value 505849129)))
-                  (* -15718867961526428520296254978781964 c))))
+                  (* -15718867961526428520296254978781964 c)))
    0)
   -26)
 
 ;;; Here, it is MAX
 (deftest misc.89a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d)
        (declare (type (integer -265115792172 -206231862770) a))
        (declare (type (integer 11069 58322510034) b))
@@ -1148,15 +1046,13 @@
        (declare
         (optimize (safety 1) (space 1) (compilation-speed 2)
                   (debug 0) (speed 2)))
-       (- (signum (catch 'ct6 0)) (numerator (* -1303 d -20527703 d c)))))
+       (- (signum (catch 'ct6 0)) (numerator (* -1303 d -20527703 d c))))
    -261283766805 41605749408 5110 1269102278886)
   -220139978315039892599545286437019126040)
 
 ;;; Here, it is MOD
 (deftest misc.89b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d)
        (declare (type (integer -481454219025 239286093202) a))
        (declare (type (integer -1121405368785 213522) b))
@@ -1165,7 +1061,7 @@
        (declare (ignorable a b c d))
        (declare (optimize (speed 2) (compilation-speed 1) (space 1)
                           (safety 3) (debug 2)))
-       (floor (load-time-value 0) (min -18 (* a c b -12626)))))
+       (floor (load-time-value 0) (min -18 (* a c b -12626))))
    -78545446876 -460518205737 -38885914099 1598305189)
   0 0)
 
@@ -1180,8 +1076,8 @@
                  (declare (optimize (safety 1)))
                  ,form))
          (fn2 `(lambda (b c) ,form)))
-    (let ((v1 (funcall (compile nil fn1) -76071 0))
-          (v2 (funcall (compile nil fn2) -76071 0))
+    (let ((v1 (call-compiled fn1 -76071 0))
+          (v2 (call-compiled fn2 -76071 0))
           (v3 (funcall (eval `(function ,fn2)) -76071 0)))
       (if (= v1 v2 v3) :good
         (list v1 v2 v3))))
@@ -1192,8 +1088,8 @@
                 (declare (optimize (speed 3) (safety 1)))
                 (ash -10 (min 8 -481))))
         (fn2 '(lambda () (ash -10 (min 8 -481)))))
-    (let ((v1 (funcall (compile nil fn1)))
-          (v2 (funcall (compile nil fn2)))
+    (let ((v1 (call-compiled fn1))
+          (v2 (call-compiled fn2))
           (v3 (funcall (eval `(function ,fn2)))))
       (if (= v1 v2 v3)
           :good
@@ -1209,8 +1105,8 @@
                  ,form))
          (fn2 `(lambda (b c) ,form))
          (vals '(26291532469 -21)))
-    (let ((v1 (apply (compile nil fn1) vals))
-          (v2 (apply (compile nil fn2) vals))
+    (let ((v1 (apply-compiled fn1 vals))
+          (v2 (apply-compiled fn2 vals))
           (v3 (apply (eval `(function ,fn2)) vals)))
       (if (= v1 v2 v3)
           :good
@@ -1227,17 +1123,16 @@
                  ,form))
          (fn2 `(lambda (a b c) ,form))
          (vals '(-123 -1 2590941967601)))
-    (eqlt (apply (compile nil fn1) vals)
-          (apply (compile nil fn2) vals)))
+    (eqlt (apply-compiled fn1 vals)
+          (apply-compiled fn2 vals)))
   t)
 
 (deftest misc.94
-  (not (funcall
-        (compile nil '(lambda ()
+  (not (call-compiled '(lambda ()
                         (declare (optimize (speed 3) (safety 1) (debug 1)))
                         (<= 268435280
                             (load-time-value
-                             39763134374436777607194165739302560271120000))))))
+                             39763134374436777607194165739302560271120000)))))
   nil)
 
 (deftest misc.95
@@ -1250,8 +1145,8 @@
                  ,form))
          (fn2 `(lambda (a b c) ,form))
          (vals '(601739317 10891850 17452477960)))
-    (let ((v1 (apply (compile nil fn1) vals))
-          (v2 (apply (compile nil fn2) vals)))
+    (let ((v1 (apply-compiled fn1 vals))
+          (v2 (apply-compiled fn2 vals)))
       (if (eql v1 v2)
           :good
         (list v1 v2))))
@@ -1267,8 +1162,8 @@
                  ,form))
          (fn2 `(lambda (b c) ,form))
          (vals '(90244278480 -338)))
-    (let ((v1 (apply (compile nil fn1) vals))
-          (v2 (apply (compile nil fn2) vals)))
+    (let ((v1 (apply-compiled fn1 vals))
+          (v2 (apply-compiled fn2 vals)))
       (if (eql v1 v2)
           :good
         (list v1 v2))))
@@ -1284,8 +1179,8 @@
                  ,form))
          (fn2 `(lambda (b c) ,form))
          (vals '(321769 1073671227)))
-    (let ((v1 (apply (compile nil fn1) vals))
-          (v2 (apply (compile nil fn2) vals)))
+    (let ((v1 (apply-compiled fn1 vals))
+          (v2 (apply-compiled fn2 vals)))
       (if (eql v1 v2)
           :good
         (list v1 v2))))
@@ -1294,33 +1189,31 @@
 ;;; sbcl bugs (0.8.4.40, x86 linux)
 
 (deftest misc.98
-  (funcall (compile nil '(lambda (x)
+  (call-compiled '(lambda (x)
                            (declare (type (integer -1000000 1000000) x))
-                           (logand x x 0)))
+                           (logand x x 0))
            12345)
   0)
 
 (deftest misc.99
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer 4303063 101130078) a))
-                   (mask-field (byte 18 2) (ash a 77))))
+                   (mask-field (byte 18 2) (ash a 77)))
    57132532)
   0)
 
 (deftest misc.100
-  (funcall (compile nil '(lambda (c)
+  (call-compiled '(lambda (c)
                            (declare (type (integer -3924 1001809828) c))
                            (declare (optimize (speed 3)))
                            (min 47 (if (ldb-test (byte 2 14) c)
                                        -570344431
-                                     (ignore-errors -732893970)))))
+                                     (ignore-errors -732893970))))
            705347625)
   -570344431)
 
 (deftest misc.101
-  (funcall
-   (compile nil '(lambda (a c)
+  (call-compiled '(lambda (a c)
                    (declare (type (integer 185501219873 303014665162) a))
                    (declare (type (integer -160758 255724) c))
                    (declare (optimize (speed 3)))
@@ -1330,22 +1223,20 @@
                              (unwind-protect 2791485))))
                      (max (ignore-errors a)
                           (let ((v6 (- v8 (restart-case 980))))
-                            (min v8 v6))))))
+                            (min v8 v6)))))
    259448422916 173715)
   259448422916)
 
 (deftest misc.102
-  (funcall
-   (compile nil '(lambda (b)
+  (call-compiled '(lambda (b)
                    (declare (type (integer -1598566306 2941) b))
                    (declare (optimize (speed 3)))
-                   (max -148949 (ignore-errors b))))
+                   (max -148949 (ignore-errors b)))
    0)
   0)
 
 (deftest misc.103
-  (funcall
-   (compile nil '(lambda (a b)
+  (call-compiled '(lambda (a b)
                    (min -80
                         (abs
                          (ignore-errors
@@ -1354,20 +1245,18 @@
                                     (block b6
                                       (return-from b6
                                         (load-time-value -6876935))))
-                            (if (logbitp 1 a) b (setq a -1522022182249))))))))
+                            (if (logbitp 1 a) b (setq a -1522022182249)))))))
    -1802767029877 -12374959963)
   -80)
 
 (deftest misc.104
-  (funcall
-   (compile nil '(lambda (a) (declare (type (integer 55400028 60748067) a))
-                   (lognand 1505 (ash a (let () 40)))))
+  (call-compiled '(lambda (a) (declare (type (integer 55400028 60748067) a))
+                   (lognand 1505 (ash a (let () 40))))
    58194485)
   -1)
 
 (deftest misc.105
-  (funcall
-   (compile nil '(lambda (b c)
+  (call-compiled '(lambda (b c)
                    (declare (type (integer -4 -3) c))
                    (block b7
                      (flet ((%f1 (f1-1 f1-2 f1-3)
@@ -1376,7 +1265,7 @@
                                      (return-from b7 -2611670)
                                    99345)))
                        (let ((v2 (%f1 -2464 (%f1 -1146 c c) -2)))
-                         b)))))
+                         b))))
    2950453607 -4)
   -815145134)
 
@@ -1394,8 +1283,7 @@
 
  ;;; "The value NIL is not of type SB-C::IR2-LVAR." (sbcl 0.8.4.40)
 (deftest misc.107
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b c)
                (declare (type (integer -29742055786 23602182204) b))
                (declare (type (integer -7409 -2075) c))
@@ -1405,15 +1293,13 @@
                               (block b6
                                 (ignore-errors (return-from b6
                                                  (if (= c 8) b 82674))))))
-                  (%f2)))))
+                  (%f2))))
    22992834060 -5833)
   82674 0)
 
 ;;; "The value NIL is not of type SB-C::IR2-LVAR." (sbcl 0.8.10.15)
 (deftest misc.107a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare
         (optimize (speed 2) (space 0) (safety 1)
@@ -1423,15 +1309,13 @@
                 &optional (f14-2 (rationalize (catch 'ct4 0))) (f14-3 0)
                 (f14-4 0))
                (dotimes (iv2 0 0) (progn f14-2))))
-         (apply #'%f14 0 0 0 nil)))))
+         (apply #'%f14 0 0 0 nil))))
   0)
 
 ;;; "The value NIL is not of type SB-C::IR2-LVAR." (sbcl 0.8.14.18)
 
 (deftest misc.107b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 7215 1030625885) a))
        (declare (type (integer -4361 -6) b))
@@ -1457,28 +1341,24 @@
                             ((31 38 20 0 5 45) 2)
                             ((34 35 64 61 47) 39)
                             ((58) a)
-                            (t 131788)))))))))))))
+                            (t 131788))))))))))))
    734649164 -3343 -2306504518)
   0)
 
 (deftest misc.107c
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 2) (space 1) (safety 1) (debug 3)
                           (compilation-speed 0)))
        (let* ((*s6*
                (unwind-protect 0 (the integer (ash 2914825 (min 8 c))))))
          (declare (special *s6*))
-         0)))
+         0))
    -105)
   0)
 
 (deftest misc.107d
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 1) (space 1) (safety 1) (debug 3)
                           (compilation-speed 1)))
@@ -1489,35 +1369,31 @@
               ((-51) -59598)
               ((-31 -150) a)
               (t b)))
-          (throw 'ct4 0)))))
+          (throw 'ct4 0))))
    10 20)
   0)
 
 (deftest misc.107e
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 1) (space 0) (safety 1)
                           (debug 3) (compilation-speed 1)))
        (flet ((%f11 (&key (key1 (the integer (- a 245241933)))) 0))
-         (%f11))))
+         (%f11)))
    1)
   0)
 
 ;;; cmucl bug (Argument X is not a NUMBER: NIL)
 
 (deftest misc.108
-  (funcall
-   (compile nil '(lambda (b)
-                   (block b7 (- b (ignore-errors (return-from b7 57876))))))
+  (call-compiled '(lambda (b)
+                   (block b7 (- b (ignore-errors (return-from b7 57876)))))
    10)
   57876)
 
 ;;; "The assertion (C::CONSTANT-CONTINUATION-P C::CONT) failed." (cmucl)
 (deftest misc.109
-  (funcall (compile
-            nil
+  (call-compiled 
             '(lambda ()
                (load-time-value
                 (block b4
@@ -1526,18 +1402,17 @@
                        (return-from b4
                          (return-from b5
                            (ignore-errors (unwind-protect
-                                              (return-from b5 0))))))))))))
+                                              (return-from b5 0)))))))))))
   -27)
 
 ;;; This bug was occuring a lot in sbcl, and now occurs in cmucl too
 ;;; NIL fell through ETYPECASE expression.  Wanted one of (C:FIXUP X86::EA C:TN).
 (deftest misc.110
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (declare (type (integer -1441970837 -427) c))
                (declare (optimize (speed 3)))
-               (block b7 (abs (min c (ignore-errors (return-from b7 c)))))))
+               (block b7 (abs (min c (ignore-errors (return-from b7 c))))))
    -500)
   -500)
 
@@ -1546,9 +1421,7 @@
 ;;;  Wanted one of (SB-C:FIXUP SB-VM::EA SB-C:TN).
 
 (deftest misc.110a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f)
        (declare (type (integer -1294746569 1640996137) a))
        (declare (type (integer 33628514900 90005963619) b))
@@ -1576,56 +1449,52 @@
                               0)
                             0))))
              0
-           0))))
+           0)))
    391833530 36648101240 -32785211 91893 -4124561581760 1358)
   0)
 
 ;;; CLISP (2.31+) compiler bug
 
 (deftest misc.111
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a c)
                (if (or (ldb-test (byte 12 18) a)
                        (not (and t (not (if (not (and c t)) nil nil)))))
-                   170 -110730)))
+                   170 -110730))
    3035465333 1919088834)
   170)
 
 ;;; sbcl (0.8.5.8) "The value NIL is not of type SB-C::IR2-LVAR."
 
 (deftest misc.112
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -944 -472) a))
                    (declare (optimize (speed 3)))
                    (round
                     (block b3
                       (return-from b3
                         (if (= 55957 a) -117 (ignore-errors
-                                               (return-from b3 a))))))))
+                                               (return-from b3 a)))))))
    -589)
   -589 0)
 
 ;;; sbcl (0.8.5.8) "The value NIL is not of type SB-C::CTRAN"
 
 (deftest misc.113
-  (funcall
-   (compile nil '(lambda (b c)
+  (call-compiled '(lambda (b c)
                    (if (or (ldb-test (byte 8 10) b) t)
                        c
                      (min (if (<= -6467 c) c 6)
                           (flet ((%f3 (f3-1 f3-2)
                                       f3-1))
-                            (multiple-value-call #'%f3 (values b 107)))))))
+                            (multiple-value-call #'%f3 (values b 107))))))
    -238 -23658556)
   -23658556)
 
 ;;; clisp (1 Oct 2003 cvs HEAD)  "*** - CAR: #:G7744659 is not a LIST"
 
 (deftest misc.114
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b)
                (unwind-protect
                    (block b2
@@ -1637,86 +1506,74 @@
                                  62410)
                                (if (not (not (if (not nil) t (ldb-test (byte 2 27) 253671809))))
                                    (return-from b2 -22)
-                                 (%f1))))))))
+                                 (%f1)))))))
    777595384624 -1510893868)
   777595384624)
 
 ;;; clisp (1 Oct 2003 cvs HEAD) "Compiler bug!! Occurred in OPTIMIZE-LABEL."
 
 (deftest misc.115
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (declare (type (integer 0 1000) a b c))
                (if (and (if b (not (and (not (or a t)) nil)) nil)
                         (logbitp 6 c))
-                   c b)))
+                   c b))
    0 100 600)
   600)
 
 (deftest misc.116
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a c)
                (declare (type (integer 0 1000) a c))
                (if (if (and (not (and (not (or a t)) nil)) t) c nil)
-                   91 -1725615)))
+                   91 -1725615))
    0 0)
   91)
 
 (deftest misc.117
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a c)
                (declare (type (integer 0 1000) a c))
                (if (or c (not (or nil (not (and (not (or a t)) nil)))))
-                   373146181 115)))
+                   373146181 115))
    0 0)
   373146181)
 
 (deftest misc.118
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer 0 10000) a))
-                   (if (or (or nil (not (or (not (or a nil)) t))) a) a 9376)))
+                   (if (or (or nil (not (or (not (or a nil)) t))) a) a 9376))
    0)
   0)
 
 (deftest misc.119
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (if (and (if (1+ 0) nil (not (and (not (and (<= 3) nil)) nil)))
                 (if (= -31) -20 -2371))
-           1493 39720))))
+           1493 39720)))
   39720)
 
 (deftest misc.120
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (type (integer 377036 4184626) c))
        (if (or (and t (not (and (not (and c nil)) nil))) nil)
-           3470653 c)))
+           3470653 c))
    1000000)
   3470653)
 
 (deftest misc.121
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
-       (if (and (and -92220 (not (and (not (or c nil)) nil))) a) b b)))
+       (if (and (and -92220 (not (and (not (or c nil)) nil))) a) b b))
    2000000 150000 -1)
   150000)
 
 ;;; CAR: #:G243 is not a LIST
 (deftest misc.122
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 2872749 5754655) a))
        (declare (type (integer 24114340 89504792) b))
@@ -1730,7 +1587,7 @@
                   (block b3 (if (if (or t b) (not nil) c)
                                 (return-from b3 -3114)
                               (ignore-errors 7)
-                              ))))))
+                              )))))
    3000000 30000000 600000)
   15978)
 
@@ -1750,8 +1607,8 @@
                    (max b
                         (multiple-value-call #'%f7 (values b 2))))))
          (vals '(1439719153))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
@@ -1770,8 +1627,8 @@
                    (max b
                         (funcall #'%f7 b 2)))))
          (vals '(1439719153))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
@@ -1791,8 +1648,8 @@
                    (max b
                         (%f7 b 2)))))
          (vals '(1439719153))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
@@ -1800,9 +1657,7 @@
 ;;; clisp optional argument bug: "SYMBOL-VALUE: 1 is not a SYMBOL"
 
 (deftest misc.126
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (special *should-always-be-true*))
        (labels ((%f10 (f10-1 &optional
@@ -1813,13 +1668,11 @@
                                                        )))
                              (f10-3 (cl:handler-case 10)))
                       -15))
-         (%f10 -144)))))
+         (%f10 -144))))
   -15)
 
 (deftest misc.127
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a c)
        (flet ((%f10 (f10-1 f10-2) 10))
          (flet ((%f4
@@ -1830,7 +1683,7 @@
                                 )))
                   (f4-2 (setq a 0)))
                  2))
-           (%f4 -5)))))
+           (%f4 -5))))
    0 0)
   2)
 
@@ -1867,8 +1720,8 @@
                           a))
                (multiple-value-call #'%f10 (values -178858 a)))))
          (vals '(-13649921 -1813684177409))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
@@ -1893,8 +1746,8 @@
                    (if (ldb-test (byte 33 15) (return-from b7 a))
                        b b)))))))
          (vals '(-823894140303 -3))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good) 
 
@@ -1904,8 +1757,7 @@
 ;;;                      (C::LAMBDA-VAR-HOME C::THING))) failed.
 
 (deftest misc.132
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b c)
                (declare (type (integer -3358662 7782429) b))
                (declare (type (integer -513018 12740) c))
@@ -1924,29 +1776,26 @@
                           (f9-2 -439518)
                           (f9-3 -2840573))
                          f9-1))
-                 (%f9 -193644 b 1368))))
+                 (%f9 -193644 b 1368)))
    10 20)
   -193644)
 
 (deftest misc.132a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 0) (safety 0) (debug 2) (compilation-speed 0)))
        (labels ((%f1 () 0))
-         (if t 0 (dotimes (iv1 5 (if (%f1) 0 0)) (catch 'ct1 0)))))))
+         (if t 0 (dotimes (iv1 5 (if (%f1) 0 0)) (catch 'ct1 0))))))
   0)
 
 ;;; cmucl (22 Oct 2003)  Default for optional parameter is improperly chosen
 (deftest misc.133
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (declare (notinline values))
                (declare (optimize (speed 0) (debug 0)))
                (flet ((%f15 (&optional (f15-5 c)) f15-5))
-                 (multiple-value-call #'%f15 (values -2688612)))))
+                 (multiple-value-call #'%f15 (values -2688612))))
    1 2 3)
   -2688612)
 
@@ -1956,44 +1805,40 @@
 ;;; type `NUMBER'".  The following tests show this bug.
 
 (deftest misc.134
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (labels ((%f5 (f5-1 f5-2 f5-3 &optional (f5-4 0)
                                    (f5-5
                                     (flet ((%f13 (f13-1)
                                                  (return-from %f13 b))) b)))
                              900654472))
-                 183301)))
+                 183301))
    13775799184)
   183301)
 
 (deftest misc.135
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b)
                (labels ((%f4 (&optional (f4-1 (labels ((%f17 nil a)) b)))
                              -14806404))
-                 190134)))
+                 190134))
    1783745644 268410629)
   190134)
 
 (deftest misc.136
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (flet ((%f17 (&optional
                              (f17-1 (flet ((%f9 nil c)) 73574919)))
                             643))
-                 1039017546)))
+                 1039017546))
    0)
   1039017546)
 
 ;;; And these caused segfaults
 
 (deftest misc.137
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda ()
                (declare (optimize (speed 3)))
                (declare (optimize (safety 1)))
@@ -2001,12 +1846,11 @@
                              (f16-2 (lognor -3897747
                                             (if nil -1 -127228378))))
                             10))
-                 20))))
+                 20)))
   20)
 
 (deftest misc.138
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (declare (type (integer 2996 39280) c))
                (declare (optimize (speed 3)))
@@ -2015,7 +1859,7 @@
                                          (f8-2 (logorc2 c -161957)))
                                         2176))
                             3))
-                   c c)))
+                   c c))
    3000)
   3000)
 
@@ -2033,18 +1877,17 @@
              (logior (labels ((%f1 (f1-1 &optional (f1-2 (setq c 7))) f1-1))
                        (%f1 774 3616592)) c)))
          (vals '(-3))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
 (deftest misc.140
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a)
                (ldb (byte 24 20)
                     (labels ((%f12 (&optional (f12-1 149) (f12-2 -3894159)) 34068))
-                      (let* ((v4 (%f12))) a)))))
+                      (let* ((v4 (%f12))) a))))
    -1)
   16777215)
  
@@ -2053,19 +1896,17 @@
 ;;; 'Error: *** Ran out of patterns in (MOVE) for (edi NIL)'
 
 (deftest misc.141
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda () (labels ((%f11 (&optional (f11-3 (restart-case 0))) f11-3))
-                          (%f11 1)))))
+                          (%f11 1))))
   1)
 
 (deftest misc.142
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda ()
                (labels ((%f15 (&optional (f15-3 (block b1 (+ 1 (return-from b1 -10)))))
                               f15-3))
-                 (%f15)))))
+                 (%f15))))
   -10)
 
 ;;; cmucl (22 Oct 2003):  NIL is not of type C::REF
@@ -2083,39 +1924,36 @@
 ;;; (now) The assertion (NOT (MEMBER C::KIND '(:DELETED :OPTIONAL :TOP-LEVEL))) failed.
 
 (deftest misc.144
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (declare (type (integer 9739325 14941321) c))
                (labels ((%f7 (f7-1 f7-2 f7-3 &optional (f7-4 b))
                              (return-from %f7 f7-4)))
                  (if (= -76482 c)
                      (if (>= c 10986082) (%f7 a b (%f7 -8088 c -147106 2)) -10502)
-                   (%f7 509252 b b)))))
+                   (%f7 509252 b b))))
    -200 17 10000000)
   17)
 
 (deftest misc.145
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (declare (optimize (safety 3)))
                (block b5
                  (return-from b5
-                   (logior (if (or c t) b (load-time-value -61)) (return-from b5 -3))))))
+                   (logior (if (or c t) b (load-time-value -61)) (return-from b5 -3)))))
    1 2 3)
   -3)
 
 ;;; cmucl: order of evaluation error
 (deftest misc.146
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (declare (optimize (speed 3)))
                (flet ((%f14 (&optional (f14-1 301917227)
                                        (f14-2 (setq b 995196571)))
                             f14-1))
-                 (%f14 b (block b3 (%f14 -64))))))
+                 (%f14 b (block b3 (%f14 -64)))))
    10)
   10)
 
@@ -2131,23 +1969,19 @@
 
 ;;; Argument X is not a NUMBER: NIL.
 (deftest misc.149
-  (funcall
-   (compile nil '(lambda (b)
-                   (block b1 (- (logand 0 -34 1026491) (ignore-errors (return-from b1 b))))))
+  (call-compiled '(lambda (b)
+                   (block b1 (- (logand 0 -34 1026491) (ignore-errors (return-from b1 b)))))
    0)
   0)
 
 (deftest misc.149a
-  (funcall
-   (compile nil '(lambda (a) (block b1 (- a (ignore-errors (return-from b1 1))))))
+  (call-compiled '(lambda (a) (block b1 (- a (ignore-errors (return-from b1 1)))))
    0)
   1)
 
 ;;; cmucl (11 2003 image)  "NIL is not of type C::CONTINUATION"
 (deftest misc.150
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (flet ((%f17
                (&optional
@@ -2156,36 +1990,30 @@
                                 -4))
                    (%f13 b (%f13 190)))))
                -157596))
-         (labels ((%f6 () (%f17))) c))))
+         (labels ((%f6 () (%f17))) c)))
    10 20 30000)
   30000)
 
 (deftest misc.150a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 2) (safety 3)
                           (debug 3) (compilation-speed 2)))
-       (catch 'ct6 (apply (constantly 0) (list))))))
+       (catch 'ct6 (apply (constantly 0) (list)))))
   0)
 
 (deftest misc.150b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type integer a))
        (declare (optimize (speed 3) (space 0) (safety 3) (debug 2)
                           (compilation-speed 3)))
-       (if (= a 0) 0 (truncate a))))
+       (if (= a 0) 0 (truncate a)))
    0)
   0)
 
 (deftest misc.150c
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 1) (space 3) (safety 2) (debug 3) (compilation-speed 3)))
        (labels ((%f4 (f4-1)
@@ -2197,27 +2025,23 @@
                    0))
            (labels ((%f13 (f13-1)
                           (%f15 b 0 0 0)))
-             0)))))
+             0))))
    1 2)
   0)
 
 (deftest misc.150d
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 4146834609223 16403344221223) a))
        (declare (type (integer -35470308180 3523580009) b))
        (declare (optimize (speed 1) (space 3) (safety 3) (debug 0) (compilation-speed 0)))
-       (catch 'ct1 (logand b a 0))))
+       (catch 'ct1 (logand b a 0)))
    4146834609223 10)
   0)
 
 ;;; cmucl (11 2003 x86 linux)  "NIL is not of type C::ENVIRONMENT"
 (deftest misc.151
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b c)
        (declare (type (integer -249 97) b))
        (declare (type (integer 3565969 6559088) c))
@@ -2225,26 +2049,23 @@
                (if (not (= 1030 4))
                    c
                  (logand (if (/= b c) b 34945725) (unwind-protect -12443701)))))
-         5520737)))
+         5520737))
    -24 5657943)
   5520737)
 
 (deftest misc.151a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare
         (optimize (speed 3) (space 3) (safety 1) (debug 1) (compilation-speed 0)))
-       (case 0 ((-12 -9 -12 -2 -5 -2 15) (catch 'ct7 (throw 'ct7 0))) (t 0)))))
+       (case 0 ((-12 -9 -12 -2 -5 -2 15) (catch 'ct7 (throw 'ct7 0))) (t 0))))
   0)  
 
 ;;; sbcl bug (0.8.5.19)
 ;;; "The value NIL is not of type SB-C::REF."
 
 (deftest misc.152
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a)
                (block b5
                  (let ((v1 (let ((v8 (unwind-protect 9365)))
@@ -2259,13 +2080,12 @@
                               (dpb (unwind-protect a)
                                    (byte 18 13)
                                    (labels ((%f4 () 27322826))
-                                     (%f6 -2 -108626545 (%f4))))))))))))
+                                     (%f6 -2 -108626545 (%f4)))))))))))
    -6)
   87246015)
 
 (deftest misc.153
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a)
                (if (logbitp 3
                             (case -2
@@ -2279,7 +2099,7 @@
                                            (- (ignore-errors (return-from b3 v4))))))))
                               (t -50)))
                    -20343
-                 a)))
+                 a))
    0)
   -20343)
 
@@ -2287,54 +2107,49 @@
 ;;; "/tmp/ecl04Coiwc0V.c:48: `lex0' undeclared (first use in this function)"
 
 (deftest misc.154
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (labels ((%f8 nil -39011))
                  (flet ((%f4 (f4-1 f4-2 &optional (f4-3 (%f8)) (f4-4 b))
                              (%f8)))
-                   (%f4 -260093 -75538 -501684 (let ((v9 (%f8))) -3))))))
+                   (%f4 -260093 -75538 -501684 (let ((v9 (%f8))) -3)))))
    0)
   -39011)
 
 ;;; "/tmp/ecl1572CbKzu.c:16: too many arguments to function `APPLY'"
 
 (deftest misc.155
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (labels ((%f6 (f6-1 f6-2) c))
-                 (multiple-value-call #'%f6 (values a c)))))
+                 (multiple-value-call #'%f6 (values a c))))
    0 10 20)
   20)
 
 ;;; "The function C::LDB1 is undefined."
 
 (deftest misc.156
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda ()
-               (let ((v6 (ldb (byte 30 1) 1473))) (let ((v8 v6)) 2395)))))
+               (let ((v6 (ldb (byte 30 1) 1473))) (let ((v8 v6)) 2395))))
   2395)
 
 ;;; "/tmp/ecl9CEiD1RL5.c:36: `lex0' undeclared (first use in this function)"
    
 (deftest misc.157
-  (funcall
-   (compile nil
+  (call-compiled 
             ' (lambda (c)
                 (labels ((%f11 nil 1))
                   (flet ((%f9 (f9-1 f9-2)
                               (case 17466182 ((-12) (%f11)) (t c))))
-                    (%f9 -9913 c)))))
+                    (%f9 -9913 c))))
    17)
   17)
 
 ;;; SBCL (0.8.5.24) bug:  "bogus operands to XOR"
 
 (deftest misc.158
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (declare (type (integer 79828 2625480458) a))
                (declare (type (integer -4363283 8171697) b))
@@ -2345,15 +2160,14 @@
                    (logand v5
                            (logior (logandc2 c v5)
                                    (common-lisp:handler-case
-                                    (ash a (min 36 22477)))))))))
+                                    (ash a (min 36 22477))))))))
    100000 0 0)
   0)
 
 ;;; sbcl (0.8.5.24) The value NIL is not of type SB-C::CTRAN.
 
 (deftest misc.159
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda ()
                (let ((v8 70696))
                  (if (equal v8 -536145083)
@@ -2361,15 +2175,13 @@
                        (flet ((%f9 (f9-1 f9-2)
                                    309257))
                          (multiple-value-call #'%f9 (values v2 v2))))
-                   100)))))
+                   100))))
   100)
 
 ;;; sbcl (0.8.5.37) The value NIL is not of type SB-C::CTRAN.
 
 (deftest misc.159a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -105680 2104974) a))
        (declare (type (integer -1881 -1134) b))
@@ -2390,7 +2202,7 @@
              (flet ((%f6 (f6-1 f6-2 f6-3)
                          f6-1))
                (multiple-value-call #'%f6
-                                    (values a (%f10 -37243) -47691))))))))
+                                    (values a (%f10 -37243) -47691)))))))
    100 -1200)
   -1)
 
@@ -2398,12 +2210,11 @@
 ;;; Error in FUNCALL [or a callee]: Caught fatal error [memory may be damaged]
 
 (deftest misc.160
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (c)
                (declare (notinline + funcall))
                (+ (labels ((%f1 () -14)) (funcall #'%f1))
-                  (flet ((%f2 () (floor c))) (funcall #'%f2)))))
+                  (flet ((%f2 () (floor c))) (funcall #'%f2))))
    0)
   -14)
 
@@ -2411,8 +2222,7 @@
 ;;; The assertion (NOT (MEMBER C::KIND '(:DELETED :OPTIONAL :TOP-LEVEL))) failed.
 
 (deftest misc.161
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a b c)
                (flet ((%f17 (f17-1 f17-2 f17-3)
                             (flet ((%f2
@@ -2424,16 +2234,15 @@
                  (if nil
                      (let* ((v6 (%f17 102136 3096194 a)))
                        b)
-                   c))))
+                   c)))
    -511 -2269809964 250738)
   250738)
 
 (deftest misc.161a
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a)
                (declare (optimize (speed 3) (space 2) (safety 3) (debug 0) (compilation-speed 0)))
-               (progn (abs 0) (- a) 0)))
+               (progn (abs 0) (- a) 0))
    1)
   0)
 
@@ -2446,21 +2255,20 @@
                 (labels ((%f17 (f17-1 &optional (f17-4 c))
                                (return-from %f17 (if f17-4 f17-1 49572640))))
                   (funcall #'%f17 15128425 a)))))
-    (funcall (compile nil fn) 1 3))
+    (call-compiled fn 1 3))
   15128425)
 
 ;;; gcl (12 Nov 2003)
 ;;; C compiler failure during compilation (duplicate case value)
 
 (deftest misc.163
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (b)
                (declare (type (integer -15716 3947) b))
                (case b
                  ((-7 -6 -6) :good)
                  ((-5 -6) :bad)
-                 )))
+                 ))
 
    -6)
   :good)
@@ -2469,9 +2277,7 @@
 ;;; Error in FUNCALL [or a callee]: Caught fatal error [memory may be damaged]
 
 (deftest misc.164
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
      (labels ((%f6 (f6-1 f6-2)
                    (cl:handler-case
@@ -2481,7 +2287,7 @@
                     (error (c) (error c))
                     )))
        (funcall #'%f6 10 20)
-       )))
+       ))
    0)
   2829254)
 
@@ -2489,9 +2295,7 @@
 
 ;;; The value NIL is not of type SB-C::NODE.
 (deftest misc.165
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (block b3
          (flet ((%f15
@@ -2506,7 +2310,7 @@
                            (%f17 -1046 a 1115306 (%f17 b -146330 422) -337817)))
                         (f15-5 a) (f15-6 -40))
                  (return-from b3 -16)))
-           (multiple-value-call #'%f15 (values -519354 a 121 c -1905))))))
+           (multiple-value-call #'%f15 (values -519354 a 121 c -1905)))))
    0 0 -5)
   -16)
 
@@ -2517,9 +2321,7 @@
 ;;;      (NOT (EQ B (COMPONENT-HEAD #)))))"
 
 (deftest misc.166
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (labels ((%f4
                  (f4-1 f4-2 &optional (f4-3 b) (f4-4 c) (f4-5 -170))
@@ -2533,14 +2335,12 @@
                            #'%f3
                            (values -479909 19843799 f4-5 -463858)))))
                        b)))
-         c)))
+         c))
    0 0 -223721124)
   -223721124)
 
 (deftest misc.167
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (flet ((%f5 (f5-1 f5-2)
                    (return-from %f5 604245664)))
@@ -2577,14 +2377,12 @@
                                    -38655))
                              (%f17 43873 -138030706 -1372492)))))
                  (return-from %f12 -15216677)))
-           (%f12 (%f5 b 2329383) a)))))
+           (%f12 (%f5 b 2329383) a))))
    1 2 3)
   -15216677)
 
 (deftest misc.168
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (block b3
          (flet ((%f11
@@ -2605,14 +2403,12 @@
                            (f10-1 f10-2
                                   &optional (f10-3 a) (f10-4 (%f11 -3931 170)))
                            -1704759))
-                   c))))))
+                   c)))))
    1 2 3)
   3)
 
 (deftest misc.169
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (if t -21705
          (flet ((%f15 (f15-1 f15-2)
@@ -2625,7 +2421,7 @@
                               (f2-3 -6))
                              (return-from b4 f2-1)))
                      (return-from b4
-                       (if b (%f2 c -320813) (%f2 b a a))))))))))
+                       (if b (%f2 c -320813) (%f2 b a a)))))))))
    1 2 3)
   -21705)
 
@@ -2633,9 +2429,7 @@
 ;;; failed AVER: "(FUNCTIONAL-LETLIKE-P CLAMBDA)"
 
 (deftest misc.170
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (flet ((%f14 (f14-1 f14-2)
                     (if (if (eql b -7) nil nil)
@@ -2649,14 +2443,12 @@
                                                   (values 439171 f14-2 0)))))
                       1)))
          (let ((v6 (%f14 (logcount b) -386283)))
-           56211))))
+           56211)))
    17)
   56211)
 
 (deftest misc.170a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -281 30570) a))
        (declare (type (integer -4247786 -199821) b))
@@ -2685,16 +2477,14 @@
                                                            (values a a f3-3))))
                              0)
                          0)))
-           (case (%f3 a a 0) (t 0))))))
+           (case (%f3 a a 0) (t 0)))))
    22087 -1787181)
   0)
 
 ;;; The value NIL is not of type SB-C::NODE.
 
 (deftest misc.171
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (block b6
          (flet ((%f11 (f11-1 f11-2 &optional (f11-3 -2369157) (f11-4 409468))
@@ -2706,7 +2496,7 @@
                (%f10
                 (multiple-value-call #'%f11 (values -5945959 1654846427 -22))
                 (return-from b2 b)
-                (return-from b2 31258361))))))))
+                (return-from b2 31258361)))))))
    10)
   1)
 
@@ -2714,9 +2504,7 @@
 ;;;   segmentation violation at #XA4A0B59
 
 (deftest misc.172
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline list apply))
        (declare (optimize (safety 3)))
@@ -2744,7 +2532,7 @@
                                                 7767415))
                                         f12-1))))
                         (%f2 b -36582571))))
-         (apply #'%f12 (list 774 -4413)))))
+         (apply #'%f12 (list 774 -4413))))
    0 1 2)
   774)
 
@@ -2752,9 +2540,7 @@
 ;;; "Unreachable code is found or flow graph is not properly depth-first ordered."
 
 (deftest misc.173
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline values))
        (declare (optimize (safety 3)))
@@ -2784,7 +2570,7 @@
                            b))
                    (%f11 c b -25644))
                54)
-           -32326608))))
+           -32326608)))
    1 2 3)
   -32326608)
 
@@ -2792,9 +2578,7 @@
 ;;; The value NIL is not of type SB-C:COMPONENT.
 
 (deftest misc.174
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
          (declare (type (integer 10292971433 14459537906) b))
          (declare (optimize (speed 3)))
@@ -2811,14 +2595,12 @@
                     -1602321))
                  (t 3)))
           19
-          c)))
+          c))
    0 11000000000 0)
   0)
 
 (deftest misc.174a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 23 365478242977) a))
        (declare (type (integer -38847 268231) b))
@@ -2831,14 +2613,12 @@
               (flet ((%f7 (f7-1 f7-2 f7-3) f7-1))
                 (multiple-value-call #'%f7 (values -135629 a -410168200))))
              (t a))
-         15173)))
+         15173))
    30 0)
   15173)
 
 (deftest misc.174b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -8688 2170) a))
        (declare (type (integer -9938931470 1964967743) b))
@@ -2863,7 +2643,7 @@
                 a
               t))
            (setq a -4803)
-         (rem a (max 47 b)))))
+         (rem a (max 47 b))))
    0 0)
   0)
 
@@ -2871,9 +2651,7 @@
 ;;; "Unreachable code is found or flow graph is not properly depth-first ordered."
 
 (deftest misc.175
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline list apply values signum funcall))
        (declare (optimize (safety 3)))
@@ -2910,14 +2688,12 @@
                      (%f4 b f7-3 f7-3)))
            (flet ((%f14 (f14-1)
                         (apply #'%f7 -252 -56169265 -7322946 (list))))
-             (%f14 a))))))
+             (%f14 a)))))
    -70313091 577425217 28052774417)
   -70313091)
 
 (deftest misc.175a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
          (declare (notinline values list apply logior))
          (declare (optimize (safety 3)))
@@ -2934,14 +2710,12 @@
                              (apply #'%f3 (list -33052082 b a 1572)))))
                            b))
                 (multiple-value-call #'%f17 (values 31 b a b))))
-             392)))
+             392))
    0 0)
   392)
 
 (deftest misc.175b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -1185422977 2286472818) a))
        (declare (type (integer -211381289038 74868) b))
@@ -2964,7 +2738,7 @@
                             (if (>= b -27) (return-from b8 -2)
                               (ignore-errors 237138926))))))
                        f7-2))
-                 (apply #'%f7 (list 761316125 b))))))
+                 (apply #'%f7 (list 761316125 b)))))
    1792769319 -60202244870)
   5)
 
@@ -2973,9 +2747,7 @@
 ;;; failed AVER: "(FUNCTIONAL-LETLIKE-P CLAMBDA)"
 
 (deftest misc.176
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 162180298 184143783) a))
        (declare (type (integer 702599480988 725878356286) b))
@@ -3014,7 +2786,7 @@
                                                               (values -3 a))))
                                       (t b)))))))
                      1503938))
-             (multiple-value-call #'%f4 (values -1 a 1853966)))))))
+             (multiple-value-call #'%f4 (values -1 a 1853966))))))
    173549795 725346738048 993243799)
   993243799)
 
@@ -3048,10 +2820,8 @@
                  (declare (optimize (speed 0)))
                  (declare (optimize (debug 0)))
                  ,form))
-         (compiled-fn1 (compile nil fn1))
-         (compiled-fn2 (compile nil fn2))
-         (results1 (multiple-value-list (apply compiled-fn1 vals)))
-         (results2 (multiple-value-list (apply compiled-fn2 vals))))
+         (results1 (multiple-value-list (apply-compiled fn1 vals)))
+         (results2 (multiple-value-list (apply-compiled fn2 vals))))
     (if (equal results1 results2)
         :good
       (values results1 results2)))
@@ -3061,9 +2831,7 @@
 ;;; The value NIL is not of type INTEGER.
 
 (deftest misc.178
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
          (declare (ignorable a b c))
          (declare (optimize (speed 3)))
@@ -3097,7 +2865,7 @@
                   (%f9 a 2774 0 c))))
            (flet ((%f18 (f18-1 f18-2 &optional (f18-3 66) (f18-4 b))
                     -6939342))
-             (%f18 1274880 (%f18 b a 46746370 -1))))))
+             (%f18 1274880 (%f18 b a 46746370 -1)))))
    0 0 0)
   -6939342)
 
@@ -3105,9 +2873,7 @@
 ;;; failed AVER: "(FUNCTIONAL-LETLIKE-P CLAMBDA)"
 
 (deftest misc.179
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 1135 16722) a))
        (declare (type (integer -640723637053 -9049) b))
@@ -3121,14 +2887,12 @@
              (case (%f17 -3908648 -7026139 a)
                ((41771 -113272 -48004 -39699 50691 -13222)
                 (multiple-value-call #'%f17 (values -1963404294 -105)))
-               (t -7026139)))))))
+               (t -7026139))))))
    2000 -10000)
   -64796)
 
 (deftest misc.180
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 41 484) a))
        (declare (type (integer -2546947 1008697961708) b))
@@ -3146,7 +2910,7 @@
                                                   (let* ((v6 (%f7 -226 250)))
                                                     a))
                                              (abs (ceiling v4)))))))
-         -6001)))
+         -6001))
    50 0)
   -6001)
 
@@ -3154,9 +2918,7 @@
 ;;; The value NIL is not of type SB-C::TAIL-SET.
 
 (deftest misc.181
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
          (declare (type (integer -74233251043 -16478648860) a))
          (declare (type (integer 0 960962) b))
@@ -3196,14 +2958,12 @@
                                        (%f10 104871 -1196 -21 a))))
                             (labels ((%f1 () (%f18 (%f18 -794761))))
                               (return-from %f14 b))))))))
-           (if (%f14) b 887481))))
+           (if (%f14) b 887481)))
    -51967629256 809047)
   809047)
 
 (deftest misc.181a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -982285129 -90) a))
        (declare (type (integer 1 82987) b))
@@ -3240,7 +3000,7 @@
                     (%f1 b b -218142
                          (%f17 -240978 2923208 22 (%f5 1542 68917407 a) b)))
               -2018
-              -1))))))
+              -1)))))
    -100 1)
   1)
 
@@ -3272,10 +3032,8 @@
                  (declare (optimize (debug 0)))
                  ,form))
          (vals '(7395 1602862793 -2384))
-         (cfn1 (compile nil fn1))
-         (cfn2 (compile nil fn2))
-         (result1 (multiple-value-list (apply cfn1 vals)))
-         (result2 (multiple-value-list (apply cfn2 vals))))
+         (result1 (multiple-value-list (apply-compiled fn1 vals)))
+         (result2 (multiple-value-list (apply-compiled fn2 vals))))
     (if (equal result1 result2)
         :good
       (values result1 result2)))
@@ -3286,9 +3044,7 @@
 ;;; Also occurs in cmucl (11/2003 snapshot)
 
 (deftest misc.183
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -368154 377964) a))
        (declare (type (integer 5044 14959) b))
@@ -3299,7 +3055,7 @@
        (declare (optimize (debug 1)))
        (block b7
          (flet ((%f3 (f3-1 f3-2 f3-3) 0))
-           (apply #'%f3 0 (catch 'foo (return-from b7 (%f3 0 b c))) c nil)))))
+           (apply #'%f3 0 (catch 'foo (return-from b7 (%f3 0 b c))) c nil))))
    0 6000 -9000000)
   0)
 
@@ -3311,9 +3067,7 @@
 ;;; failed AVER: "(FUNCTIONAL-LETLIKE-P CLAMBDA)"
 
 (deftest misc.184
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 867934833 3293695878) a))
        (declare (type (integer -82111 1776797) b))
@@ -3332,7 +3086,7 @@
                  (flet ((%f8 (f8-1 &optional (f8-2 (%f4)) (f8-3 0))
                              f8-3))
                    0))))
-         0)))
+         0))
    3040851270 1664281 -1340106197)
   0)
 
@@ -3341,9 +3095,7 @@
 ;;; ("XEP for LABELS CL-TEST::%F10" ...
 
 (deftest misc.185
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 5 155656586618) a))
        (declare (type (integer -15492 196529) b))
@@ -3364,14 +3116,12 @@
                                   (catch 'ct2 (throw 'ct2 c)))
                                nil))))
                0))
-         (%f3 (%f3 (%f3 b 0 0 0) a 0) a b b b c))))
+         (%f3 (%f3 (%f3 b 0 0 0) a 0) a b b b c)))
    5 0 7)
   0)
 
 (deftest misc.185a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -1304066 1995764) a))
        (declare (type (integer -52262604195 5419515202) b))
@@ -3385,7 +3135,7 @@
                 (%f13 b 0 0)
                 (catch 'ct1 0)
                 (catch 'ct2 (throw 'ct2 c))
-                nil))))
+                nil)))
    0 0 0)
   0)
 
@@ -3405,10 +3155,8 @@
                  (declare (notinline logeqv apply)
                           (optimize (safety 3) (speed 0) (debug 0)))
                  ,form))
-         (cf1 (compile nil fn1))
-         (cf2 (compile nil fn2))
-         (result1 (multiple-value-list (funcall cf1 2 18886)))
-         (result2 (multiple-value-list (funcall cf2 2 18886))))
+         (result1 (multiple-value-list (call-compiled fn1 2 18886)))
+         (result2 (multiple-value-list (call-compiled fn2 2 18886))))
     (if (equal result1 result2)
         :good
       (values result1 result2)))
@@ -3439,29 +3187,25 @@
 ;;; Segmentation violation
 
 (deftest misc.188
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
           (declare (notinline floor min funcall))
           (declare (optimize (safety 3) (speed 0) (debug 0)))
           (floor (flet ((%f10 (f10-1 f10-2) b)) (%f10 (%f10 0 0) a))
                  (min -37
                       (labels ((%f6 (f6-1 f6-2 f6-3) b))
-                        (funcall #'%f6 b b b))))))
+                        (funcall #'%f6 b b b)))))
    7187592 -3970792748407 -14760)
   1 0)
 
 ;;; Wrong number of arguments passed to an anonymous function
 (deftest misc.189
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (optimize (speed 3) (safety 1) (debug 1)))
        (let* ((v7 (labels ((%f13 (f13-1 f13-2 f13-3) 0))
                     (multiple-value-call #'%f13 (values a a a)))))
-         (flet ((%f10 nil v7)) (%f10)))))
+         (flet ((%f10 nil v7)) (%f10))))
    1733 3000 1314076)
   0)
 
@@ -3487,23 +3231,21 @@
                 (declare (optimize (debug 0)))
                 ,form))
          (vals '(538754530150 -199250645748 105109641)))
-    (apply (compile nil fn) vals))
+    (apply-compiled fn vals))
   -284)
 
 ;;; gcl
 ;;; Error in COMPILER::CMP-ANON [or a callee]: 0 is not of type FUNCTION.
 
 (deftest misc.191
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
           (declare (optimize (speed 3) (safety 1)))
           (labels ((%f1 nil c))
             (flet ((%f12 (f12-1)
                          (labels ((%f9 (f9-1 f9-2 f9-3) (%f1)))
                            (apply #'%f9 (%f9 a b 0) a 0 nil))))
-              (apply #'%f12 0 nil)))))
+              (apply #'%f12 0 nil))))
    0 0 0)
   0)
 
@@ -3511,15 +3253,13 @@
 ;;; Returns incorrect value
 
 (deftest misc.192
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 3)))
        (declare (optimize (safety 1)))
        (declare (optimize (debug 1)))
        (flet ((%f8 (f8-1 f8-2 f8-3) f8-2))
-         (catch 'ct6 (%f8 0 b (catch 'ct6 (throw 'ct6 a)))))))
+         (catch 'ct6 (%f8 0 b (catch 'ct6 (throw 'ct6 a))))))
    1 2)
   2)
 
@@ -3542,8 +3282,8 @@
                  (declare (optimize (debug 0)))
                  ,form))
          (vals '(7792101 -1615 6070931814551))
-         (result1 (multiple-value-list (apply (compile nil fn1) vals)))
-         (result2 (multiple-value-list (apply (compile nil fn2) vals))))
+         (result1 (multiple-value-list (apply-compiled fn1 vals)))
+         (result2 (multiple-value-list (apply-compiled fn2 vals))))
     (if (equal result1 result2)
         :good
       (values result1 result2)))
@@ -3553,9 +3293,7 @@
 ;;;  The assertion (EQ (C::TN-ENVIRONMENT C:TN) C::TN-ENV) failed.
 
 (deftest misc.194
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline funcall))
        (declare (optimize (safety 3) (speed 0) (debug 3)))
@@ -3564,15 +3302,13 @@
                       &optional (f14-3 0) (f14-4 (catch 'ct8 0))
                       (f14-5 (unwind-protect c)))
                0))
-         (funcall #'%f14 0 0))))
+         (funcall #'%f14 0 0)))
    1 2 3)
   0)
 
 ;;; incorrect value (in cmucl)
 (deftest misc.195
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -5906488825 254936878485) a))
        (declare (type (integer -350857549 -11423) b))
@@ -3581,15 +3317,13 @@
        (block b8
          (labels ((%f6 (f6-1 &optional (f6-2 0) (f6-3 0) (f6-4 0))
                        0))
-           (multiple-value-call #'%f6 (values 0))))))
+           (multiple-value-call #'%f6 (values 0)))))
    100 -100000)
   0)
 
 ;;; NIL is not of type C::ENVIRONMENT
 (deftest misc.196
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 1 46794484349) a))
        (declare (type (integer -627 -2) b))
@@ -3599,21 +3333,19 @@
            0
          (labels ((%f9 (f9-1 f9-2 f9-3)
                        0))
-           (%f9 (catch 'ct6 a) (catch 'ct4 0) 0)))))
+           (%f9 (catch 'ct6 a) (catch 'ct4 0) 0))))
    1 -200)
   0)
 
 ;;; The assertion (EQ (C::TN-ENVIRONMENT C:TN) C::TN-ENV) failed.
 (deftest misc.197
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (notinline logcount))
        (declare (optimize (safety 3) (speed 0) (debug 3)))
        (labels ((%f5 (&optional (f5-1 b) (f5-2 0) (f5-3 (catch (quote ct2) 0)))
                      (prog1 (logcount (block b1 f5-1)))))
-         (if (%f5 0 0 0) (%f5 a) 0))))
+         (if (%f5 0 0 0) (%f5 a) 0)))
    1 2)
   1)
 
@@ -3627,7 +3359,7 @@
                  (declare (type (integer -70450 39128850560) c))
                  (declare (optimize (speed 3) (safety 1)))
                  ,form)))
-    (funcall (compile nil fn1) 3512352656))
+    (call-compiled fn1 3512352656))
   29119897960)
 
 (deftest misc.199
@@ -3638,19 +3370,18 @@
                          (progn (setq b 11159349376)
                                 (throw 'ct1 0)))
                        b))))
-    (funcall (compile nil fn) 4108962100))
+    (call-compiled fn 4108962100))
   11159349376)
 
 ;;; sbcl
 ;;; "The value 0 is not of type REAL."  (???)
 
 (deftest misc.200
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (speed 1) (space 0) (safety 3) (debug 3) (compilation-speed 1)))
                    (ceiling
                     (ceiling
-                     (flet ((%f16 () 0)) (%f16)))))))
+                     (flet ((%f16 () 0)) (%f16))))))
   0 0)
 
 ;;; ecl 5 Dec 2003
@@ -3658,23 +3389,19 @@
 
 (deftest misc.201
   ;; form to be evaluated
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 1) (space 0) (safety 0) (debug 2)
                           (compilation-speed 1)))
        (flet ((%f10 (f10-1) (return-from %f10 a)))
-         (multiple-value-call #'%f10 (values b)))))
+         (multiple-value-call #'%f10 (values b))))
    10 -100)
   ;; expected return value
   10)
 
 ;;; Does not terminate?
 (deftest misc.202
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
              (declare (type (integer -363953100 5324773015552) a))
              (declare (type (integer -5744998440960 59520311) b))
@@ -3684,29 +3411,25 @@
                                 (compilation-speed 2)))
              (flet ((%f1 (f1-1 f1-2)
                          (labels ((%f1 (f1-1 f1-2) 0)) (%f1 a f1-2))))
-                   (%f1 0 c))))
+                   (%f1 0 c)))
    10 20 -20000)
   0)
 
 ;;; #<illegal pointer bfffe90c>
 (deftest misc.203
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 3) (space 1) (safety 2) (debug 0)
                           (compilation-speed 0)))
        (labels ((%f18 (f18-1 f18-2 &optional (f18-3 a) (f18-4 a))
                       f18-2))
-         (multiple-value-call #'%f18 (values a 0)))))
+         (multiple-value-call #'%f18 (values a 0))))
    100)
   0)
 
 ;;; `env0' undeclared (first use in this function)
 (deftest misc.204
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
           (declare (type (integer -4801373 -50300) a))
           (declare (type (integer -62 -28) b))
@@ -3718,15 +3441,13 @@
                                 (f3-6 (labels ((%f9 nil b))
                                         (apply #'%f12 (%f9) nil))))
                           (%f12 0)))
-              (%f3 b 0 a)))))
+              (%f3 b 0 a))))
    -2224841 -54)
   0)
 
 ;;; #<compiled-function 08405fd8> is not of type INTEGER.
 (deftest misc.205
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 0)
                           (compilation-speed 3)))
@@ -3735,7 +3456,7 @@
            (apply #'%f11 a (logand (%f1))
                   (flet ((%f13 (f13-1 f13-2) b))
                     (apply #'%f13 0 0 nil))
-                  nil)))))
+                  nil))))
    100 200)
   0)
 
@@ -3754,62 +3475,52 @@
 
 ;;; #<compiled-closure 08405fd8> is not of type INTEGER
 (deftest misc.207
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 3) (space 2) (safety 0) (debug 1)
                           (compilation-speed 0)))
        (labels ((%f3 (f3-1) a))
          (labels ((%f10 (f10-1 f10-2) a))
-           (apply #'%f10 0 (logior (%f3 0)) nil)))))
+           (apply #'%f10 0 (logior (%f3 0)) nil))))
    -10000)
   -10000)
 
 ;;; `env0' undeclared (first use in this function)
 (deftest misc.208
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 3) (space 2) (safety 3) (debug 3)
                           (compilation-speed 0)))
        (flet ((%f6 (f6-1 f6-2 f6-3) f6-3))
          (labels ((%f8 (f8-1) (let* ((v1 (%f6 0 0 0))) 0)))
-           (apply #'%f6 b b (%f8 b) nil)))))
+           (apply #'%f6 b b (%f8 b) nil))))
    10)
   0)
 
 ;;; Wrong value computed
 (deftest misc.209
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 3) (space 2) (safety 3) (debug 3)
                           (compilation-speed 3)))
-       (max (catch 'ct4 (throw 'ct4 (setq b 0))) b)))
+       (max (catch 'ct4 (throw 'ct4 (setq b 0))) b))
    6353)
   0)
 
 ;;; Wrong value computed
 (deftest misc.210
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (type (integer 3 65500689) c))
        (declare (optimize (speed 2) (space 1) (safety 3) (debug 3)
                           (compilation-speed 2)))
        (catch 'ct6
-         (let ((v10 (truncate (integer-length (throw 'ct6 0))))) c))))
+         (let ((v10 (truncate (integer-length (throw 'ct6 0))))) c)))
    100)
   0)
 
 (deftest misc.210a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -55982525 -1) a))
        (declare (optimize (speed 1) (space 2) (safety 1) (debug 2)
@@ -3819,15 +3530,13 @@
            (flet ((%f12 (f12-1) v6))
              (if (<= 0) (%f11 v6 0 0)
                (multiple-value-call #'%f11
-                                    (values 0 0 (%f11 0 0 (apply #'%f12 0 nil))))))))))
+                                    (values 0 0 (%f11 0 0 (apply #'%f12 0 nil)))))))))
    -100)
   -100)
 
 ;;; Segmentation violation
 (deftest misc.211
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -1439706333184 1191686946816) a))
        (declare (type (integer -28 282229324) b))
@@ -3841,7 +3550,7 @@
             (%f4 v4))
           (max 38
                (labels ((%f8 (f8-1 &optional (f8-2 (+ c a))) 0))
-                 (apply #'%f8 a nil)))))))
+                 (apply #'%f8 a nil))))))
    -979021452526 138874383 21099308459)
   -25763722434
   -34)
@@ -3856,61 +3565,52 @@
 
 ;;; segmentation violation
 (deftest misc.213
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -2 -1) b))
        (declare (optimize (speed 1) (space 0) (safety 1) (debug 1)
                           (compilation-speed 3)))
        (max (labels ((%f15 (f15-1) b)) (if (< 0 (%f15 a)) 0 0))
             (labels ((%f11 (f11-1 f11-2 f11-3) b))
-              (apply #'%f11 0 0 0 nil)))))
+              (apply #'%f11 0 0 0 nil))))
    0 -2)
   0)
 
 (deftest misc.213a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 3) (space 3) (safety 0) (debug 1)
                           (compilation-speed 3)))
        (max (labels ((%f7 (f7-1) a)) (%f7 0))
             (flet ((%f12 (f12-1 f12-2) (if a f12-2 0)))
-              (apply #'%f12 0 a nil)))))
+              (apply #'%f12 0 a nil))))
    123)
   123)
 
 ;;; Wrong value
 (deftest misc.214
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 3) (space 1) (safety 2) (debug 0)
                           (compilation-speed 2)))
-       (flet ((%f8 nil (setq a 0))) (max a (%f8)))))
+       (flet ((%f8 nil (setq a 0))) (max a (%f8))))
    100)
   100)
 
 ;;; Wrong value
 (deftest misc.215
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 3) (safety 3) (debug 0)
                           (compilation-speed 2)))
-       (ldb (byte 26 6) -1252))))
+       (ldb (byte 26 6) -1252)))
   67108844)
 
 (deftest misc.215a
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (speed 3) (space 2) (safety 2) (debug 1)
                                       (compilation-speed 2)))
-                   (ldb (byte 30 0) -407020740))))
+                   (ldb (byte 30 0) -407020740)))
   666721084)
 
 ;;; Floating point exception
@@ -3928,21 +3628,17 @@
 
 ;;; Infinite loop
 (deftest misc.219
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (labels ((%f (a b)
                     (labels ((%f (c d) 0))
                       (%f 1 2))))
-         (%f 3 4)))))
+         (%f 3 4))))
   0)
 
 ;;; #\^E is not of type NUMBER.
 (deftest misc.220
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -3218770816 9386121) a))
        (declare (type (integer -1 13) b))
@@ -3955,7 +3651,7 @@
                       (- (labels ((%f11 (f11-1 f11-2 f11-3) a))
                            (%f11 0 0 0)))
                       a)
-                nil))))
+                nil)))
    -468614602 3)
   -468614602)
 
@@ -3976,9 +3672,7 @@
 ;;; *** - SYMBOL-VALUE: 2 is not a SYMBOL
 
 (deftest misc.224
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (optimize (speed 2) (space 3) (safety 0)
                           (debug 1) (compilation-speed 0)))
@@ -3988,44 +3682,39 @@
                                       (labels ((%f9 nil 0)) (%f9))
                                     a)))
                     (flet ((%f17 (f17-1 f17-2) f14-1)) (%f17 0 f14-3))))
-         (%f14 (%f14 0 a) 0 b a))))
+         (%f14 (%f14 0 a) 0 b a)))
    248000 5409415 227923)
   0)
 
 ;;; Wrong values
 (deftest misc.225
-  (funcall (compile nil '(lambda () (values (values 'a 'b)))))
+  (call-compiled '(lambda () (values (values 'a 'b))))
   a)
 
 ;;; clisp (12 Dec 2003, 2:30AM CST cvs head)
 ;;; SYMBOL-VALUE: 1 is not a SYMBOL
 (deftest misc.226
-  (funcall
-   (compile nil
+  (call-compiled 
             '(lambda (a)
                (flet ((%f (&optional (x (setq a 1))
                                      (y (setq a 2)))
                            0))
-                 (%f 0 0))))
+                 (%f 0 0)))
    0)
   0)
 
 (deftest misc.227
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (flet ((%f (&optional x (y (setq b 1))) x))
-         (%f 0))))
+         (%f 0)))
    0)
   0)
 
 ;;; acl (x86 linux 6.2, patched 12 Dec 2003)
 ;;; No from-creg to move to...
 (deftest misc.228
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (optimize (speed 1) (space 2) (safety 0) (debug 2)
                           (compilation-speed 2)))
@@ -4036,14 +3725,12 @@
            ((12986)
             (let ((v3 (catch 'ct2 (throw 'ct2 0))))
               (labels ((%f14 (f14-1 f14-2) 0)) (%f14 b c))))
-           (t 0)))))
+           (t 0))))
    -3847091255 -13482 -7577750)
   0)
 
 (deftest misc.228a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -249606 2) a))
        (declare (type (integer 125 511) b))
@@ -4058,14 +3745,12 @@
                       (unwind-protect
                           (throw 'ct4 c)
                         (loop for lv2 below 2 count (logbitp 0 c))))
-                     (t a))))))
+                     (t a)))))
    0 200 -1)
   0)
 
 (deftest misc.228b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (type (integer -1 412413109) c))
        (declare (optimize (speed 1) (space 2) (safety 2) (debug 1)
@@ -4074,15 +3759,13 @@
          (logior (* (progn (if c 0 (throw 'ct2 0)) 0)
                     (catch 'ct2 (throw 'ct2 0)))
                  (complex c 0)
-                 ))))
+                 )))
    62151)
   62151)
 
 ;;; Error: `T' is not of the expected type `INTEGER'
 (deftest misc.229
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda nil
        (declare (optimize (speed 2) (space 1) (safety 1) (debug 2)
                           (compilation-speed 3)))
@@ -4090,16 +3773,14 @@
          (let ((v4 0))
            (catch 'ct5
              (%f15
-              (gcd (catch 'ct5 (let* ((v5 (throw 'ct5 0))) 0)) v4))))))))
+              (gcd (catch 'ct5 (let* ((v5 (throw 'ct5 0))) 0)) v4)))))))
   0)
 
 ;;; ecl
 ;;; Wrong result (order of evaluation problem)
 
 (deftest misc.230
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -6527559920 -247050) a))
        (declare (optimize (speed 1) (space 3) (safety 0) (debug 0)
@@ -4107,7 +3788,7 @@
        (labels ((%f10 (&optional (f10-1 0)
                                  (f10-2 (setq a -4456327156)))
                       0))
-         (logxor a (%f10 a)))))
+         (logxor a (%f10 a))))
    -3444248334)
   -3444248334)
 
@@ -4115,9 +3796,7 @@
 ;;; Wrong value
 
 (deftest misc.231
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer -5209401 3339878) b))
        (declare (optimize (speed 1) (space 2) (safety 0) (debug 2)
@@ -4125,15 +3804,13 @@
        (flet ((%f3 (f3-1 f3-2)
                    f3-1))
          (apply #'%f3 0 (logxor (catch 'ct2 b)
-                                (catch 'ct5 (throw 'ct5 0))) nil))))
+                                (catch 'ct5 (throw 'ct5 0))) nil)))
    -2179757)
   0)
 
 ;;; Invalid number of arguments: 1
 (deftest misc.232
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 197447754 495807327) a))
        (declare (type (integer -125379462 1863191461) b))
@@ -4147,15 +3824,13 @@
                b))
          (flet ((%f16 (f16-1 f16-2 f16-3)
                       0))
-           (apply #'%f16 a 0 (%f8) nil)))))
+           (apply #'%f16 a 0 (%f8) nil))))
    348270365 28780966)
   0)
 
 ;;;  The assertion (EQ C::CHECK :SIMPLE) failed.
 (deftest misc.233
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -2333758327203 -321096206070) a))
        (declare (type (integer -2842843403569 258395684270) b))
@@ -4185,15 +3860,13 @@
                           (if nil
                               (%f2 b a f18-1 69968 4 -217193265)
                             (catch 'ct1 129548688)))))))
-         (max (apply #'%f18 (list 0))))))
+         (max (apply #'%f18 (list 0)))))
    -2067244683733 143879071206)
   129548688)
 
 ;;;  NIL is not of type C::TAIL-SET
 (deftest misc.234
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b) ;; (a b)
        (declare (type (integer -13583709 -3876310) b))
        (declare (optimize (speed 1) (space 2) (safety 3) (debug 3)
@@ -4206,7 +3879,7 @@
                               (block b8 (if (ldb-test (byte 0 0) 0) (* 0 f14-2) 0))))
                             0))
                       (%f2 b f14-2))))
-         (%f14 0 0 (%f14 0 0 0)))))
+         (%f14 0 0 (%f14 0 0 0))))
    ;; -155589
    -5694124)
   0)
@@ -4214,21 +3887,17 @@
 ;;; sbcl 0.8.6.34
 ;;; Wrong value
 (deftest misc.235
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
          (declare (notinline not))
          (declare (optimize (speed 1) (space 0) (safety 0)
                             (debug 2) (compilation-speed 3)))
-         (multiple-value-prog1 0 (catch 'ct2 (if (not nil) (throw 'ct2 b) 0)))))
+         (multiple-value-prog1 0 (catch 'ct2 (if (not nil) (throw 'ct2 b) 0))))
    :wrong)
   0)
 
 (deftest misc.236
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 1) (space 0) (safety 3)
                           (debug 0) (compilation-speed 1)))
@@ -4237,53 +3906,45 @@
                         (%f8 (catch 'ct7 (throw 'ct7 f18-1)))))
            (multiple-value-prog1 (catch 'ct7 a)
                                  0
-                                 (multiple-value-call #'%f18 (values 0 (%f8 b))))))))
+                                 (multiple-value-call #'%f18 (values 0 (%f8 b)))))))
    :good :bad)
   :good)
 
 (deftest misc.237
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 2) (safety 3)
                           (debug 3) (compilation-speed 1)))
        (multiple-value-prog1 0
                              (catch 'ct7 (logandc1 (block b7 0)
-                                                   (throw 'ct7 -908543)))))))
+                                                   (throw 'ct7 -908543))))))
   0)
 
 ;;; cmucl (11 2003 snapshot)
 
 ;;;  NIL is not of type C::CONTINUATION
 (deftest misc.238
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -77145797 -1) a))
        (declare (optimize (speed 1) (space 1) (safety 3) (debug 3) (compilation-speed 1)))
        (flet ((%f5 (f5-1) a))
-         (%f5 (unwind-protect 0 (logand (- (catch 'ct5 0))))))))
+         (%f5 (unwind-protect 0 (logand (- (catch 'ct5 0)))))))
    -100)
   -100)
 
 (deftest misc.238a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 2) (safety 3)
                           (debug 0) (compilation-speed 0)))
        (min (load-time-value 0))
-       0)))
+       0))
   0)
 
 ;;; (in C::MAYBE-LET-CONVERT)
 (deftest misc.239
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -2315418108387 111852261677) a))
        (declare (optimize (speed 2) (space 0) (safety 2) (debug 2) (compilation-speed 1)))
@@ -4294,20 +3955,17 @@
          (flet ((%f10 (f10-1 f10-2 f10-3)
                       (flet ((%f15 (f15-1 &optional (f15-2 (%f4)) (f15-3 0)) f15-3))
                         0)))
-           0))))
+           0)))
    100)
   0)
 
 (deftest misc.239a
-  (funcall
-   (compile nil '(lambda () (declare (optimize speed safety))
-                   (LET ((x (PROG1 0 (ROUND 18916)))) (catch 'ct4 0)))))
+  (call-compiled '(lambda () (declare (optimize speed safety))
+                   (LET ((x (PROG1 0 (ROUND 18916)))) (catch 'ct4 0))))
   0)
 
 (deftest misc.240
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer 4 7) b))
        (declare (optimize (speed 2) (space 3) (safety 3) (debug 1) (compilation-speed 3)))
@@ -4316,47 +3974,41 @@
           (max
            (let ((*s1* b))
              (declare (special *s1*))
-             (+ 0 *s1*)))))))
+             (+ 0 *s1*))))))
    5)
   0)
 
 ;;; clisp (12 Dec 2003 cvs head)
 ;;; *** - Compiler bug!! Occurred in ASSEMBLE-LAP at ILLEGAL INSTRUCTION.
 (deftest misc.241
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 3) (safety 0) (debug 0) (compilation-speed 2)))
-       (labels ((%f17 (f17-1 f17-2) (multiple-value-prog1 0 0 0 (return-from %f17 0)))) (%f17 0 0)))))
+       (labels ((%f17 (f17-1 f17-2) (multiple-value-prog1 0 0 0 (return-from %f17 0)))) (%f17 0 0))))
   0)
 
 (deftest misc.242
-  (funcall (compile nil '(lambda (a) (block b6 (multiple-value-prog1 a (return-from b6 0))))) :wrong)
+  (call-compiled '(lambda (a) (block b6 (multiple-value-prog1 a (return-from b6 0)))) :wrong)
   0)
 
 (deftest misc.243
-  (funcall (compile nil '(lambda () (block b3 (return-from b3 (multiple-value-prog1 0 (return-from b3 0)))))))
+  (call-compiled '(lambda () (block b3 (return-from b3 (multiple-value-prog1 0 (return-from b3 0))))))
   0)
 
 ;;; lispworks 4.3 (personal edition)
 (deftest misc.244
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 3) (space 1) (safety 2) (debug 3) (compilation-speed 2)))
-       (catch 'ct8 (labels ((%f4 (&optional (f4-1 0) (f4-2 (throw 'ct8 0))) f4-1)) (%f4 b)))))
+       (catch 'ct8 (labels ((%f4 (&optional (f4-1 0) (f4-2 (throw 'ct8 0))) f4-1)) (%f4 b))))
    :wrong)
   0)
 
 (deftest misc.245
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 2) (space 0) (safety 0) (debug 2) (compilation-speed 1)))
-       (catch 'ct2 (labels ((%f11 (&optional (f11-1 (throw 'ct2 0))) a)) (apply #'%f11 0 nil)))))
+       (catch 'ct2 (labels ((%f11 (&optional (f11-1 (throw 'ct2 0))) a)) (apply #'%f11 0 nil))))
    20)
   20)
 
@@ -4373,7 +4025,7 @@
 ;;; "Error: Attempt to access the plist field of 0 which is not a symbol."
 
 (deftest misc.248
-  (funcall (compile nil '(lambda () (dotimes (i 0 0) 0))))
+  (call-compiled '(lambda () (dotimes (i 0 0) 0)))
   0)
 
 ;;; sbcl
@@ -4382,9 +4034,7 @@
 ;;;  #<SB-C::PHYSENV :LAMBDA # :NLX-INFO # {A680EF1}>
 
 (deftest misc.249
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
          (declare (notinline <=))
          (declare (optimize (speed 2) (space 3) (safety 0)
@@ -4393,15 +4043,13 @@
              (labels ((%f9 (f9-1 f9-2 f9-3)
                            (ignore-errors 0)))
                (dotimes (iv4 5 a) (%f9 0 0 b)))
-           0)))
+           0))
    1 2)
   0)
 
 ;;; cmucl 11/2003
 (deftest misc.250
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -12 14) a))
        (declare        (optimize (speed 1) (space 2) (safety 1) (debug 1) (compilation-speed 3)))
@@ -4415,7 +4063,7 @@
                       (let* ((v2 (ignore-errors a)))
                         v6)))))
                  0))
-           (%f11 0 0)))))
+           (%f11 0 0))))
    5)
   0)
 
@@ -4429,9 +4077,7 @@
 ;;;     VARS= (F3-1 F3-2 F3-3)>)
 
 (deftest misc.251
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -186585769 -7483) a))
        (declare (type (integer -550 524) b))
@@ -4444,26 +4090,22 @@
                            0))
                 (if (/= b a)
                     b
-                  (deposit-field (%f3 0 b 0) (byte 0 0) (%f3 0 0 (%f13 0 0)))))))))
+                  (deposit-field (%f3 0 b 0) (byte 0 0) (%f3 0 0 (%f13 0 0))))))))
    -10000 0)
   0)
 
 ;;; 8061593093 is not of type (INTEGER -2147483648 4294967295)
 (deftest misc.252
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer -43443 9126488423) b))
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 3) (compilation-speed 0)))
-       (logand (setq b 8061593093) (min b 0))))
+       (logand (setq b 8061593093) (min b 0)))
    0)
   0)
 
 (deftest misc.252a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -30189 -6047) a))
        (declare (type (integer -10 16391481067) b))
@@ -4475,7 +4117,7 @@
                  (declare (special *s1*))
                  (truncate b)))
            a
-         0)))
+         0))
    -12618 16130777867)
   -12618)
 
@@ -4487,19 +4129,15 @@
 ;;; (C::SUBSTITUTE-CONTINUATION #<Continuation c1> #<Continuation c2>)
 
 (deftest misc.253
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 2) (safety 3) (debug 3) (compilation-speed 2)))
        (flet ((%f17 (f17-1) 0))
-         (%f17 (logandc1 0 (catch 'ct2 0)))))))
+         (%f17 (logandc1 0 (catch 'ct2 0))))))
   0)
 
 (deftest misc.253a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 1) (space 1) (safety 3) (debug 2)
                           (compilation-speed 1)))
@@ -4512,36 +4150,32 @@
                                          123337746))
             1)
            (tagbody)
-           c))))
+           c)))
    -34661)
   -34661)
 
 ;;; Wrong return value
 (deftest misc.254
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -5241 -1159) a))
        (declare (optimize (speed 3) (space 2) (safety 0) (debug 3) (compilation-speed 1)))
        (gcd a
             (let ((*misc.254* (setq a -4929)))  ;; special variable
               (declare (special *misc.254*))
-              0))))
+              0)))
    -3000)
   3000)
 
 (deftest misc.255
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer -3474321 15089206) b))
        (declare (optimize (speed 3) (space 3) (safety 3) (debug 3) (compilation-speed 0)))
        (- b
           (block b3
             (setq b 9367613)
-            0))))
+            0)))
    10)
   10)
 
@@ -4549,22 +4183,18 @@
 ;;; Bug involving tagbody and go in lexical function
 
 (deftest misc.256
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 0) (safety 3) (debug 0) (compilation-speed 0)))
        (tagbody (flet ((%f6 () (go 18))) (%f6))
-                18))))
+                18)))
   nil)
 
 ;;; clisp (22 Dec 2003)
 ;;; *** - Compiler bug!! Occurred in ACCESS-IN-STACK at STACKZ-END.
 
 (deftest misc.257
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 2) (safety 3) (debug 3) (compilation-speed 1)))
        (declare (special b))
@@ -4572,97 +4202,83 @@
                             (flet ((%f9 (&optional (f9-1 b) (f9-2 (go tag2)) (f9-3 0)) 0))
                               (%f9 0 0 0))))
                   (%f1 0))
-                tag2))))
+                tag2)))
   nil)
 
 ;;; clisp (26 Dec 2003)
 ;;; PROGV binding is not having the correct effect in compiled code
 
 (deftest misc.258
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 2) (safety 1) (debug 1)
                           (compilation-speed 0)))
        (let ((*s4* :right))
          (declare (special *s4*))
          (progv '(*s4*) (list :wrong1) (setq *s4* :wrong2))
-         *s4*))))
+         *s4*)))
   :right)
 
 ;;; sbcl 0.8.7.5
 ;;; The value 215067723 is not of type (INTEGER 177547470 226026978).
 
 (deftest misc.259
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
          (declare (type (integer 177547470 226026978) a))
          (declare (optimize (speed 3) (space 0) (safety 0) (debug 0)
                             (compilation-speed 1)))
-         (logand a (* a 438810))))
+         (logand a (* a 438810)))
    215067723)
   13739018)
 
 (deftest misc.260
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
          (declare (type (integer 43369342 45325981) a))
          (declare (optimize (speed 2) (space 0) (safety 2)
                             (debug 0) (compilation-speed 3)))
-         (logand 0 (* 5459177 a))))
+         (logand 0 (* 5459177 a)))
    44219966)
   0)
 
 (deftest misc.261
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
          (declare (type (integer 379442022 806547932) b))
          (declare (optimize (speed 2) (space 0) (safety 0)
                             (debug 3) (compilation-speed 2)))
-         (logand b (* 227 b))))
+         (logand b (* 227 b)))
    551173513)
   545263625)
 
 (deftest misc.262
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 515644 54674673) a))
        (declare (optimize (speed 3) (space 2) (safety 3)
                           (debug 0) (compilation-speed 1)))
-       (mask-field (byte 0 0) (* 613783109 a))))
+       (mask-field (byte 0 0) (* 613783109 a)))
    28831407)
   0)
 
 (deftest misc.263
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 862944 60462138) a))
        (declare (optimize (speed 3) (space 3) (safety 0)
                           (debug 1) (compilation-speed 1)))
-       (logandc2 0 (* a 18094747))))
+       (logandc2 0 (* a 18094747)))
    36157847)
   0)
 
 (deftest misc.264
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 896520522 1249309734) a))
        (declare (optimize (speed 3) (space 3) (safety 1)
                           (debug 1) (compilation-speed 2)))
-       (lognand 0 (* a 1381212086))))
+       (lognand 0 (* a 1381212086)))
    1202966173)
   -1)
 
@@ -4671,14 +4287,12 @@
 ;;; The function SB-VM::%LEA-MOD32 is undefined.
 
 (deftest misc.265
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -19621 11895) a))
        (declare (optimize (speed 3) (space 2) (safety 3)
                           (debug 3) (compilation-speed 3)))
-       (* 0 a 103754)))
+       (* 0 a 103754))
    1)
   0)
 
@@ -4687,36 +4301,30 @@
 ;;; Broken at C::C2GO.
 
 (deftest misc.266
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (tagbody
         (flet ((%f (x) :bad)) (multiple-value-call #'%f (go done)))
-        done))))
+        done)))
   nil)
 
 (deftest misc.266a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer -14356828946432 -24266) b))
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 3)
                           (compilation-speed 2)))
-       (progn (tagbody (unwind-protect 0 (go 3)) 3) b)))
+       (progn (tagbody (unwind-protect 0 (go 3)) 3) b))
    -30000)
   -30000)
 
 ;;; Broken at C::C2VAR.
 (deftest misc.266b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 2) (space 3) (safety 2) (debug 0)
                           (compilation-speed 0)))
-       (unwind-protect 0 (catch 'ct7 (prog1 b 0)))))
+       (unwind-protect 0 (catch 'ct7 (prog1 b 0))))
    1)
   0)
 
@@ -4733,25 +4341,21 @@
   0)
 
 (deftest misc.268
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 1) (safety 3) (debug 2)
                           (compilation-speed 2)))
        (catch 'ct7
-         (rationalize (let ((v9 (1+ (throw 'ct7 0)))) 48955))))))
+         (rationalize (let ((v9 (1+ (throw 'ct7 0)))) 48955)))))
   0)
 
 (deftest misc.269
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -1 20) a))
        (declare (optimize (speed 3) (space 1) (safety 2) (debug 2)
                           (compilation-speed 3)))
-       (if (if a (logbitp 34 a) nil) 0 -230678)))
+       (if (if a (logbitp 34 a) nil) 0 -230678))
    14)
   -230678)
 
@@ -4768,14 +4372,12 @@
 ;;; wrong number of values passed to anonymous function
 
 (deftest misc.272
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 1) (safety 0) (debug 3)
                           (compilation-speed 2)))
        (flet ((%f17 (f17-1) 1))
-         (multiple-value-call #'%f17 (values (floor 0)))))))
+         (multiple-value-call #'%f17 (values (floor 0))))))
   1)
 
 ;;; clisp (10 jan 2004)
@@ -4783,9 +4385,7 @@
 ;;; (see CLHS section 5.2)
 
 (deftest misc.273
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (d)
        (declare (optimize (speed 3) (space 0) (safety 3)
                           (debug 2) (compilation-speed 0)))
@@ -4797,7 +4397,7 @@
                            (return-from b7 17)
                          (return-from b7
                            (progv '(*s6*) (list 31) d))
-                         )))))))
+                         ))))))
    65)
   13)
 
@@ -4805,9 +4405,7 @@
 ;;; Lexical unwinding of UVL stack is not implemented.
 
 (deftest misc.274
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare
         (optimize (speed 2)
@@ -4821,13 +4419,11 @@
         (catch 'ct7 0)
         (catch 'ct1
           (catch 'ct4
-            (complex (throw 'ct4 (dotimes (iv4 0 0) (throw 'ct1 0))) 0)))))))
+            (complex (throw 'ct4 (dotimes (iv4 0 0) (throw 'ct1 0))) 0))))))
   0)
 
 (deftest misc.274a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
          (declare (optimize (speed 3) (space 1) (safety 3)
                             (debug 1) (compilation-speed 3)))
@@ -4835,16 +4431,14 @@
            (apply (constantly 0)
                   0
                   (catch 'ct2 (throw 'ct2 (rem 0 (max 46 0))))
-                  nil)))))
+                  nil))))
   0)
 
 
 ;;;  failed AVER: "SUCC"
 
 (deftest misc.275
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (notinline funcall min coerce))
        (declare
@@ -4860,14 +4454,12 @@
                                  b (return-from %f12 0))
                         0))
                      'integer)))
-         (funcall #'%f12 0))))
+         (funcall #'%f12 0)))
    -33)
   0)
 
 (deftest misc.275a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 0) (safety 2)
                           (debug 1) (compilation-speed 1)))
@@ -4875,16 +4467,14 @@
          (coerce
           (logcount
            (if t 0 (multiple-value-prog1 (identity 0) (return-from b4 0))))
-          'integer)))))
+          'integer))))
   0)
 
 ;;; clisp (28 Jan 2004)
 ;;; Different return values
 
 (deftest misc.276
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     `(lambda (b)
        (declare (optimize (speed 2) (space 0) (safety 0)
                           (debug 3) (compilation-speed 3)))
@@ -4894,7 +4484,7 @@
                                    b)))
                    (unwind-protect b (labels ((%f6 ())) (%f6))
                                    ))))
-         (%f2))))
+         (%f2)))
    :good)
   :good)
 
@@ -4902,48 +4492,40 @@
 
 ;;; Error: In - of (1 NIL) arguments should be of type NUMBER
 (deftest misc.277
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 1) (safety 0)
                           (debug 3) (compilation-speed 0)))
        (labels ((%f15 (&optional (f15-3
                                   (tagbody (labels ((%f6 () (go tag1))) (%f6)) tag1)))
                       0))
-         (%f15)))))
+         (%f15))))
   0)
 
 ;;; incorrect return value
 (deftest misc.278
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 0) (safety 2) (debug 3)
                           (compilation-speed 0)))
        (catch 'ct5 (flet ((%f2 (&optional (f2-4 (throw 'ct5 0))) 1))
-                     (%f2 (%f2 0)))))))
+                     (%f2 (%f2 0))))))
   1)
 
 ;;; incorrect return value
 (deftest misc.279
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 1) (safety 3) (debug 0) (compilation-speed 3)))
        (flet ((%f10 ()
                     (if (< 0 (dotimes (iv2 1 -501162)))
                         0 -14)))
-         (%f10)))))
+         (%f10))))
   -14)
 
 ;;; incorrect return value (may be same bug as misc.278)
 (deftest misc.280
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 1) (space 3) (safety 1) (debug 3) (compilation-speed 2)))
        (catch 'ct6
@@ -4954,33 +4536,29 @@
                                    (throw 'ct6 1)
                                    ))))
            (%f12)
-           a))))
+           a)))
    :good)
   :good)
 
 ;;; incorrect return value
 (deftest misc.281
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 3) (space 3) (safety 3) (debug 2) (compilation-speed 3)))
-       (ldb (byte 24 0) c)))
+       (ldb (byte 24 0) c))
    -227016367797)
   12919115)
 
 ;;; gcl: Error in COMPILER::CMP-ANON [or a callee]: The function COMPILER::LDB1 is undefined.
 (deftest misc.282
-  (funcall (compile nil '(lambda () (declare (optimize safety))
-                           (ldb (byte 13 13) 43710))))
+  (call-compiled '(lambda () (declare (optimize safety))
+                           (ldb (byte 13 13) 43710)))
   5)
 
 ;;; gcl (2/28/2004)
 ;;; Error in COMPILER::CMP-ANON [or a callee]: T is not of type INTEGER.
 (deftest misc.283
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b d)
        (declare (optimize (speed 2) (space 2) (safety 1) (compilation-speed 3)))
        (expt (logxor (progn
@@ -4990,16 +4568,14 @@
                        0)
                      0 b
                      (rational d))
-             0)))
+             0))
    2 4)
   1)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: 3 is not of type FUNCTION.
 ;;; (possibly the same bug as misc.283)
 (deftest misc.284
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 1) (space 1) (safety 2) (debug 3)
                           (compilation-speed 2)))
@@ -5009,20 +4585,18 @@
           0
           tag2)
          (funcall (constantly 0)
-                  (apply (constantly 0) (signum c) nil)))))
+                  (apply (constantly 0) (signum c) nil))))
    3)
   0)
 
 ;;; ecl 29 Feb 2004
 ;;; Incorrect constant propagation
 (deftest misc.285
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 2) (space 0) (safety 0) (debug 2)
                           (compilation-speed 3)))
-       (block b7 (let* ((v1 (* (return-from b7 0) a))) -4359852))))
+       (block b7 (let* ((v1 (* (return-from b7 0) a))) -4359852)))
    1)
   0)
 
@@ -5033,9 +4607,7 @@
 ;;; gcl (found by Camm)
 ;;; Error in COMPILER::CMP-ANON [or a callee]: The function NIL is undefined.
 (deftest misc.287
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (e)
        (declare (optimize (speed 1) (space 3) (safety 3) (debug 3)
                           (compilation-speed 1)))
@@ -5045,7 +4617,7 @@
                  (tagbody
                   (let* ((v4 (unwind-protect (go 0)))) 0)
                   0)
-                 (logand (handler-bind () 0)))))))
+                 (logand (handler-bind () 0))))))
    10)
   0)
 
@@ -5068,28 +4640,24 @@ Broken at C::WT-C-INLINE-LOC.
 |#
 
 (deftest misc.288
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 2) (safety 3) (debug 3)
                           (compilation-speed 2)))
        (let ((v2 (integer-length (expt 0 0))))
-         (dotimes (iv4 0 0) (logand v2))))))
+         (dotimes (iv4 0 0) (logand v2)))))
   0)
 
 ;;; cmucl
 ;;; wrong return value
 
 (deftest misc.289
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 2)
                           (compilation-speed 2)))
        (multiple-value-prog1 (apply (constantly 0) b 0 0 nil)
-                             (catch 'ct8 (throw 'ct8 -2)))))
+                             (catch 'ct8 (throw 'ct8 -2))))
    1)
   0)
 
@@ -5097,20 +4665,16 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; failed AVER: "(TAILP BLOCK2-STACK BLOCK1-STACK)"
 
 (deftest misc.290
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare
         (optimize (speed 3) (space 3) (safety 1)
                   (debug 2) (compilation-speed 0)))
-       (apply (constantly 0) (catch 'ct2 0) 0 (catch 'ct2 0) nil))))
+       (apply (constantly 0) (catch 'ct2 0) 0 (catch 'ct2 0) nil)))
   0)
 
 (deftest misc.290a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 1) (safety 0)
                           (debug 0) (compilation-speed 0)))
@@ -5119,7 +4683,7 @@ Broken at C::WT-C-INLINE-LOC.
                (let ((v2 (expt (catch 'ct7 0) 0)))
                  0)
                0)
-              (expt (apply (constantly 0) 0 0 (catch 'ct6 0) nil) 0)))))
+              (expt (apply (constantly 0) 0 0 (catch 'ct6 0) nil) 0))))
   -2)
 
 ;; Allegro CL 6.2 (14 Mar 2004) interpreter bug
@@ -5141,9 +4705,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; The value -1 is not of type (MOD 536870911).
 
 (deftest misc.292
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare
         (optimize (speed 3) (space 2) (safety 3) (debug 0)
@@ -5159,14 +4721,12 @@ Broken at C::WT-C-INLINE-LOC.
                            nil)))
          (flet ((%f14 (f14-1 &optional (f14-2 b) (f14-3 0) (f14-4 0))
                       (%f15 0 0 b)))
-           (%f14 0 c)))))
+           (%f14 0 c))))
    1 2 3)
   0)
 
 (deftest misc.292a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 2) (space 0) (safety 3) (debug 1)
                           (compilation-speed 2)))
@@ -5184,16 +4744,14 @@ Broken at C::WT-C-INLINE-LOC.
                        0
                        nil))
               0
-              nil)))
+              nil))
    1 2)
   0)
 
 ;;; failed AVER: "(NOT (MEMQ PUSH END-STACK))"
 
 (deftest misc.293
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 2) (space 1) (safety 3) (debug 3)
                           (compilation-speed 3)))
@@ -5202,14 +4760,12 @@ Broken at C::WT-C-INLINE-LOC.
                             (multiple-value-prog1 0 (return-from %f9 0) a)))
                 (let ((*s4* (%f9 0)))
                   0))))
-         0)))
+         0))
    1)
   0)
 
 (deftest misc.293a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (optimize (speed 2) (space 3) (safety 1)
                           (debug 2) (compilation-speed 2)))
@@ -5219,26 +4775,22 @@ Broken at C::WT-C-INLINE-LOC.
           (catch 'ct7
             (return-from b6
               (catch 'ct2
-                (complex (cl::handler-bind nil -254932942) 0))))))))
+                (complex (cl::handler-bind nil -254932942) 0)))))))
    1 2 3)
   -254932942)
 
 (deftest misc.293b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (notinline complex))
        (declare (optimize (speed 1) (space 0) (safety 1)
                           (debug 3) (compilation-speed 3)))
        (flet ((%f () (multiple-value-prog1 0 (return-from %f 0))))
-         (complex (%f) 0)))))
+         (complex (%f) 0))))
   0)
 
 (deftest misc.293c
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
            (declare (type (integer -6556 -33) a))
            (declare (type (integer -1973908574551 1125) b))
@@ -5255,14 +4807,12 @@ Broken at C::WT-C-INLINE-LOC.
              (multiple-value-prog1 0
                (catch 'ct7 (return-from b4 (catch 'ct6 (if a 0 b))))
                0
-               0))))
+               0)))
    -237 -1365751422718)
   0)
 
 (deftest misc.293d
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (debug 3) (safety 0) (space 2)
 			  (compilation-speed 2) (speed 2)))
@@ -5270,16 +4820,14 @@ Broken at C::WT-C-INLINE-LOC.
 	      (multiple-value-prog1
 	       0
 	       (catch 'ct8
-		 (return-from b4 (catch 'ct2 (progn (tagbody) 0)))))))))
+		 (return-from b4 (catch 'ct2 (progn (tagbody) 0))))))))
   0)
    
 
 ;;; failed AVER: "(SUBSETP START START-STACK)"
 
 (deftest misc.294
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline /=))
        (declare (optimize (speed 2) (space 0) (safety 1)
@@ -5290,14 +4838,12 @@ Broken at C::WT-C-INLINE-LOC.
                       (if (/= 0) 0 (multiple-value-prog1
                                     0 (throw 'ct1 a) c)))))
              (let ((*s3* (%f1 a a 0)))
-               0)))))
+               0))))
    1 2 3)
   0)
 
 (deftest misc.294a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline expt))
        (declare (optimize (speed 1) (space 2) (safety 3)
@@ -5306,16 +4852,14 @@ Broken at C::WT-C-INLINE-LOC.
          (expt
           (catch 'ct2
             (throw 'ct2 (if a 0 (multiple-value-prog1 0 (throw 'ct2 c) 0))))
-          0))))
+          0)))
    1 2 3)
   1)
 
 ;;;  The value NIL is not of type SB-C::IR2-BLOCK.
 
 (deftest misc.295
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -2858 1050811) a))
        (declare (type (integer -419372 1395833) b))
@@ -5378,16 +4922,14 @@ Broken at C::WT-C-INLINE-LOC.
                                     (min -74 -473379)))))))
                      (progv nil nil (prog1 b 22 c a)))))))))
         (catch 'ct1 (throw 'ct1 0))
-        0)))
+        0))
    794801 211700 -1246335)
   7)
 
 ;;; Tests added by Camm for gcl
 
 (deftest misc.296
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -2016726144 234357120) a))
           (declare (type (integer -10569521299456 -1307998945280) b))
@@ -5426,16 +4968,14 @@ Broken at C::WT-C-INLINE-LOC.
                                          *s8*)))))
                                  0)))
                   (%f14 0 0))
-                0)))
+                0))
    -28594854 -3859203606860 -40757449218 894599577 -4163 11621230
    29558853 -92216802)
   1)
 
 
 (deftest misc.297
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -4354712743936 666241234) a))
           (declare (type (integer -23496787232 13342697120) b))
@@ -5462,15 +5002,13 @@ Broken at C::WT-C-INLINE-LOC.
                                            h))))
                                       (apply #'%f6 0 nil))))
                         0))
-            (%f7 0 d 0 f d))))
+            (%f7 0 d 0 f d)))
     -4319330882538 -3195059121 -2799927 -1466395 10630639 -224479
     -502579707077 -985908422)
    0)
 
 (deftest misc.298
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer 1296736620544 1680954654720) a))
           (declare (type (integer -2 -2) b))
@@ -5488,15 +5026,13 @@ Broken at C::WT-C-INLINE-LOC.
               (let ((v9 (unwind-protect (go 0)))) 0)
               0
               (numerator (funcall (constantly 0) (logorc2 0 0) 0)))
-            0)))
+            0))
    1451922002679 -2 285 1067997670626 1115209 -37445463114
          36530345360 -80501559891)
    0)
 
 (deftest misc.299
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -1814 3348) a))
           (declare (type (integer -32239015 12) b))
@@ -5534,15 +5070,13 @@ Broken at C::WT-C-INLINE-LOC.
                                           tag3)
                                         h)))))))
                     0))
-                0))))
+                0)))
    1555 -22062210 85224215 -161218251003 78463284 730073
    33930166854 37839245921)
    0)
 
 (deftest misc.300
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -29429 -3320) a))
           (declare (type (integer -407874593 279639852) b))
@@ -5575,16 +5109,14 @@ Broken at C::WT-C-INLINE-LOC.
                                       0))
                                     (byte 0 0) 0))
                              0)))
-              (%f12 0 (%f17 0) 0)))))
+              (%f12 0 (%f17 0) 0))))
    -6416 -274982013 2946309248013 1724720 -228 5782683458 21484
    -1681168611256)
   0)
 
 
 (deftest misc.301
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -1814 3348) a))
           (declare (type (integer -32239015 12) b))
@@ -5622,15 +5154,13 @@ Broken at C::WT-C-INLINE-LOC.
                                           tag3)
                                         h)))))))
                     0))
-                0))))
+                0)))
    1555 -22062210 85224215 -161218251003 78463284 730073
    33930166854 37839245921)
   0)
 
 (deftest misc.302
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -206837809920 -126404559104) a))
           (declare (type (integer -277874608640 -63724432) b))
@@ -5651,15 +5181,13 @@ Broken at C::WT-C-INLINE-LOC.
                                        (flet ((%f1 (f1-1 f1-2) 0))
                                          (apply #'%f1 0 0 (list))))))
                        0))
-            (%f12 0 e))))
+            (%f12 0 e)))
    -195379170409 -30212852077 -1 -2082141 -1686846623470 360505
    -324299330279 37218064)
   0)
 
 (deftest misc.303
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -55724018 0) a))
           (declare (type (integer -4929718 2777256) b))
@@ -5685,15 +5213,13 @@ Broken at C::WT-C-INLINE-LOC.
                                   0)))
                       0)
                     0))
-              0))))
+              0)))
    -23410726 -4342503 20297113275 80145634 -17664 937086103773 -1
    2923877584757)
   0)
 
 (deftest misc.304
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -11679 1672) a))
           (declare (type (integer -359757 -216048) b))
@@ -5714,15 +5240,13 @@ Broken at C::WT-C-INLINE-LOC.
                            0)
                          tag2)
                        0)
-                     h (cl::handler-case 0))))))
+                     h (cl::handler-case 0)))))
    -7209 -223767 -42093806027 -9 132172281069 138363461574
    -3751010 0)
   0)
 
 (deftest misc.305
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -438 247) a))
           (declare (type (integer -93662232 112841) b))
@@ -5749,15 +5273,13 @@ Broken at C::WT-C-INLINE-LOC.
                                             g))))
                                   c)
                                 'integer))))
-            (if (%f5 d 0 e 0 0) h 0))))
+            (if (%f5 d 0 e 0 0) h 0)))
    -58 -22237190 2055343 -8144832891 1213 19038103159 -1009345
    929619162)
   929619162)
 
 (deftest misc.306
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer 261 234565) a))
           (declare (type (integer -1454263719936 -3279802168) b))
@@ -5776,15 +5298,13 @@ Broken at C::WT-C-INLINE-LOC.
                 (logxor f
                         (multiple-value-bind (*s4*)
                             (logxor 0 (expt -2 1))
-                          (truncate 0)))))))
+                          (truncate 0))))))
    130724 -736795298357 -1221747467 326 -9775240900 -94105708
    -2273680158 -1156846)
   1)
 
 (deftest misc.307
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -2903632 1282236) a))
           (declare (type (integer 7 10741) b))
@@ -5808,14 +5328,12 @@ Broken at C::WT-C-INLINE-LOC.
                         0)
                       (logand (cl::handler-bind ()
                                 (logand -15 -2 32578787 10349 e
-                                        -24781944 -8)))))))))
+                                        -24781944 -8))))))))
    60336 1625 124302 -33193 -8095855 4995857 0 4572381)
   0)
 
 (deftest misc.308
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -2806612475904 8750665416704) a))
           (declare (type (integer -3 10) b))
@@ -5832,15 +5350,13 @@ Broken at C::WT-C-INLINE-LOC.
                         (multiple-value-prog1 0
                           0
                           (return-from %f7 (mask-field (byte 0 0) 0)))))
-            (unwind-protect (%f7 0)))))
+            (unwind-protect (%f7 0))))
    1951007924893 10 -49879990 614214833752 -1808568999586 1282634
    99 -2783010573143)
   0)
 
 (deftest misc.309
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -521338 12) a))
           (declare (type (integer -1787856009216 1182078822400) b))
@@ -5863,16 +5379,14 @@ Broken at C::WT-C-INLINE-LOC.
                              (return-from b8
                                (let ((*s8* 0)) (round 0))))))
               0
-              0))))
+              0)))
    -275760 -565946697213 9650536069 -37585973 1536165173011
    -12895970021 -102192 -534)
   0 0)
 
 
 (deftest misc.310
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -2016726144 234357120) a))
           (declare (type (integer -10569521299456 -1307998945280) b))
@@ -5911,15 +5425,13 @@ Broken at C::WT-C-INLINE-LOC.
                                          *s8*)))))
                                  0)))
                   (%f14 0 0))
-                0)))
+                0))
    -28594854 -3859203606860 -40757449218 894599577 -4163 11621230
    29558853 -92216802)
   1)
 
 (deftest misc.311
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -1203392327680 -3017953) a))
           (declare (type (integer -34222 -1) b))
@@ -5958,16 +5470,14 @@ Broken at C::WT-C-INLINE-LOC.
                                        0)))
                               (f2-5 0) (f2-6 0))
                         0))
-            (%f2 0 0 f))))
+            (%f2 0 0 f)))
    -738307241633 -25016 -846570136 2181696281793 -983259 24 36
    -185316211)
   0)
 
 
 (deftest misc.312
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -18334222 14354736) a))
           (declare (type (integer 11163582 6421184978944) b))
@@ -5991,15 +5501,13 @@ Broken at C::WT-C-INLINE-LOC.
                                           (coerce 0 'integer))))))
                                 0))
                           0)))
-            0)))
+            0))
    7112398 3547401482305 -12827294644277 23312291 -444957551
    -5443955020 -1 4998457143)
   0)
 
 (deftest misc.313
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer 55474 401001) a))
           (declare (type (integer -8359558987776 8684176949248) b))
@@ -6040,14 +5548,12 @@ Broken at C::WT-C-INLINE-LOC.
                                         (%f3 c 0 a)))
                                 (f6-5 0))
                           0))
-              (apply #'%f6 0 0 h nil)))))
+              (apply #'%f6 0 0 h nil))))
    93287 3146418586486 -51786 0 -63479145888 1935918 -10058 -2033798238)
   0)
 
 (deftest misc.314
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h)
           (declare (type (integer -176150296 698) a))
           (declare (type (integer -62799871488 -56234210816) b))
@@ -6069,7 +5575,7 @@ Broken at C::WT-C-INLINE-LOC.
                           (flet ((%f13 (f13-1 f13-2 f13-3) f13-2))
                             (funcall #'%f13 0 a (%f11))))))
                 0))
-            0)))
+            0))
    -90583503 -61289371485 -1 175888 -3 3257970 -3264725617  -6816839328)
   0)
 
@@ -6080,9 +5586,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; (in COMP::IA-RESOLVE-REFS)
 
 (deftest misc.316
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a c)
        (declare (optimize (speed 2) (space 3) (safety 2) (debug 2)
                           (compilation-speed 0)))
@@ -6093,7 +5597,7 @@ Broken at C::WT-C-INLINE-LOC.
                                               (complex (numerator (go tag4)) 0)))
                                    c)
                          tag4)
-                c))))
+                c)))
    1 2)
   0)
 
@@ -6101,22 +5605,18 @@ Broken at C::WT-C-INLINE-LOC.
 
 ;;; wrong value returned
 (deftest misc.317
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 1) (safety 3) (debug 0)
                           (compilation-speed 3)))
        (catch 'ct4
          (elt '(40760)
-              (min 0 (max 0 (let* ((v3 (* (throw 'ct4 0) 0))) 0))))))))
+              (min 0 (max 0 (let* ((v3 (* (throw 'ct4 0) 0))) 0)))))))
   0)
 
 ;;; seg fault
 (deftest misc.318
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -2050548150 4917) a))
        (declare (type (integer -4 1) b))
@@ -6137,15 +5637,13 @@ Broken at C::WT-C-INLINE-LOC.
                      (apply #'%f18 b b 0 0 nil))
                    0)
              a)
-         0)))
+         0))
    10 1 99335934976)
   10)
 
 ;;; seg fault
 (deftest misc.319
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -626615938 3649977016320) a))
        (declare (type (integer -3615553 6013683) b))
@@ -6158,7 +5656,7 @@ Broken at C::WT-C-INLINE-LOC.
                       (flet ((%f4 (f4-1 f4-2)
                                   (apply #'%f10 (%f10 0 a 0) 0 c nil)))
                         (complex (%f4 0 0) 0))))
-           0 0)))
+           0 0))
    2378435476701 1646880 246794654)
   0)
 
@@ -6166,22 +5664,18 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; failed AVER: "(EQL (LAMBDA-COMPONENT FUNCTIONAL) *CURRENT-COMPONENT*)"
 
 (deftest misc.320
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 0) (safety 2)
                           (debug 2) (compilation-speed 0)))
        (catch 'ct2
          (elt '(102)
               (flet ((%f12 () (rem 0 -43)))
-                (multiple-value-call #'%f12 (values))))))))
+                (multiple-value-call #'%f12 (values)))))))
   102)
 
 (deftest misc.320a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 3) (space 0) (safety 2)
                             (debug 2) (compilation-speed 0)))
@@ -6191,14 +5685,12 @@ Broken at C::WT-C-INLINE-LOC.
                                      (vector 0 0))
                              0)
                        (rem 0 -71))
-                 )))
+                 ))
    2)
   0)
 
 (deftest misc.320b
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -690191 -454473) a))
        (declare (type (integer -459197 -62) b))
@@ -6214,7 +5706,7 @@ Broken at C::WT-C-INLINE-LOC.
             (min 1
                  (max 0
                       (reduce #'(lambda (lmv6 lmv5) (mod 0 (min -86 0)))
-                              (list 0 0)))))))
+                              (list 0 0))))))
    -512398 -156405 1140919327630)
   3327764)  
 
@@ -6222,28 +5714,24 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; Wrong value
 
 (deftest misc.321
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p)
        (declare (optimize (speed 1) (space 3) (safety 2) (debug 1)
                           (compilation-speed 3)))
        (catch 'ct2
          (let* ((v3 (- (if p (throw 'ct2 :good) 0))))
-           :bad))))
+           :bad)))
    t)
   :good)
 
 ;;; segfault
 (deftest misc.322
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 2) (space 2) (safety 0) (debug 3)
                           (compilation-speed 2)))
        (logorc2 (labels ((%f14 (f14-1) a)) (%f14 0))
-                (reduce #'(lambda (lmv1 lmv2) a) (list 0 0)))))
+                (reduce #'(lambda (lmv1 lmv2) a) (list 0 0))))
    3151096069)
   -1)
 
@@ -6258,21 +5746,19 @@ Broken at C::WT-C-INLINE-LOC.
             (eval '(reduce #'logior
                            (vector (reduce #'logand (vector 0 0) . ,tail) 0)
                            . ,tail)))))
-    (funcall (compile nil form)))
+    (call-compiled form))
   0)
 
 ;;; Bad value
 
 (deftest misc.324
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (speed 2) (space 2) (safety 3) (debug 2)
                           (compilation-speed 3)))
        (labels ((%f6 (f6-1) (multiple-value-setq (a) 0)))
          (reduce #'(lambda (lmv4 lmv3) a)
-                 (list (%f6 0) 2)))))
+                 (list (%f6 0) 2))))
    1)
   0)
 
@@ -6280,9 +5766,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; Broken at C::C2MULTIPLE-VALUE-SETQ.
 
 (deftest misc.325
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -1659358 3099614928896) a))
        (declare (type (integer -492625 197903) b))
@@ -6291,20 +5775,18 @@ Broken at C::WT-C-INLINE-LOC.
                           (compilation-speed 1)))
        (reduce #'(lambda (lmv5 lmv6)
                    (multiple-value-setq (a) 2443855591508))
-               (vector b a 0 0) :from-end t)))
+               (vector b a 0 0) :from-end t))
    1 2)
   2443855591508)
 
 ;;; wrong value
 (deftest misc.326
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer 155 7955) b))
        (declare (optimize (speed 3) (space 3) (safety 3) (debug 1)
                           (compilation-speed 0)))
-       (flet ((%f13 (f13-1) (shiftf b 3019))) (+ b (%f13 0)))))
+       (flet ((%f13 (f13-1) (shiftf b 3019))) (+ b (%f13 0))))
    200)
   400)
 
@@ -6312,9 +5794,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; Error: `NIL' is not of the expected type `REAL'
 
 (deftest misc.327
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -67668056 -55) a))
        (declare (type (integer -586950907 -10945000) b))
@@ -6334,15 +5814,13 @@ Broken at C::WT-C-INLINE-LOC.
                                               0)
                                         :start 1
                                         :from-end t)))))))
-     (%f15 0))))
+     (%f15 0)))
    -38276611 -11001852)
   1073730663)
 
 ;;; wrong return value: T
 (deftest misc.327a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e)
        (declare (notinline max vector reduce))
        (declare (optimize (speed 1) (space 2) (safety 1) (debug 1)
@@ -6352,7 +5830,7 @@ Broken at C::WT-C-INLINE-LOC.
                        (catch 'ct2 (catch 'ct2 (throw 'ct2 0))) 0 e 0)
                
                :end 2
-               :from-end t)))
+               :from-end t))
    68664683637 328245 881497115 -303855 311427)
   0)
     
@@ -6361,24 +5839,20 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;   The value org.armedbear.lisp.Symbol@54 is not of type integer.
 
 (deftest misc.328
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -11368047588 14412128900) a))
        (declare (type (integer -10 0) b))
        (declare (ignorable a b))
        (declare (optimize (speed 3) (space 1) (safety 3) (debug 0)
                           (compilation-speed 0)))
-       (if (logbitp 0 (if (or t nil) (setf a -2616861879) 0)) 0 0)))
+       (if (logbitp 0 (if (or t nil) (setf a -2616861879) 0)) 0 0))
    -4836700955 -1)
   0)
 
 ;;; Incorrect value
 (deftest misc.329
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -725661427 405092) a))
        (declare (type (integer 84176291516 98216856233) b))
@@ -6387,44 +5861,38 @@ Broken at C::WT-C-INLINE-LOC.
                           (compilation-speed 0)))
        (let ((*s2* (case b ((53651 62711 29537 25305 62250) 0) (t 0))))
          (declare (special *s2*))
-         (setq a -688292831))))
+         (setq a -688292831)))
    -406606203 84436335326)
   -688292831)
 
 (deftest misc.330
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -12816761394938 -8706928710678) a))
        (declare (type (integer -3683497948554 427) b))
        (declare (ignorable a b))
        (declare (optimize (speed 3) (space 0) (safety 0) (debug 3)
                           (compilation-speed 2)))
-       (lcm (block b8 (signum (return-from b8 a))))))
+       (lcm (block b8 (signum (return-from b8 a)))))
    -12715609319989 -582329850697)
   12715609319989)
 
 (deftest misc.331
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -777352478 239900) a))
        (declare (type (integer -63500163479 -8671) b))
        (declare (ignorable a b))
        (declare (optimize (speed 3) (space 0) (safety 0) (debug 2)
                           (compilation-speed 3)))
-       (if (if (>= 0) t t) (setq b -25319949896) b)))
+       (if (if (>= 0) t t) (setq b -25319949896) b))
    0 -10000)
   -25319949896)
 
 ;;; Debugger invoked on condition of type TYPE-ERROR:
 ;;;   The value 0 is not of type org.armedbear.lisp.Symbol@80f563d8.
 (deftest misc.332
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (notinline max logorc1 numerator rem))
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 1)
@@ -6432,7 +5900,7 @@ Broken at C::WT-C-INLINE-LOC.
        (rem (progn (tagbody (numerator (logorc1 0 (go tag5)))
                             tag5)
                    0)
-            (max 93 0))))
+            (max 93 0)))
    -801 17641908)
   0)
 
@@ -6440,24 +5908,20 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;   The value #<THREAD @ #x15c40eb> is not of type org.armedbear.lisp.Symbol@80f563d8.
 
 (deftest misc.333
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (notinline logxor))
        (declare (optimize (speed 3) (space 0) (safety 0) (debug 3)
                           (compilation-speed 3)))
        (logxor (progn (tagbody (let* ((*s4* (progn (go 1) 0))) 0)
                                1)
-                      0)))))
+                      0))))
   0)
 
 ;;; Debugger invoked on condition of type PROGRAM-ERROR:
 ;;;  Wrong number of arguments for EXPT.
 (deftest misc.334
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 1892675246514 8763564964618) a))
        (declare (type (integer -1353 -456) b))
@@ -6465,7 +5929,7 @@ Broken at C::WT-C-INLINE-LOC.
        (declare (ignorable a b c))
        (declare (optimize (speed 3) (space 2) (safety 0) (debug 2)
                           (compilation-speed 1)))
-       (+ (block b6 (expt (return-from b6 b) 0)))))
+       (+ (block b6 (expt (return-from b6 b) 0))))
    3966745735633 -1123 2030094113)
   -1123)
 
@@ -6486,25 +5950,21 @@ Broken at C::WT-C-INLINE-LOC.
 
 ;;; Incorrect return value
 (deftest misc.337
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 2) (safety 2) (debug 0)
                           (compilation-speed 0)))
        (imagpart (block b8
-                   (logior (block b7 (return-from b8 225480400))))))))
+                   (logior (block b7 (return-from b8 225480400)))))))
   0)
 
 ;;; Inconsistent stack height 1 != 2
 (deftest misc.338
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile
-         nil
+       (call-compiled 
          '(lambda (c)
-            (conjugate (block b8 (max (if c (return-from b8 0) 0))))))
+            (conjugate (block b8 (max (if c (return-from b8 0) 0)))))
         10))
   0)
 
@@ -6513,9 +5973,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 1) (space 3) (safety 3) (debug 0)
                            (compilation-speed 0)))
@@ -6525,14 +5983,12 @@ Broken at C::WT-C-INLINE-LOC.
                   :end    1
                   :start  0
                   :from-end t
-                  ))))))
+                  )))))
   0)
 
 ;;;   The value INTEGER is not of type sequence.
 (deftest misc.340
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -4379340 -1962) a))
        (declare (type (integer 1304043 3225940) b))
@@ -6546,7 +6002,7 @@ Broken at C::WT-C-INLINE-LOC.
                                                     t)
                                             tag3)
                                    0))
-               'integer)))
+               'integer))
    -1625211 3052955 -2091182035681)
   0)
 
@@ -6555,16 +6011,14 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (c)
         (declare (optimize (speed 2) (space 1) (safety 1) (debug 2)
                            (compilation-speed 3)))
         (logeqv (block b6
                   (logeqv (case 0
                             ((45293 29462 60403) (return-from b6 0))
-                            (t c)))))))
+                            (t c))))))
     10))
   10)
 
@@ -6573,15 +6027,13 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a)
         (declare (optimize (speed 1) (space 0) (safety 2) (debug 1)
                            (compilation-speed 2)))
         (progn (tagbody (imagpart (dotimes (iv3 0 a) (go 4)))
                         4)
-               0)))
+               0))
     1))
   0)
 
@@ -6590,9 +6042,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 2) (space 3) (safety 2) (debug 3)
                            (compilation-speed 2)))
@@ -6602,21 +6052,19 @@ Broken at C::WT-C-INLINE-LOC.
                               (list (return-from b8 0) 0 0)
                               :end      3
                               :start    0
-                              :from-end t)))))))
+                              :from-end t))))))
   0)
 
 ;;; Wrong value
 (deftest misc.344
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -3464434 12316202) a))
        (declare (optimize (speed 1) (space 0) (safety 0) (debug 0)
                           (compilation-speed 2)))
        (progn (tagbody (gcd (expt (setf a -2612809) 0) (go 5))
                        5)
-              a)))
+              a))
    1891348)
   -2612809)
 
@@ -6625,9 +6073,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b c)
         (declare (type (integer -1968 -1759) a))
         (declare (type (integer 91 2293818743282) b))
@@ -6642,7 +6088,7 @@ Broken at C::WT-C-INLINE-LOC.
                                                   (max 0
                                                        (return-from b1 0)))))
                             (progn 0))))
-             (sbit #*0001011010010 (min 12 (max 0 0))))))
+             (sbit #*0001011010010 (min 12 (max 0 0)))))
     -1957 523078358699 -634832888815))
   0)
 
@@ -6650,9 +6096,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (c)
         (declare (type (integer -3011346550 1630587670) c))
         (declare (optimize (speed 1) (space 1) (safety 0) (debug 3)
@@ -6660,15 +6104,13 @@ Broken at C::WT-C-INLINE-LOC.
         (progn (tagbody (dotimes (iv2 0 (- 0 (go 7))) (progn 0))
                         7
                         (progn (mask-field (byte 0 0) 0) c))
-               0)))
+               0))
     1))
   0)
 
 ;;; wrong return value
 (deftest misc.346
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 2) (safety 2) (debug 2)
                           (compilation-speed 2)))
@@ -6680,44 +6122,38 @@ Broken at C::WT-C-INLINE-LOC.
                               (min 1
                                    (max 0
                                         (progn (return-from b8 191438621)
-                                               0)))))))))))
+                                               0))))))))))
   0)
 
 ;;; The value 8 is not of type FUNCTION.
 (deftest misc.347
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 2) (safety 3) (debug 2)
                           (compilation-speed 1)))
        (complex (* (block b2
                      (boole boole-xor (logxor (return-from b2 0)) 0)))
-                0))))
+                0)))
   0)
 
 ;;; Wrong result
 (deftest misc.348
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a c)
        (declare (optimize (speed 1) (space 0) (safety 2) (debug 3)
                           (compilation-speed 1)))
-       (max (conjugate (setq a -4178265097)) (if (> c 0) 0 a))))
+       (max (conjugate (setq a -4178265097)) (if (> c 0) 0 a)))
    -2408319173 -4307532101272)
   -4178265097)
 
 (deftest misc.349
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 3) (space 1) (safety 1) (debug 1)
                           (compilation-speed 2)))
        (mod (let ((*s7* (block b7 (logandc2 (+ (return-from b7 0)) 0))))
               -10)
-            (max 26 0)))))
+            (max 26 0))))
   16)
 
 ;;; Inconsistent stack height 0 != 1
@@ -6726,24 +6162,20 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 2) (space 3) (safety 1) (debug 2)
                            (compilation-speed 3)))
         (progn (tagbody (complex (- 0 (if (and t) 0 (go tag1))) 0)
                         tag1)
-               0)))))
+               0))))
   0)
 
 (deftest misc.351
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (c)
         (declare (type (integer -598962457711 -2902) c))
         (declare (optimize (speed 1) (space 0) (safety 1) (debug 0)
@@ -6751,7 +6183,7 @@ Broken at C::WT-C-INLINE-LOC.
         (lognor c
                 (block b1
                   (loop for lv3 below 1
-                        sum (if (/= 0) (return-from b1 0) c))))))
+                        sum (if (/= 0) (return-from b1 0) c)))))
     -392248104420))
   392248104419)
 
@@ -6759,24 +6191,20 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 1) (space 3) (safety 3) (debug 3)
                            (compilation-speed 1)))
         (progn (tagbody (+ 0 (if (< 0) (go 5) 0))
                         5)
-               0)))))
+               0))))
   0)
 
 (deftest misc.353
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b)
         (declare (type (integer -8 -2) a))
         (declare (type (integer -67321 14697029362) b))
@@ -6792,15 +6220,13 @@ Broken at C::WT-C-INLINE-LOC.
                                      (return-from b2 0))
                                     (t a))
                                   0))))
-              0)))
+              0))
     -7 772373806))
   1)
 
 ;;; Incorrect return value
 (deftest misc.354
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -1309 67082465417) a))
        (declare (type (integer -7824641338734 -832606641) b))
@@ -6811,14 +6237,12 @@ Broken at C::WT-C-INLINE-LOC.
        (+ 0
           (progn (tagbody (if (if (>= b (go 3)) nil t) a c)
                           3)
-                 0))))
+                 0)))
    29329060987 -4964942044116 512158612507)
   0)
 
 (deftest misc.355
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (type (integer -1390043946499 -115168466439) c))
        (declare (optimize (speed 2) (space 0) (safety 0) (debug 1)
@@ -6827,7 +6251,7 @@ Broken at C::WT-C-INLINE-LOC.
           (coerce (progn (tagbody (if (<= -1 (go tag1)) 0 c)
                                   tag1)
                          0)
-                  'integer))))
+                  'integer)))
    -115168466439)
   0)
 
@@ -6835,25 +6259,21 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 2) (space 2) (safety 1) (debug 0)
                            (compilation-speed 3)))
         (let ((*s7* 0))
           (dotimes (iv2 0 0)
             (block b3
-              (block b3 (block b3 (setq *s7* (return-from b3 0)))))))))))
+              (block b3 (block b3 (setq *s7* (return-from b3 0))))))))))
   0)
 
 (deftest misc.357
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (b)
         (declare (type (integer -1750881587721 -327383867) b))
         (declare (optimize (speed 1) (space 0) (safety 2) (debug 3)
@@ -6863,7 +6283,7 @@ Broken at C::WT-C-INLINE-LOC.
                          (setq *s8*
                                (case 0
                                  ((-26733 -244 -26253 -50028) 0)
-                                 (t (return-from b2 b)))))))))
+                                 (t (return-from b2 b))))))))
     -1153135130306))
   1)
 
@@ -6871,9 +6291,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda ()
         (declare (optimize (speed 2) (space 0) (safety 0) (debug 3)
                            (compilation-speed 1)))
@@ -6883,16 +6301,14 @@ Broken at C::WT-C-INLINE-LOC.
                                             (if (ldb-test (byte 0 0) 0)
                                                 (return-from b3 *s1*)
                                               0)))
-                                      (setq *s1* (return-from b3 0)))))))))))
+                                      (setq *s1* (return-from b3 0))))))))))
   0)
 
 (deftest misc.359
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b)
         (declare (type (integer -477801566869 432060432661) a))
         (declare (type (integer 366578392 525704751) b))
@@ -6905,7 +6321,7 @@ Broken at C::WT-C-INLINE-LOC.
                                               (setq *s1* (go 4))))
                                 4)
                        0))
-               (t 0)))))
+               (t 0))))
     287358622300 400248608))
   0)
 
@@ -6923,9 +6339,7 @@ Broken at C::WT-C-INLINE-LOC.
 
 ;;; failed AVER: "(SUBSETP END END-STACK)"
 (deftest misc.361
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline boole values denominator list))
        (declare
@@ -6940,16 +6354,14 @@ Broken at C::WT-C-INLINE-LOC.
              (list 0)
            (let ((v9 (ignore-errors (throw 'ct6 0))))
              (denominator
-              (progv nil nil (values (boole boole-and 0 v9)))))))))
+              (progv nil nil (values (boole boole-and 0 v9))))))))
    1 2 3)
   0)
 
 ;;; sbcl (0.8.10.15)
 ;;; Wrong return value: SB-KERNEL:*HANDLER-CLUSTERS*
 (deftest misc.362
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b g h)
        (declare (optimize (speed 3) (space 3) (safety 2)
                           (debug 2) (compilation-speed 3)))
@@ -6966,22 +6378,20 @@ Broken at C::WT-C-INLINE-LOC.
                               0)
                             nil)
                      0))
-           (common-lisp:handler-case 0)))))
+           (common-lisp:handler-case 0))))
    1 2 3)
   0)
 
 ;;; Wrong value: NIL
 (deftest misc.363
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -17286401550789 15753784105886) a))
        (declare (optimize (speed 2) (space 2) (safety 2)
                           (debug 0) (compilation-speed 3)))
        (if (not (>= 0 (shiftf a 110236462073)))
            0
-         (elt '(30 101 13 2 10 52 89 57) (min 7 (max 0 a))))))
+         (elt '(30 101 13 2 10 52 89 57) (min 7 (max 0 a)))))
    -3647332298473)
   57)
 
@@ -7010,8 +6420,8 @@ Broken at C::WT-C-INLINE-LOC.
              (declare (optimize (speed 3) (space 0) (safety 3) (debug 2) (compilation-speed 2)))
              (coerce (logxor b -1) 'integer)))
          (vals '(9 -328421075 -6406890))
-         (v1 (apply (compile nil fn1) vals))
-         (v2 (apply (compile nil fn2) vals)))
+         (v1 (apply-compiled fn1 vals))
+         (v2 (apply-compiled fn2 vals)))
     (if (eql v1 v2) :good (list v1 v2)))
   :good)
 
@@ -7019,9 +6429,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;  Argument X is not a REAL: #<FUNCTION "CLOSURE" {947C46D}>
 
 (deftest misc.366
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f g h i)
        (declare (type (integer 10 65866342) a))
        (declare (type (integer 151 702748905609) b))
@@ -7069,7 +6477,7 @@ Broken at C::WT-C-INLINE-LOC.
                                                   a))
                                       (ignore-errors 0)))
                                    0
-                                   nil))))))))))
+                                   nil)))))))))
    21956127 524275646496 101890987 8762 -88607922426 -55959 2177 147174
    38469170)
   11751)
@@ -7078,9 +6486,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;  is not of type RATIONAL.
 
 (deftest misc.367
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 11557968 115977463) a))
        (declare (type (integer -89510 -20616) b))
@@ -7099,16 +6505,14 @@ Broken at C::WT-C-INLINE-LOC.
                            (catch 'ct2 (throw 'ct5 (progn (%f17 a b) a))))
                        nil)))
              0))
-           (%f17 0 a))))))
+           (%f17 0 a)))))
    112475717 -25829)
   0)
 
 ;;; sbcl 0.8.10.25
 ;;; "The value -3 is not of type (INTEGER -5 -2)."
 (deftest misc.368
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -5 -2) a))
        (declare (ignorable a))
@@ -7119,16 +6523,14 @@ Broken at C::WT-C-INLINE-LOC.
            (and (not (not (> a (numerator (setf a -4)))))
                 (logbitp 0 (conjugate a)))
            0
-         0)))
+         0))
    -3)
   0)
 
 ;;; acl 6.2 (x86 linux trial edition, patched, 4/15/04)
 ;;; Error: `T' is not of the expected type `NUMBER'
 (deftest misc.369
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e)
        (declare (type (integer -15256078323 33828721319) a))
        (declare (type (integer -44368 22872) b))
@@ -7154,16 +6556,14 @@ Broken at C::WT-C-INLINE-LOC.
                                        &allow-other-keys)
                                  0))
                      0)))
-         b)))
+         b))
    -2821485338 -35420 -7622 135 9592294022)
   -35420)
 
 ;;; Lispworks personal edition 4.3 (x86 linux)
 ;;; Inconsistent return value
 (deftest misc.370
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -3070433 6) a))
        (declare (type (integer -5 -3) b))
@@ -7181,7 +6581,7 @@ Broken at C::WT-C-INLINE-LOC.
                       (f15-4 (denominator (setq c -4214677583716))) (f15-5 0)
                       &key (key1 c) &allow-other-keys)
                (progv '(*s1* *s5* *s7*) (list f15-2 0 f15-1) key1)))
-         (%f15 0 (%f15 c 0) 0))))
+         (%f15 0 (%f15 c 0) 0)))
    -1233959 -4 -2643533316361)
   -4214677583716)
 
@@ -7192,9 +6592,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b c)
         (declare (type (integer -7288 10764) a))
         (declare (type (integer -7 24) b))
@@ -7214,15 +6612,13 @@ Broken at C::WT-C-INLINE-LOC.
                                                  0))
                                              tag3)
                                     0))
-                         0)))))
+                         0))))
     -5566 9 10557204445))
   0)
 
 ;;; 0 is not of type LIST
 (deftest misc.372
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -738508 627) a))
        (declare (type (integer -100241328874 104421) b))
@@ -7237,7 +6633,7 @@ Broken at C::WT-C-INLINE-LOC.
                            (cons c
                                  (truncate 0
                                            (min -42 0)))
-                         (cdr v1)))))))
+                         (cdr v1))))))
    -657195 -10801112339 -4291316763)
   0)
 
@@ -7246,9 +6642,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b c)
         (declare (type (integer 0 179061) a))
         (declare (type (integer -15793 42532) b))
@@ -7264,7 +6658,7 @@ Broken at C::WT-C-INLINE-LOC.
                           0))
                       0)
                 :end 6
-                :from-end t)))
+                :from-end t))
     141814 1445 -2))
   142419)
 
@@ -7272,9 +6666,7 @@ Broken at C::WT-C-INLINE-LOC.
   (let
    #+armedbear ((jvm::*catch-errors* nil))
    nil  
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (a b)
         (declare (type (integer -99 4) a))
         (declare (type (integer 35621436 36172433) b))
@@ -7290,16 +6682,14 @@ Broken at C::WT-C-INLINE-LOC.
                                        0)
                                  0)))
                      (declare (dynamic-extent v10))
-                     0)))))
+                     0))))
     -57 35725118))
   -1)
 
 ;;; abcl (23 May 2004)
 ;;; 0 is not of type LIST
 (deftest misc.375
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e f)
        (declare (type (integer -3172868 25583841) a))
        (declare (type (integer -8176159 1565888775976) b))
@@ -7318,16 +6708,14 @@ Broken at C::WT-C-INLINE-LOC.
                                            (cons d 0)
                                          (cdr *s7*)))))
              0
-           0))))
+           0)))
    12851164 182468232812 -2243976802 309299185674 2538150 1855615980)
   0)
 
 ;;; abcl (25 May 2004)
 ;;; 0 is not of type LIST
 (deftest misc.376
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (space 1) (safety 2) (debug 1)
                           (compilation-speed 0)))
@@ -7336,13 +6724,11 @@ Broken at C::WT-C-INLINE-LOC.
                        (progn (cdr *s6*) 0)))
          (floor (rational (let ((*s2*
                                  (rational (common-lisp:handler-case 0))))
-                            0)))))))
+                            0))))))
   0)
 
 (deftest misc.377
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (e) ; (a b c d e)
        (declare (type (integer -46778182694 512) e))
        (declare (optimize (speed 3) (space 3) (safety 2) (debug 2)
@@ -7355,40 +6741,34 @@ Broken at C::WT-C-INLINE-LOC.
                                           (rationalize (cdr *s5*))))
                                0)))
            0
-         0)))
+         0))
    10)
   0)
 
 (deftest misc.378
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 1) (space 0) (safety 1) (debug 3)
                           (compilation-speed 2)))
        (dotimes (iv4 3 0)
          (restart-case (round (multiple-value-bind (*s6*) (cons c 0)
-                                (car *s6*)))))))
+                                (car *s6*))))))
    1)
   0)
 
 (deftest misc.379
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 2) (space 0) (safety 2) (debug 2)
                           (compilation-speed 1)))
-       (values (floor 0) (multiple-value-bind (v3) (cons 0 0) (car v3))))))
+       (values (floor 0) (multiple-value-bind (v3) (cons 0 0) (car v3)))))
   0 0)
 
 ;;; gcl (31 May 2004, cvs head)
 ;;; Error in APPLY [or a callee]: Expected a FIXNUM
 ;;; Also fails in cmucl 1/2003
 (deftest misc.380
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -1397457 1846252) a))
        (declare (optimize (speed 2) (space 2) (safety 1)
@@ -7405,7 +6785,7 @@ Broken at C::WT-C-INLINE-LOC.
                                         (deposit-field -5
                                                        (byte 20 30) a))))))
                            0)))
-               (let ((*s8* (cons 0 0))) 0)))))))
+               (let ((*s8* (cons 0 0))) 0))))))
    399997)
   1125898833500797)
 
@@ -7414,9 +6794,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;
 ;; Error in function LISP::ASSERT-ERROR:  The assertion (NOT C::WIN) failed.
 (deftest misc.381
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -1397457 1846252) a))
        (declare (optimize (speed 2) (space 2) (safety 1)
@@ -7433,7 +6811,7 @@ Broken at C::WT-C-INLINE-LOC.
                                         (deposit-field -5
                                                        (byte 20 30) a))))))
                            0)))
-               (let ((s8 (cons 0 0))) 0)))))))
+               (let ((s8 (cons 0 0))) 0))))))
    399997)
   1125898833500797)
 
@@ -7442,9 +6820,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; Error in SYSTEM:ASET [or a callee]: Expected a FIXNUM
 
 (deftest misc.382
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer -65822755520 31689335872) b))
        (declare (optimize (speed 2) (space 2) (safety 3)
@@ -7463,16 +6839,14 @@ Broken at C::WT-C-INLINE-LOC.
                            (if (ldb-test (byte 0 0)
                                          (shiftf (aref s8)
                                                  (aref s8)))
-                               0 0)))))))))
+                               0 0))))))))
    -38169486910)
   13423701584)
 
 ;;; cmucl 11/2003
 ;;; Wrong value
 (deftest misc.383
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -93650 118967004056) a))
        (declare (type (integer -429173946 -3892) b))
@@ -7485,7 +6859,7 @@ Broken at C::WT-C-INLINE-LOC.
         (let* ((*s3* (cons 0 a)))
           (declare (dynamic-extent *s3*))
           (shiftf c -124766263))
-        411942919)))
+        411942919))
    79909316946 -347537841 -210771963)
   -142606339)
 
@@ -7497,35 +6871,30 @@ Broken at C::WT-C-INLINE-LOC.
   (let
       #+armedbear ((jvm::*catch-errors* nil))
       nil
-      (funcall
-       (compile
-        nil
+      (call-compiled 
         '(lambda ()
-           (catch 'ct8 (throw 'ct8 (catch 'ct7 0)))))))
+           (catch 'ct8 (throw 'ct8 (catch 'ct7 0))))))
   0)
 
 (deftest misc.385
   (let
       #+armedbear ((jvm::*catch-errors* nil))
       nil
-      (funcall
-       (compile nil '(lambda () (values 1 (catch 'ct2 2))))))
+      (call-compiled '(lambda () (values 1 (catch 'ct2 2)))))
   1 2)
 
 (deftest misc.386
   (let
       #+armedbear ((jvm::*catch-errors* nil))
       nil
-      (funcall
-       (compile nil '(lambda () (values (rationalize (catch 'ct1 1)) 2)))))
+      (call-compiled '(lambda () (values (rationalize (catch 'ct1 1)) 2))))
   1 2)
 
 (deftest misc.387
   (let
       #+armedbear ((jvm::*catch-errors* nil))
       nil
-      (funcall
-       (compile nil '(lambda () (block b1 (catch 'ct1 (throw 'ct1 (return-from b1 0))))))))
+      (call-compiled '(lambda () (block b1 (catch 'ct1 (throw 'ct1 (return-from b1 0)))))))
   0)
 
 ;;; ecl (cvs head, 13 June 2004)
@@ -7534,9 +6903,7 @@ Broken at C::WT-C-INLINE-LOC.
 ; NIL cannot be coerced to a C int.
 
 (deftest misc.388
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 200077 60836768) a))
        (declare (type (integer 339831915 371006999) b))
@@ -7544,16 +6911,14 @@ Broken at C::WT-C-INLINE-LOC.
        (declare (ignorable a b c))
        (declare (optimize (speed 2) (space 1) (safety 0) (debug 0)
                           (compilation-speed 0)))
-       (dotimes (iv4 2 0) (multiple-value-setq (c) 4212))))
+       (dotimes (iv4 2 0) (multiple-value-setq (c) 4212)))
    8959928 366395687 5048)
   0)
 
 ;;; wrong return value
 
 (deftest misc.389
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -49972981888 -48068810368) a))
        (declare (type (integer -452283089 -27620701) b))
@@ -7561,15 +6926,13 @@ Broken at C::WT-C-INLINE-LOC.
        (declare (ignorable a b c))
        (declare (optimize (speed 2) (space 1) (safety 2) (debug 1)
                           (compilation-speed 0)))
-       (multiple-value-setq (c) 8015)))
+       (multiple-value-setq (c) 8015))
    -49966124671 -68547159 12944)
   8015)
 
 ;;; Evaluation order bug
 (deftest misc.390
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -257 -140) a))
        (declare (type (integer -1 1069496658) b))
@@ -7580,7 +6943,7 @@ Broken at C::WT-C-INLINE-LOC.
        (labels ((%f12 (f12-1 &optional (f12-2 (setq b 63838027)) &key
                              (key1 0) (key2 0))
                       b))
-         (boole boole-orc2 b (let ((*s3* (%f12 0))) -14)))))
+         (boole boole-orc2 b (let ((*s3* (%f12 0))) -14))))
    -173 1028908375 1289968133290)
   1028908383)
 
@@ -7588,15 +6951,13 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; "The value NIL is not of type SB-C::LVAR"
 
 (deftest misc.391
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (optimize (speed 2) (space 0) (safety 0)
                           (debug 1) (compilation-speed 3)))
        (let* ((v5 (cons b b)))
          (declare (dynamic-extent v5))
-         a)))
+         a))
    'x 'y)
   x)
 
@@ -7605,14 +6966,12 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;   is not of type SB-C::REF."
 
 (deftest misc.392
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (notinline /=))
        (declare (optimize (speed 1) (space 2) (safety 1)
                           (debug 3) (compilation-speed 3)))
-       (prog2 0 0 (loop for lv4 below 3 count (or b (/= b))))))
+       (prog2 0 0 (loop for lv4 below 3 count (or b (/= b)))))
    1 2)
   0)
 
@@ -7622,9 +6981,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; (in C::CORE-CALL-TOP-LEVEL-LAMBDA)
 
 (deftest misc.393
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -995205 1035654) a))
        (declare (type (integer 473 114804994247) b))
@@ -7638,14 +6995,12 @@ Broken at C::WT-C-INLINE-LOC.
                        &optional (f7-4 (lcm (if (>= b a) 0 a))) (f7-5 0)
                        &key)
                  0))
-         (progn (%f7 (%f7 b a a b) b 0) 0))))
+         (progn (%f7 (%f7 b a a b) b 0) 0)))
    447930 66120263479)
   0)
 
 (deftest misc.393a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -76 86) a))
        (declare (type (integer -13771285280 109) b))
@@ -7655,7 +7010,7 @@ Broken at C::WT-C-INLINE-LOC.
         (optimize (safety 3) (space 1) (debug 2) (compilation-speed 3)
                   (speed 3)))
        (dotimes (iv1 2 0)
-         (case (min -3693810 a iv1) ((26 -4) (ldb (byte 13 0) a)) (t b)))))
+         (case (min -3693810 a iv1) ((26 -4) (ldb (byte 13 0) a)) (t b))))
    56 -1579426331)
   0)
 
@@ -7663,9 +7018,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; Wrong values
 
 (deftest misc.394
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -76645001 98715919) a))
        (declare (type (integer 0 856472753903) b))
@@ -7674,14 +7027,12 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (speed 2) (space 0) (debug 3) (compilation-speed 0)
                   (safety 3)))
-       (logeqv 0 b)))
+       (logeqv 0 b))
    -34528661 843541658238)
   -843541658239)
 
 (deftest misc.395
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 6429252570156 8761983588786) a))
        (declare (type (integer -400378288 4971722) b))
@@ -7690,15 +7041,13 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (debug 3) (speed 3) (space 2) (safety 0)
                   (compilation-speed 3)))
-       (+ (shiftf a 8496033756259) (min 0 b))))
+       (+ (shiftf a 8496033756259) (min 0 b)))
    8369430915156 -369704905)
   8369061210251)
 
 ;;; "The assertion (EQ (CAR C::STACK) C::CONT) failed."
 (deftest misc.396
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -1601 485) a))
        (declare (type (integer -190428560464 -1444494) b))
@@ -7707,16 +7056,14 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (debug 0) (space 2) (speed 0) (safety 3)
                   (compilation-speed 2)))
-       (apply (constantly 0) 0 (list (signum b)))))
+       (apply (constantly 0) 0 (list (signum b))))
    -1365 -46960621335)
   0)
 
 ;;; "The assertion (EQ (C::FUNCTIONAL-KIND (C::LAMBDA-HOME C::FUN))
 ;;;      :TOP-LEVEL) failed."
 (deftest misc.397
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -168258525920 -2044) a))
        (declare (type (integer -522 54) b))
@@ -7729,7 +7076,7 @@ Broken at C::WT-C-INLINE-LOC.
                      (flet ((%f7 (f7-1 f7-2 f7-3 &optional &key (key1 a))
                                  (progv '(*s1* *s6* *s2*) (list a 0 key1) f4-1)))
                        f4-2)))
-         (apply #'%f4 (list a 0)))))
+         (apply #'%f4 (list a 0))))
    -156882103995 -38)
   0)
 
@@ -7738,9 +7085,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;;                  NAME= IV1
 ;;;                  TYPE= #<NUMERIC-TYPE (MOD 3)>>"
 (deftest misc.398
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -319 7353) a))
        (declare (type (integer 31751 4233916489) b))
@@ -7754,16 +7099,14 @@ Broken at C::WT-C-INLINE-LOC.
             (labels ((%f12 (f12-1 f12-2 f12-3)
                            0))
               (%f12 0 b 0))
-          (dotimes (iv1 2 0) (catch 'ct2 a))))))
+          (dotimes (iv1 2 0) (catch 'ct2 a)))))
    4430 3476635674)
   0)
 
 ;;; "NIL is not of type C::CONTINUATION"
 ;;; in C::FIND-PUSHED-CONTINUATIONS
 (deftest misc.399
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -3 1) a))
        (declare (ignorable a))
@@ -7771,15 +7114,13 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (space 0) (debug 0) (speed 3) (compilation-speed 2)
                   (safety 3)))
-       (catch 'ct8 (logior a -457019 -1))))
+       (catch 'ct8 (logior a -457019 -1)))
    0)
   -1)
 
 ;;; Wrong value
 (deftest misc.400
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 3376 4762) a))
        (declare (ignorable a))
@@ -7787,15 +7128,13 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (debug 0) (safety 0) (space 0) (compilation-speed 3)
                   (speed 3)))
-       (case (lognand 775 a) ((-7) 0) (t 4))))
+       (case (lognand 775 a) ((-7) 0) (t 4)))
    4182)
   0)
 
 ;;; Invalid number of arguments: 1
 (deftest misc.401
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 7299 257071514003) a))
        (declare (ignorable a))
@@ -7803,15 +7142,13 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (compilation-speed 2) (space 1) (safety 2) (speed 1)
                   (debug 2)))
-       (logeqv (setq a 220250126156) 0)))
+       (logeqv (setq a 220250126156) 0))
    157474319912)
   -220250126157)
 
 ;;; "The assertion (EQ (CAR C::NEW-STACK) C::CONT) failed."
 (deftest misc.402
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -19116544 21344004) a))
        (declare (ignorable a))
@@ -7825,15 +7162,13 @@ Broken at C::WT-C-INLINE-LOC.
                   (list
                    (let* ((*s1* 0))
                      *s1*)))
-           0))))
+           0)))
    10)
   0)
 
 ;;; "The assertion C::INDIRECT failed."
 (deftest misc.403
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -6456 -32) a))
        (declare (ignorable a))
@@ -7841,7 +7176,7 @@ Broken at C::WT-C-INLINE-LOC.
        (declare
         (optimize (space 3) (safety 1) (compilation-speed 1) (speed 0)
                   (debug 0)))
-       (dotimes (iv1 0 a) (loop for lv4 below 3 sum (catch 'ct8 0)))))
+       (dotimes (iv1 0 a) (loop for lv4 below 3 sum (catch 'ct8 0))))
    -1648)
   -1648)
 
@@ -7851,9 +7186,7 @@ Broken at C::WT-C-INLINE-LOC.
 (deftest misc.404
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile
-         nil
+       (call-compiled 
          '(lambda (a b)
             (declare (type (integer -77007578505 7500480849) a))
             (declare (type (integer 211464 53140083) b))
@@ -7867,16 +7200,14 @@ Broken at C::WT-C-INLINE-LOC.
                                          0)))
                               0)
                             tag8)
-                   a)))
+                   a))
         -1068524571 20786758))
   -1068524571)
 
 (deftest misc.405
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile
-         nil
+       (call-compiled 
          '(lambda (a b)
             (declare (type (integer -82196 13938) a))
             (declare (type (integer -44152792 -15846835) b))
@@ -7896,16 +7227,14 @@ Broken at C::WT-C-INLINE-LOC.
                                0
                              0)
                            b)))
-                0))))
+                0)))
         -10305 -26691848))
   0)
 
 (deftest misc.406
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile
-         nil
+       (call-compiled 
          '(lambda (a)
             (declare (type (integer -1 1412366903315) a))
             (declare (ignorable a))
@@ -7913,21 +7242,19 @@ Broken at C::WT-C-INLINE-LOC.
                                (compilation-speed 1) (speed 2)))
             (progn (tagbody (case 0 ((1 0 4) (values (go 1) 0)) (t 0))
                             1)
-                   0)))
+                   0))
         251841706892))
   0)
 
 ;;; Incorrect binding
 (deftest misc.407
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -324 175) a))
        (declare (ignorable a))
        (declare (optimize (safety 0) (space 0) (speed 2) (debug 0)
                           (compilation-speed 0)))
-       (multiple-value-bind (v5) (cons (truncate 0) a) (cdr v5))))
+       (multiple-value-bind (v5) (cons (truncate 0) a) (cdr v5)))
    -279)
   -279)
 
@@ -7936,9 +7263,7 @@ Broken at C::WT-C-INLINE-LOC.
 (deftest misc.408
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile
-         nil
+       (call-compiled 
          '(lambda (a)
             (declare (type (integer 0 0) a))
             (declare (ignorable a))
@@ -7948,7 +7273,7 @@ Broken at C::WT-C-INLINE-LOC.
                                           (let ((v5 (cons 0 (if (go 3) 0 0)))) 0))
                               (progn 0))
                             3)
-                   (ash 0 (min 16 0)))))
+                   (ash 0 (min 16 0))))
         0))
   0)
 
@@ -7956,9 +7281,7 @@ Broken at C::WT-C-INLINE-LOC.
 ;;; (0 . 0) is not of type REAL
 
 (deftest misc.409
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -40524 53538) a))
        (declare (type (integer -5967075 -235) b))
@@ -7974,7 +7297,7 @@ Broken at C::WT-C-INLINE-LOC.
                        (reduce #'(lambda (lmv2 lmv1) (%f2 0 0 a))
                                (list 0 0 a 0 0 0 a) :end 7))
                      0)
-                nil))))
+                nil)))
    -7465 -3590953)
   0)
 
@@ -7984,36 +7307,30 @@ Broken at C::WT-C-INLINE-LOC.
 Broken at C::WT-MAKE-CLOSURE.
 |#
 (deftest misc.410
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (safety 0) (space 1) (compilation-speed 0)
                           (speed 2) (debug 0)))
        (let ((*s2* 0))
          (declare (special *s2*))
          (reduce #'(lambda (lmv1 lmv2) *s2*) (vector 0) :end 1
-                 :start 0)))))
+                 :start 0))))
   0)
 
 ;;; THROW: The catch CT2 is undefined.
 (deftest misc.411
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (safety 2) (debug 0) (space 0)
                           (compilation-speed 2) (speed 0)))
        (catch 'ct2 (values 0 (throw 'ct2 0)))
-       0)))
+       0))
   0)
 
 ;;; /tmp/eclDD7aumXi8.c: In function `LC3':
 ;;; /tmp/eclDD7aumXi8.c:9: `env0' undeclared (first use in this function)
 (deftest misc.412
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -25409 1946) a))
        (declare (type (integer -215956065 223815244) b))
@@ -8023,15 +7340,13 @@ Broken at C::WT-MAKE-CLOSURE.
        (complex (flet ((%f15 (f15-1 &optional &key (key1 0)) 0))
                   (reduce #'(lambda (lmv6 lmv1) (%f15 lmv1))
                           (list b 0)))
-                0)))
+                0))
    -21802 -105983932)
   0)
 
 ;;; Different resutls: #<a type-error>, 0
 (deftest misc.413
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -120206733 37762378) a))
        (declare (type (integer 2777758072 5675328792) b))
@@ -8052,7 +7367,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                             (key1 a) (key2 b)
                                             &allow-other-keys)
                                      0))
-                                 b)))))))))
+                                 b))))))))
    -4794909 4095236669)
   0)
 
@@ -8060,15 +7375,13 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Wrong value computed
 
 (deftest misc.414
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (speed 1) (space 3) (compilation-speed 3)
                           (debug 3) (safety 1)))
        (if (setq c 2)
            (case (shiftf c 1) ((2) c) (t 0))
-         0)))
+         0))
    0)
   1)
 
@@ -8089,43 +7402,37 @@ Broken at C::WT-MAKE-CLOSURE.
 
 ;;; Wrong value
 (deftest misc.416
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer 12052668 22838464) b))
        (declare (ignorable a b c))
        (declare        (optimize (compilation-speed 3) (debug 2) (speed 1) (space 0)
                           (safety 3)))
-       (min (mask-field (byte 2 18) b) 89582)))
+       (min (mask-field (byte 2 18) b) 89582))
    13891743)
   0)
 
 ;;; Invalid number of arguments: 3
 (deftest misc.417
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
      (declare (type (integer 995 22565094) c))
      (declare (optimize (safety 2) (debug 1) (space 0) (compilation-speed 2)
                         (speed 1)))
-     (numerator (floor (numerator (deposit-field 0 (byte 0 0) c))))))
+     (numerator (floor (numerator (deposit-field 0 (byte 0 0) c)))))
    17190042)
   17190042)
 
 ;;; Invalid number of arguments: #<Unknown Immediate Object, lowtag=#b110, type=#x66
 ;;;                               {598FCC66}>
 (deftest misc.418
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer 1670923021 2536883848) a))
        (declare (ignorable a b c))
        (declare (optimize (safety 3) (compilation-speed 3) (speed 1) (debug 1)
                           (space 2)))
-       (if (logior (setf c 67) 0 a) a 0)))
+       (if (logior (setf c 67) 0 a) a 0))
    2161404325 -1968715305 83)
   2161404325)
 
@@ -8134,13 +7441,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;                       ((nil #<numeric-type integer> #<numeric-type integer>)))
 
 (deftest misc.419
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (safety 3) (speed 3) (compilation-speed 1) (space 1)
                           (debug 2)))
-       (boole boole-set 0 (case 2 ((0) 0) (t (numerator (catch 'ct2 0))))))))
+       (boole boole-set 0 (case 2 ((0) 0) (t (numerator (catch 'ct2 0)))))))
   -1)
 
 ;;;  nil is not of type c::continuation
@@ -8148,9 +7453,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;                       ((nil #<union-type real> #<union-type real>)))
 
 (deftest misc.420
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -65954801 6519292634236) a))
        (declare (type (integer 5721249203 36508717226) b))
@@ -8165,32 +7468,28 @@ Broken at C::WT-MAKE-CLOSURE.
                  :start
                  0
                  :from-end
-                 t))))
+                 t)))
    6313133774518 10840050742)
   0)
 
 ;;; Invalid number of arguments: 1
 (deftest misc.421
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (optimize (debug 0) (space 2) (compilation-speed 1) (safety 0)
                           (speed 0)))
-       (imagpart (block b8 (logior (catch 'ct7 (return-from b8 a)) -1123785)))))
+       (imagpart (block b8 (logior (catch 'ct7 (return-from b8 a)) -1123785))))
    -1021899)
   0)
 
 ;;; Invalid number of arguments: 2
 (deftest misc.422
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -13 -3) a))
        (declare (optimize (space 2) (debug 1) (safety 1) (speed 2)
                           (compilation-speed 1)))
-       (logorc2 (sbit #*0010000011101010 (min 15 (max 0 0))) a)))
+       (logorc2 (sbit #*0010000011101010 (min 15 (max 0 0))) a))
    -7)
   6)
 
@@ -8198,15 +7497,13 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (c::convert-type-check #<Continuation c1>
 ;;;                        ((t #<member-type null> #<union-type real>)))
 (deftest misc.423
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 0 1) a))
        (declare (type (integer -8031148528 5509023941) b))
        #+cmu (declare (optimize (extensions:inhibit-warnings 3)))
        (declare (optimize (space 2) (safety 3) (debug 1) (compilation-speed 3) (speed 2)))
-       (min 0 (ignore-errors (logand 0 b 388)))))
+       (min 0 (ignore-errors (logand 0 b 388))))
    0 4604112015)
   0)
 
@@ -8214,9 +7511,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (kernel:two-arg-> nil 0)
 
 (deftest misc.424
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
      (declare (type (integer -24 15) a))
      (declare (type (integer -99661829155 16) b))
@@ -8228,34 +7523,30 @@ Broken at C::WT-MAKE-CLOSURE.
        (logandc1 a
                  (ignore-errors
                   (let* ((v8 (complex (throw 'ct4 0) 0)))
-                    0))))))
+                    0)))))
    -18 -47519360453)
   0)
 
 ;;; Different results
 (deftest misc.425
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
      (declare (type (integer -394128 80657) a))
      (declare (type (integer 13729431 14852298) b))
      (declare (optimize (space 2) (compilation-speed 1) (safety 0) (debug 0)
                         (speed 2)))
-     (logorc1 (* a (logior b 0)) 0)))
+     (logorc1 (* a (logior b 0)) 0))
    -80334 14527920)
   1167085925279)
 
 ;;; Unable to display error condition
 (deftest misc.426
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        #+cmu (declare (optimize (extensions:inhibit-warnings 3)))
        (declare (optimize (safety 3) (space 3) (speed 3) (debug 1)
                           (compilation-speed 3)))
-       (dotimes (iv3 1 0) (logxor iv3 1285775)))))
+       (dotimes (iv3 1 0) (logxor iv3 1285775))))
   0)
 
 ;;; sbcl 0.8.15.13
@@ -8263,9 +7554,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (This appears to be related to DYNAMIC-EXTENT)
 
 (deftest misc.427
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (notinline list reduce logior))
        (declare (optimize (safety 2) (compilation-speed 1)
@@ -8274,33 +7563,29 @@ Broken at C::WT-MAKE-CLOSURE.
        (logior
         (let* ((v5 (reduce #'+ (list 0 a))))
           (declare (dynamic-extent v5))
-          (1- v5)))))
+          (1- v5))))
    17)
   16)
 
 (deftest misc.428
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (notinline -))
        (declare        (optimize (compilation-speed 0) (safety 1) (speed 0)
                           (debug 2) (space 3)))
        (let ((v10 (catch 'ct2 1)))
          (declare (dynamic-extent v10))
-         (- v10)))))
+         (- v10))))
   -1)
 
 (deftest misc.429
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (safety 1) (debug 1) (space 2)
                           (speed 2) (compilation-speed 1)))
        (let ((v8 (let ((*s3* 0)) *s3*)))
          (declare (dynamic-extent v8))
-         (logandc1 v8 28)))))
+         (logandc1 v8 28))))
   28)
 
 ;;; poplog 15.53
@@ -8312,12 +7597,10 @@ Broken at C::WT-MAKE-CLOSURE.
 
 ;;; Wrong return values: T, 0
 (deftest misc.431
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a) (declare (notinline > *))
        (declare (optimize (compilation-speed 0) (safety 2) (speed 2) (debug 0) (space 3)))
-       (catch 'ct1 (* a (throw 'ct1 (if (> 0) a 0))))))
+       (catch 'ct1 (* a (throw 'ct1 (if (> 0) a 0)))))
    5445205692802)
   5445205692802)
 
@@ -8340,9 +7623,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;   (SB-VM::UNSIGNED-REG)
 
 (deftest misc.434
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -8431780939320 1571817471932) a))
        (declare (type (integer -4085 0) b))
@@ -8363,16 +7644,14 @@ Broken at C::WT-MAKE-CLOSURE.
                                  (if (< iv1 iv1)
                                      (lognand iv1 (ash iv1 (min 53 iv1)))
                                    iv1))))))
-             0)))))
+             0))))
    -7639589303599 -1368)
   0)
 
 ;;; failed AVER:
 ;;;  "(AND (EQ (CTRAN-KIND START) INSIDE-BLOCK) (NOT (BLOCK-DELETE-P BLOCK)))"
 (deftest misc.435
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d)
        (declare (notinline aref logandc2 gcd make-array))
        (declare
@@ -8389,7 +7668,7 @@ Broken at C::WT-MAKE-CLOSURE.
             (declare (dynamic-extent v2))
             (gcd (go tag2) (logandc2 (catch 'ct2 c) (aref v2))))
           tag2)
-         0)))
+         0))
    3021871717588 -866608 -2 -17194)
   0)
 
@@ -8403,9 +7682,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;   (SB-VM::UNSIGNED-REG)
 
 (deftest misc.436
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -2917822 2783884) a))
        (declare (type (integer 0 160159) b))
@@ -8432,7 +7709,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                              '(-10197561 486 430631291
                                                          9674068))))))))
            b
-         0)))
+         0))
    1265797 110757)
   0)
 
@@ -8440,9 +7717,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (in (SB-C::TN-SC-OFFSET 1 #<SB-C:TN #:G27!1>))
 
 (deftest misc.437
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e)
        (declare (notinline values complex eql))
        (declare
@@ -8457,7 +7732,7 @@ Broken at C::WT-MAKE-CLOSURE.
                       &optional (f10-4 (ignore-errors 0)) (f10-5 0)
                       &key &allow-other-keys)
                (if (or (eql 0 0) t) 0 (if f10-1 0 0))))
-         (complex (multiple-value-call #'%f10 (values a c b 0 0)) 0))))
+         (complex (multiple-value-call #'%f10 (values a c b 0 0)) 0)))
    80043 74953652306 33658947 -63099937105 -27842393)
   0)
 
@@ -8470,23 +7745,19 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;   (SB-VM::UNSIGNED-REG)
 
 (deftest misc.438
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     ' (lambda (a)
         (declare (type (integer 0 1696) a))
         ; (declare (ignorable a))
         (declare (optimize (space 2) (debug 0) (safety 1)
                    (compilation-speed 0) (speed 1)))
-        (if (logbitp 0 (ash (1- a) (min 11 a))) 0 0)))
+        (if (logbitp 0 (ash (1- a) (min 11 a))) 0 0))
    805)
   0)
 
 ;;; "The value -13589 is not of type (INTEGER -15205 18871)"
 (deftest misc.439
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -15205 18871) a))
        (declare (ignorable a))
@@ -8497,7 +7768,7 @@ Broken at C::WT-MAKE-CLOSURE.
                   (safety 1)
                   (debug 1)
                   (compilation-speed 3)))
-       (if (<= a (- (setf a 10305))) a 0)))
+       (if (<= a (- (setf a 10305))) a 0))
    -13589)
   10305)
 
@@ -8505,9 +7776,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error: the value of (CAR EXCL::INTEGERS) is NIL, which is not of type INTEGER.
 
 (deftest misc.440
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (notinline logior))
        (declare (optimize (safety 3) (debug 1) (speed 0) (space 1)
@@ -8526,15 +7795,13 @@ Broken at C::WT-MAKE-CLOSURE.
                 0))
          (let ((*s8* (%f10)))
            (declare (special *s8*))
-           *s8*))))
+           *s8*)))
    13524 4484529434427 8109510572804)
   0)
 
 ;;; Error: the value of realpart is nil, which is not of type (or rational float).
 (deftest misc.441
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (notinline complex))
        (declare (optimize (compilation-speed 1) (space 1) (speed 3) (safety 2) (debug 3)))
@@ -8542,15 +7809,13 @@ Broken at C::WT-MAKE-CLOSURE.
                          &key (key1 (labels ((%f9 nil a)) (complex (%f9) 0)))
                          (key2 0) &allow-other-keys)
                 0))
-         (%f8 0 a))))
+         (%f8 0 a)))
    1 2)
   0)
 
 ;;; Error: the value of excl::x is nil, which is not of type integer.
 (deftest misc.442
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (notinline apply evenp))
        (declare (optimize (speed 1) (space 1) (safety 1) (compilation-speed 0) (debug 0)))
@@ -8559,16 +7824,14 @@ Broken at C::WT-MAKE-CLOSURE.
                              (key1 (flet ((%f8 nil b)) (if (evenp (%f8)) 0 a)))
                              (key2 0))
                   0))
-         (apply #'%f18 b nil))))
+         (apply #'%f18 b nil)))
    505808341634 -39752189)
   0)
 
 ;;; Error: No from-creg to move to <3:iparam2@(:iparam 2){4=c{s:<3>}}> before (move-throw-tag nil nil -> ({18}) ([18>>:frame :dfr]))
 
 (deftest misc.443
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d e)
        (declare (type (integer -2310674 2) a))
        (declare (type (integer -492505702625 -147091001460) b))
@@ -8581,7 +7844,7 @@ Broken at C::WT-MAKE-CLOSURE.
                           ((-4557) (let ((*s7* (max d))) 0))
                           ((-15387) c)
                           (t 0))
-                        (unwind-protect (throw 'ct7 b) 0)))))
+                        (unwind-protect (throw 'ct7 b) 0))))
    -1748290 -244489705763 38969920 -90 341977)
   -244489705763)
 
@@ -8591,9 +7854,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; gcl 25 Nov 2004
 ;;; Incorrect return value
 (deftest misc.446
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c d)
        (declare (type (integer -1254 1868060) a))
        (declare (type (integer -1 0) b))
@@ -8604,32 +7865,28 @@ Broken at C::WT-MAKE-CLOSURE.
                           (compilation-speed 3) (debug 3)))
        (* (labels ((%f8 (&optional (f8-1 0)) (setq b 0)))
             (if (> d 1668249724 (%f8)) 0 (complex a 0)))
-          (if (oddp b) 0 c))))
+          (if (oddp b) 0 c)))
    796131 -1 -338008808923 530637)
   -269099291056676913)
 
 (deftest misc.447
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 38632397 46632460288) a))
        (declare (optimize (space 0) (safety 0) (debug 1)
                           (compilation-speed 1) (speed 0)))
-       (catch 'ct2 (if (= a 0 (throw 'ct2 0)) 1 2289596))))
+       (catch 'ct2 (if (= a 0 (throw 'ct2 0)) 1 2289596)))
    18160383912)
   0)
 
 (deftest misc.448
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -3716 1269) a))
        (declare (type (integer -1976579 2312) b))
        (declare (optimize (compilation-speed 1) (safety 0)
                           (speed 0) (space 0) (debug 3)))
-       (if (<= 0 b (setq a 117)) 0 a)))
+       (if (<= 0 b (setq a 117)) 0 a))
    -1147 -44004)
   117)
 
@@ -8637,13 +7894,12 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect return value
 
 (deftest misc.449
-  (funcall (compile nil '(lambda (a) (* 10 a (setq a 1000)))) 1)
+  (call-compiled '(lambda (a) (* 10 a (setq a 1000))) 1)
   10000)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: The variable MIN is unbound.
 (deftest misc.450
-  (funcall
-   (compile nil '(lambda (a b) (min 0 (reduce #'min (vector a b 0)) 0)))
+  (call-compiled '(lambda (a b) (min 0 (reduce #'min (vector a b 0)) 0))
    -10 -1)
   -10)
 
@@ -8651,26 +7907,26 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect return value
 
 (deftest misc.451
-  (funcall (compile nil '(lambda (a b) (flet ((%f3 () (setq a -2210)))
-                                         (logxor a b (%f3)))))
+  (call-compiled '(lambda (a b) (flet ((%f3 () (setq a -2210)))
+                                         (logxor a b (%f3))))
            -22650 20595)
   171)
 
 (deftest misc.452
-  (funcall (compile nil '(lambda (d) (labels ((%f3 () (setf d -1135) -983))
-                                       (+ d (%f3) 11267))))
+  (call-compiled '(lambda (d) (labels ((%f3 () (setf d -1135) -983))
+                                       (+ d (%f3) 11267)))
            -2914)
   7370)
 
 (deftest misc.453
-  (funcall (compile nil '(lambda (a) (* a (setf a 2) a (identity 5))))
+  (call-compiled '(lambda (a) (* a (setf a 2) a (identity 5)))
            3)
   60)
 
 (deftest misc.454
   (let* ((form '(let ((v1 0)) (decf v1 (setq v1 -1))))
          (val1 (eval form))
-         (val2 (funcall (compile nil `(lambda () ,form)))))
+         (val2 (call-compiled `(lambda () ,form))))
     (if (eql val1 val2) :good
       (list val1 val2)))
   :good)
@@ -8681,51 +7937,43 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; LOGAND (?) bug
 
 (deftest misc.455
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -4079701634499 2272876436845) b))
        (declare (optimize (space 0) (compilation-speed 1)
                           (safety 3) (speed 2) (debug 0)))
-       (logand (* -775 b) a 37284)))
+       (logand (* -775 b) a 37284))
    -18465060867 832909434173)
   32772)
 
 (deftest misc.456
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b c)
        (declare (type (integer -30606350847 35078064098) b))
        (declare (type (integer -6652 6638) c))
        (declare (optimize (space 3) (safety 0)
                           (speed 0) (compilation-speed 2) (debug 1)))
-           (logand (* -9964236 (setq c 6206) 2600) b c)))
+           (logand (* -9964236 (setq c 6206) 2600) b c))
     17296668225 -6574)
   4096)
 
 ;;; DEPOSIT-FIELD (?) bug
 
 (deftest misc.457
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -455461 343063) a))
        (declare (type (integer -1020097 -12430) b))
        (declare (optimize (speed 3) (space 0) (compilation-speed 3)
                           (debug 0) (safety 3)))
-       (deposit-field (* (logeqv a a) b) (byte 6 24) 0)))
+       (deposit-field (* (logeqv a a) b) (byte 6 24) 0))
    -212811 -985078)
   0)
 
 ;;; LDB, *
 
 (deftest misc.458
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     ' (lambda (a)
            (declare (type (integer -8175 27760966190) a))
            (declare (optimize
@@ -8734,22 +7982,20 @@ Broken at C::WT-MAKE-CLOSURE.
                      #+sbcl (sb-c:insert-step-conditions 0)
                      (space 2) (speed 0) (compilation-speed 1)
                      (safety 0) (debug 3)))
-           (ldb (byte 29 0) (* a a))))
+           (ldb (byte 29 0) (* a a)))
    14774118941)
   101418825)
 
 ;;; LOGAND, +
 
 (deftest misc.459
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
            (declare (type (integer -32933298905 -168011) a))
            (declare (type (integer -190015111797 16) b))
            (declare (optimize (speed 2) (compilation-speed 0) (space 0)
                               (safety 1) (debug 0)))
-           (logand (+ b -9255) a 63)))
+           (logand (+ b -9255) a 63))
    -8166030199 -45872222127)
   8)
 
@@ -8759,9 +8005,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;  were causing this message to be printed.)
 
 (deftest misc.460
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 50354997 50514623) a))
        (declare (ignorable a))
@@ -8785,7 +8029,7 @@ Broken at C::WT-MAKE-CLOSURE.
                          (min (catch 'ct6 0) (catch 'ct8 0) 0)
                        (let ((*s1* (cons a 0)))
                          (car *s1*)))
-                   0))))
+                   0)))
    50395193)
   0)
 
@@ -8793,14 +8037,13 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error possibly related to type propagation
 
 (deftest misc.461
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -26657952320 0) a))
                    (declare (optimize (compilation-speed 0) (space 3) (speed 3)
                                       (safety 0) (debug 2)))
                    (- a
                       (ash -1 (min 31 (- a)))
-                      -26715477)))
+                      -26715477))
    -26179151369)
   -24004952244)
 
@@ -8810,29 +8053,27 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; gazonk0.c:5257: warning: assignment makes integer from pointer without a cast
 
 (deftest misc.462
-  (funcall
-   (compile nil '(lambda (a b)
+  (call-compiled '(lambda (a b)
                    (declare (type (integer -2726808666112 -26532) a))
                    (declare (type (integer 182701814 171137312256) b))
                    (declare (ignorable a b))
                    (declare (optimize (compilation-speed 3) (safety 0)
                                       (speed 3) (space 3) (debug 3)))
-                   (ash (let* ((v8 (cons 0 0))) 0) (min 15 a))))
+                   (ash (let* ((v8 (cons 0 0))) 0) (min 15 a)))
    -1982565461868 46279989780)
   0)
 
 ;;; gazonk0.c: In function `L1':
 ;;; gazonk0.c:5262: warning: assignment makes integer from pointer without a cast
 (deftest misc.463
-  (funcall
-   (compile nil '(lambda (a b)
+  (call-compiled '(lambda (a b)
                    (declare (type (integer 0 0) a))
                    (declare (type (integer -160364747008 264742845184) b))
                    (declare (ignorable a b))
                    (declare (optimize (debug 0) (safety 0)
                                       (compilation-speed 2) (space 0)
                                       (speed 1)))
-                   (ash (multiple-value-setq (a) 0) (min 97 13027666096))))
+                   (ash (multiple-value-setq (a) 0) (min 97 13027666096)))
    0 34670845086)
   0)
 
@@ -8840,26 +8081,24 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Compiler error on ash, rem
 
 (deftest misc.464
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (debug 1) (safety 2) (compilation-speed 0)
                                       (space 1) (speed 1)))
                    (count (ash (the integer
                                  (macrolet () (rem -197 (min -72 215))))
                                (min 98 442719))
-                          #(0 96) :test '=))))
+                          #(0 96) :test '=)))
   0)
 
 (deftest misc.465
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -18822 -1280) a))
                    (declare (optimize (debug 0) (speed 1)
                                       (compilation-speed 3) (safety 0)
                                       (space 0)))
                    (ash (the integer
                           (logand a (if t a (imagpart -2607360))))
-                        (min 79 (catch 'ct7 0)))))
+                        (min 79 (catch 'ct7 0))))
    -17635)
   -17635)
 
@@ -8871,10 +8110,10 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error: -1 is illegal argument to isqrt
 
 (deftest misc.466
-  (funcall (compile nil '(lambda (x)
+  (call-compiled '(lambda (x)
                            (declare (type (member 4 -1) x)
                                     (optimize speed (safety 1)))
-                           (isqrt x)))
+                           (isqrt x))
            4)
   2)
 
@@ -8883,78 +8122,70 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; These are also produced by the special purpose tester in random-type-prop.lsp
 
 (deftest misc.467
-  (funcall
-   (compile nil '(lambda (p2 p3)
+  (call-compiled '(lambda (p2 p3)
                    (declare (optimize speed (safety 1))
                             (type (integer -990888631320) p2)
                             (type (integer -20346 -19755) p3))
-                   (+ -77 (the (integer * -990888630255) p2) p3)))
+                   (+ -77 (the (integer * -990888630255) p2) p3))
    -990888630272 -19756)
   -990888650105)
 
 (deftest misc.468
-  (funcall
-   (compile nil '(lambda (p2 p3)
+  (call-compiled '(lambda (p2 p3)
                    (declare (optimize speed (safety 1))
                             (type (integer * 151075404030) p2)
                             (type (integer 6515518 *) p3))
                    (- 12967657127936 (the (eql 151075403520) p2)
-                      (the (member 6515658 -14) p3))))
+                      (the (member 6515658 -14) p3)))
    151075403520 6515658)
   12816575208758)
 
 (deftest misc.469
-  (funcall
-   (compile nil '(lambda (p2)
+  (call-compiled '(lambda (p2)
                    (declare (optimize speed (safety 1)) (type integer p2))
-                   (+ 30926 (the (integer -4025987543018 *) p2))))
+                   (+ 30926 (the (integer -4025987543018 *) p2)))
    -4025817763840)
   -4025817732914)
 
 (deftest misc.470
-  (funcall
-   (compile nil '(lambda (p2)
+  (call-compiled '(lambda (p2)
                    (declare (optimize speed (safety 1))
                             (type (integer 3689224658939 *) p2))
-                   (+ -1071 (the (integer * 3689229115390) p2))))
+                   (+ -1071 (the (integer * 3689229115390) p2)))
    3689228853248)
   3689228852177)
 
 (deftest misc.471
-  (funcall
-   (compile nil '(lambda (p1 p2)
+  (call-compiled '(lambda (p1 p2)
                    (declare (optimize speed (safety 1))
                             (type (integer -9024844 230253450) p1)
                             (type (eql 35716681856) p2))
-                   (* p1 (the (integer * 35716681856) p2))))
+                   (* p1 (the (integer * 35716681856) p2)))
    -9024809 35716681856)
   -322336231864165504)
 
 (deftest misc.472
-  (funcall
-   (compile nil '(lambda (p1 p2)
+  (call-compiled '(lambda (p1 p2)
                    (declare (optimize speed (safety 1))
                             (type (integer -785238 -80) p1)
                             (type (eql -523213622272) p2))
-                   (min p1 (the integer p2))))
+                   (min p1 (the integer p2)))
    -259 -523213622272)
   -523213622272)
 
 (deftest misc.473
-  (funcall
-   (compile nil '(lambda (p2)
+  (call-compiled '(lambda (p2)
                    (declare (optimize speed (safety 1))
                             (type (integer * 65861934352) p2))
-                   (max 23939 (the (integer 64863825609 65878336765) p2))))
+                   (max 23939 (the (integer 64863825609 65878336765) p2)))
    65861912512)
   65861912512)
 
 (deftest misc.474
-  (funcall
-   (compile nil '(lambda (p1)
+  (call-compiled '(lambda (p1)
                    (declare (optimize speed (safety 1))
                             (type (integer -6750156308) p1))
-                   (logand (the signed-byte p1) -540165229)))
+                   (logand (the signed-byte p1) -540165229))
    -6750156304)
   -7289140848)
 
@@ -8965,48 +8196,44 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.475
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (p1 p2 p3 p4 p6)
+       (call-compiled '(lambda (p1 p2 p3 p4 p6)
                         (declare (optimize speed (safety 1))
                                  (type (integer -785238 61564048) p1)
                                  (type (integer * 65861934352) p2))
                         (+ P1 (THE (INTEGER -485480 -7019) P2) P3 P4
                            463666373060
-                           P6)))
+                           P6))
         61564048 -7457 24939545512 51 730))
   488667475944)
 
 (deftest misc.476
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (p4)
+       (call-compiled '(lambda (p4)
                         (declare (optimize speed (safety 1))
                                  (type (integer -115781893486) p4))
-                        (- 1 -35 0 (the (integer -115778245122) p4) -2)))
+                        (- 1 -35 0 (the (integer -115778245122) p4) -2))
         -115778114900))
   115778114938)
 
 (deftest misc.477
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (p4 p5)
+       (call-compiled '(lambda (p4 p5)
                         (declare (optimize speed (safety 1))
                                  (type (integer -126908726190 -126906628448) p4)
                                  (type (integer * 2202) p5))
-                        (* -1950 -33610502463 2 p4 p5)))
+                        (* -1950 -33610502463 2 p4 p5))
         -126906629040 1839))
   -30591843552678654213361992000)
 
 (deftest misc.478
   (let #+armedbear ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (p2)
+       (call-compiled '(lambda (p2)
                         (declare (optimize speed (safety 1))
                                  (type (integer * 2343679) p2))
-                        (logand 12050257282405 p2 117775123 505354693 -415679150084)))
+                        (logand 12050257282405 p2 117775123 505354693 -415679150084))
         -6189))
   33816832)
 
@@ -9015,37 +8242,37 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.479
   (let ((r (make-array nil :element-type '(unsigned-byte 32)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 32) nil) r)
                                      (type integer p2))
                             (setf (aref r) (logxor 0 (the (integer 2797513123 2798027357) p2)))
-                            (values)))))
-    (funcall fn r 2797674503)
+                            (values))))
+    (call-compiled fn r 2797674503)
     (aref r))
   2797674503)
 
 (deftest misc.480
   (let ((r (make-array nil :element-type 'integer))
-        (fn (compile nil '(lambda (r p1)
+        (fn '(lambda (r p1)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array integer nil) r)
                                      (type (integer -797971 -797511) p1))
                             (setf (aref r) (logeqv p1 15 1078254884158 -12564176924 0 15096591909))
-                            (values)))))
-    (funcall fn r -797965)
+                            (values))))
+    (call-compiled fn r -797965)
     (aref r))
   -1075415510532)
 
 (deftest misc.481
   (let ((r (make-array nil :element-type '(unsigned-byte 16)))
-        (fn (compile nil '(lambda (r p1)
+        (fn '(lambda (r p1)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 16) nil) r)
                                      (type (member 4194309 -123 1692 -4432 -760653 -1741 37) p1))
                             (setf (aref r) (logorc1 (the (eql -4432) p1) 0))
-                            (values)))))
-    (funcall fn r -4432)
+                            (values))))
+    (call-compiled fn r -4432)
     (aref r))
   4431)
 
@@ -9053,134 +8280,134 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.482
   (let ((r (make-array nil :element-type '(unsigned-byte 4)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 4) nil) r)
                                      (type (eql -4) p2))
                             (setf (aref r) (logorc2 13 p2))
-                            (values)))))
-    (funcall fn r -4)
+                            (values))))
+    (call-compiled fn r -4)
     (aref r))
   15)
 
 (deftest misc.483
   (let ((r (make-array nil :element-type '(unsigned-byte 4)))
-        (fn (compile nil '(lambda (r p1 p2)
+        (fn '(lambda (r p1 p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 4) nil) r)
                                      (type (integer * 28306533) p1)
                                      (type (integer * 1245601) p2))
                             (setf (aref r) (logandc1 p1 (the (integer -3308174) p2)))
-                            (values)))))
-    (funcall fn r -519 -28180)
+                            (values))))
+    (call-compiled fn r -519 -28180)
     (aref r))
   4)
 
 (deftest misc.484
   (let ((r (make-array nil :element-type '(unsigned-byte 4)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 4) nil) r)
                                      (type (member 260646 -348969 34359738370 -110167) p2))
                             (setf (aref r) (logandc2 9 (the (eql -348969) p2)))
-                            (values)))))
-    (funcall fn r -348969)
+                            (values))))
+    (call-compiled fn r -348969)
     (aref r))
   8)
 
 (deftest misc.485
   (let ((r (make-array nil :element-type 'bit))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array bit nil) r)
                                      (type (integer -108220 256178) p2))
                             (setf (aref r) (logand 1 (the (member -1 2147483652 1 -5 3802) p2)))
-                            (values)))))
-    (funcall fn r -5)
+                            (values))))
+    (call-compiled fn r -5)
     (aref r))
   1)
 
 (deftest misc.486
   (let ((r (make-array nil :element-type '(unsigned-byte 4)))
-        (fn (compile nil '(lambda (r p1 p2)
+        (fn '(lambda (r p1 p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 4) nil) r)
                                      (type (integer -9) p1)
                                      (type (integer * 1234117) p2))
                             (setf (aref r) (logior (the (integer -295 *) p1) (the (integer -90 *) p2)))
-                            (values)))))
-    (funcall fn r 6 6)
+                            (values))))
+    (call-compiled fn r 6 6)
     (aref r))
   6)
 
 (deftest misc.487
   (let ((r (make-array nil :element-type '(unsigned-byte 16)))
-        (fn (compile nil '(lambda (r p1)
+        (fn '(lambda (r p1)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 16) nil) r)
                                      (type (integer 1583040351 1587341394) p1))
                             (setf (aref r) (logandc2 (the (integer 1587211196 1587341392) p1) -166174))
-                            (values)))))
-    (funcall fn r 1587341392)
+                            (values))))
+    (call-compiled fn r 1587341392)
     (aref r))
   34832)
 
 (deftest misc.488
   (let ((r (make-array nil :element-type '(unsigned-byte 32)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 32) nil) r)
                                      (type (integer 1960409798 1960426181) p2))
                             (setf (aref r) (logorc1 -1 p2))
-                            (values)))))
-    (funcall fn r 1960409801)
+                            (values))))
+    (call-compiled fn r 1960409801)
     (aref r))
   1960409801)
 
 (deftest misc.489
   (let ((r (make-array nil :element-type '(unsigned-byte 32)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 32) nil) r)
                                      (type (integer -55) p2))
                             (setf (aref r) (logorc2 0 (the (member -51) p2)))
-                            (values)))))
-    (funcall fn r -51)
+                            (values))))
+    (call-compiled fn r -51)
     (aref r))
   50)
 
 (deftest misc.490
   (let ((r (make-array nil :element-type '(unsigned-byte 32)))
-        (fn (compile nil '(lambda (r p1)
+        (fn '(lambda (r p1)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (unsigned-byte 32) nil) r)
                                      (type (integer 761639858 1030075825) p1))
                             (setf (aref r) (logior (the (integer * 35389813668) p1) 0))
-                            (values)))))
-    (funcall fn r 1030075308)
+                            (values))))
+    (call-compiled fn r 1030075308)
     (aref r))
   1030075308)
 
 (deftest misc.491
   (let ((r (make-array nil :element-type '(signed-byte 16)))
-        (fn (compile nil '(lambda (r p2)
+        (fn '(lambda (r p2)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (signed-byte 16) nil) r)
                                      (type (integer 505774114 573717424) p2))
                             (setf (aref r) (lognand 58539 (the (integer * 910674467) p2)))
-                            (values)))))
-    (funcall fn r 506608551)
+                            (values))))
+    (call-compiled fn r 506608551)
     (aref r))
   -8356)
 
 (deftest misc.492
   (let ((r (make-array nil :element-type '(signed-byte 8)))
-        (fn (compile nil '(lambda (r p1)
+        (fn '(lambda (r p1)
                             (declare (optimize speed (safety 1))
                                      (type (simple-array (signed-byte 8) nil) r) (type (integer * 22050378) p1))
                             (setf (aref r) (lognand (the (integer 19464371) p1) 2257))
-                            (values)))))
-    (funcall fn r 19469591)
+                            (values))))
+    (call-compiled fn r 19469591)
     (aref r))
   -18)
 
@@ -9190,11 +8417,10 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.493
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (b)
+       (call-compiled '(lambda (b)
                         (declare (optimize (speed 2) (debug 1) (safety 3)
                                            (compilation-speed 3) (space 1)))
-                        (aref #(41397376227 18660605846 49244777443) (min 2 (max 0 b)))))
+                        (aref #(41397376227 18660605846 49244777443) (min 2 (max 0 b))))
         
         -71))
   41397376227)
@@ -9205,18 +8431,16 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.494
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda ()
+       (call-compiled '(lambda ()
                         (declare (optimize (safety 0) (space 2) (debug 3) (speed 0)
                                            (compilation-speed 2)))
-                        (conjugate (progn (catch 'ct5 (if t 0 0)) 0))))))
+                        (conjugate (progn (catch 'ct5 (if t 0 0)) 0)))))
   0)
 
 ;;; The value 5085 is not of type FUNCTION.
 
 (deftest misc.495
-  (funcall
-   (compile nil '(lambda (a b)
+  (call-compiled '(lambda (a b)
                    (declare (type (integer -4197 284380207) a))
                    (declare (type (integer -23 5088) b))
                    (declare (ignorable a b))
@@ -9226,7 +8450,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                  '(169496 -726 -13623 53307916 128 -258391 156
                                           7432659 30 20 -11))
                        0
-                     a)))
+                     a))
    72179019 5084)
   72179019)
 
@@ -9235,26 +8459,24 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.496
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil
+       (call-compiled 
                  '(lambda (a)
                     (declare (type (integer -54915 -3396) a))
                     (declare (optimize (debug 3) (space 0) (safety 2) (speed 2)
                                        (compilation-speed 3)))
-                    (progn (1+ a) (catch 'ct6 (progn 0)))))
+                    (progn (1+ a) (catch 'ct6 (progn 0))))
         -25986))
   0)
 
 (deftest misc.497
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil
+       (call-compiled 
                  '(lambda (b)
                     (declare (type (integer -1 0) b))
                     (declare (optimize (space 3) (compilation-speed 1)
                                        (safety 0) (debug 1) (speed 0)))
-                    (if 0 (prog2 0 0 (1+ b)) 0)))
+                    (if 0 (prog2 0 0 (1+ b)) 0))
         0))
   0)
 
@@ -9263,15 +8485,14 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.498
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil
+       (call-compiled 
                  '(lambda (a)
                     (declare (type (integer -16191 4) a))
                     (declare (optimize (compilation-speed 2) (space 1) (debug 0)
                                        (safety 0) (speed 2)))
                     (conjugate (dotimes (iv1 0 0)
                                  (let ((v2 (dotimes (iv3 0 0) (1+ a))))
-                                   0)))))
+                                   0))))
         -2840))
   0)
 
@@ -9280,26 +8501,24 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.499
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil
+       (call-compiled 
                  '(lambda (a b)
                     (declare (type (integer -31415 133871) a))
                     (declare (type (integer -993 6448) b))
                     (declare (ignorable a b))
                     (declare (optimize (space 0) (debug 2) (safety 0) (speed 0)
                                        (compilation-speed 0)))
-                    (progn (ceiling (progn (1+ b) a)) a)))
+                    (progn (ceiling (progn (1+ b) a)) a))
         -16435 2620))
   -16435)
 
 ;;; Stack overflow during compilation
 
 (deftest misc.500
-  (funcall
-   (compile nil '(lambda nil
+  (call-compiled '(lambda nil
                    (declare (optimize (space 2) (debug 2) (compilation-speed 2)
                                       (speed 1) (safety 3)))
-                   (the integer (integer-length (dotimes (iv4 2 15790955)))))))
+                   (the integer (integer-length (dotimes (iv4 2 15790955))))))
   24)
 
 ;;; Inconsistent stack height 1 != 0
@@ -9307,25 +8526,23 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.501
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -437165353 179983908) a))
                         (declare (optimize (compilation-speed 0) (debug 1) (space 1)
                                            (safety 2) (speed 1)))
-                        (dotimes (iv1 0 0) (1+ a))))
+                        (dotimes (iv1 0 0) (1+ a)))
         1))
   0)
 
 ;;; Ordering problems
 
 (deftest misc.502
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -7 84717795) a))
                    (declare (ignorable a))
                    (declare (optimize (speed 1) (space 1) (debug 1) (safety 2)
                                       (compilation-speed 0)))
-                   (+ a (setq a 35035201))))
+                   (+ a (setq a 35035201)))
    29207264)
   64242465)
 
@@ -9333,8 +8550,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Different results
 
 (deftest misc.503
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (optimize (space 3) (debug 1) (speed 2) (safety 0)
                                       (compilation-speed 1)))
                    (catch 'ct1
@@ -9342,7 +8558,7 @@ Broken at C::WT-MAKE-CLOSURE.
                             (catch 'ct5
                               (reduce 'min
                                       (vector 0 0 0 a a 0 0 (values 0 0) (throw 'ct5 -6))
-                                      :end 8 :start 6 :from-end t))))))
+                                      :end 8 :start 6 :from-end t)))))
    17)
   -6)
 
@@ -9351,48 +8567,44 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.504
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer 196060 241373941) a))
                         (declare (ignorable a))
                         (declare (optimize (speed 3) (debug 0) (safety 2)
                                            (compilation-speed 3) (space 2)))
-                        (prog2 (if 0 (+ a a) 0) 0)))
+                        (prog2 (if 0 (+ a a) 0) 0))
         200000))
   0)
 
 (deftest misc.505
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -6 5) a))
                         (declare (optimize (speed 3) (space 0) (safety 2)
                                            (compilation-speed 2) (debug 3)))
-                        (dotimes (iv1 0 0) (+ a a))))
+                        (dotimes (iv1 0 0) (+ a a)))
         1))
   0)
 
 (deftest misc.506
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -53 49) a))
                         (declare (optimize (debug 0) (compilation-speed 1) (space 2)
                                            (safety 0) (speed 0)))
-                        (unwind-protect (+ a a) 0)))
+                        (unwind-protect (+ a a) 0))
         -38))
   -76)
 
 ;;; The value 15390 is not of type FUNCTION.
 (deftest misc.507
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer 2697 13005) a))
                    (declare (optimize (debug 0) (space 2) (speed 2)
                                       (compilation-speed 3) (safety 3)))
-                   (truncate (prog1 0 a (+ a a)))))
+                   (truncate (prog1 0 a (+ a a))))
    7695)
   0 0)
 
@@ -9402,8 +8614,7 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.508
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -57853147 -2) a))
                         (declare (ignorable a))
                         (declare (optimize (debug 2) (space 1) (compilation-speed 3)
@@ -9411,15 +8622,14 @@ Broken at C::WT-MAKE-CLOSURE.
                         (the integer
                           (mask-field (byte 2 29)
                                       (ash (multiple-value-setq (a) -51781613)
-                                           (min 1 a))))))
+                                           (min 1 a)))))
         -29324754))
   1610612736)
 
 (deftest misc.509
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -38984312 657) a))
                         (declare (ignorable a))
                         (declare (optimize (debug 1) (compilation-speed 1) (speed 1)
@@ -9429,33 +8639,31 @@ Broken at C::WT-MAKE-CLOSURE.
                               116871
                             (cl:handler-case
                              (multiple-value-setq (a)
-                               -34832621))))))
+                               -34832621)))))
         -26788929))
   116871)
 
 (deftest misc.510
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -2827 3400) a))
                         (declare (optimize (compilation-speed 1) (space 3) (debug 1)
                                            (safety 0) (speed 1)))
-                        (logand (the integer (dotimes (iv4 2 a) (progn iv4))))))
+                        (logand (the integer (dotimes (iv4 2 a) (progn iv4)))))
         155))
   155)
 
 (deftest misc.511
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer 18967 23584) a))
                         (declare (ignorable a))
                         (declare (optimize (space 1) (speed 1) (debug 1)
                                            (compilation-speed 3) (safety 1)))
                         (the integer
-                          (values (loop for lv4 below 2 count (find a '(16389)))))))
+                          (values (loop for lv4 below 2 count (find a '(16389))))))
         21352))
   0)
 
@@ -9464,8 +8672,7 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.512
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer 1 188902468) a))
                         (declare (ignorable a))
                         (declare (optimize (space 2) (speed 3) (safety 3)
@@ -9485,7 +8692,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                                  (setf v3
                                                        (let* ((v9 v3))
                                                          a))))
-                                              (t -639367819)))))))))
+                                              (t -639367819))))))))
         49008586))
   -639367819
   0)
@@ -9496,8 +8703,7 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.513
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -2 75025568) a))
                         (declare (ignorable a))
                         (declare (optimize (space 0) (compilation-speed 0) (safety 0)
@@ -9510,19 +8716,18 @@ Broken at C::WT-MAKE-CLOSURE.
                                           (ignore-errors (progn (tagbody) -49510826))
                                           a))
                                       0)))
-                          0)))
+                          0))
         68043554))
   0)
 
 (deftest misc.514
   (let #+abcl ((jvm::*catch-errors* nil))
        nil
-       (funcall
-        (compile nil '(lambda (a)
+       (call-compiled '(lambda (a)
                         (declare (type (integer -6844832476 188341751) a))
                         (declare (optimize (speed 3) (debug 1) (safety 0) (space 3)
                                            (compilation-speed 1)))
-                        (the integer (multiple-value-setq (a) -96073358))))
+                        (the integer (multiple-value-setq (a) -96073358)))
         -3792864899))
   -96073358)
 
@@ -9530,35 +8735,32 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Issue with dynamic extent
 
 (deftest misc.515
-  (funcall
-   (compile nil '(lambda (a)
+  (call-compiled '(lambda (a)
                    (declare (type (integer -1337016312 832159784) a))
                    (declare (optimize speed (safety 1)))
                    (let* ((y 0)
                           (v9 0))
                      (declare (dynamic-extent v9))
                      (setq v9 (+ a a))
-                     (setq y (1+ v9)))))
+                     (setq y (1+ v9))))
    -1209913207)
   -2419826413)
 
 (deftest misc.516
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                          (declare (optimize (space 0) (debug 0) (safety 2)
                                             (compilation-speed 3) (speed 1)))
                          (let ((*s2* (* -507991378 14)))
                               (declare (dynamic-extent *s2*))
                               (declare (special *s2*))
-                              (1+ *s2*)))))
+                              (1+ *s2*))))
   -7111879291)
 
 ;;; gcl 29 Dec 2004
 ;;; Interference of special variable bindings?
 
 (deftest misc.517
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (safety 3) (space 3) (debug 1) (speed 1)
                                       (compilation-speed 0)))
                    (let* ((*s8* (let ((*s8* (make-array nil :initial-element 0)))
@@ -9566,14 +8768,13 @@ Broken at C::WT-MAKE-CLOSURE.
                                   (progn (shiftf (aref *s8*) 31508066) 0))
                                 ))
                      (declare (special *s8*))
-                     0))))
+                     0)))
   0)
 
 ;;; Incorrect return value
 
 (deftest misc.518
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (compilation-speed 0) (safety 1)
                                       (debug 1) (space 0) (speed 3)))
                    (flet ((%f10 (&optional (f10-1 0) (f10-2 0) &key)
@@ -9585,16 +8786,14 @@ Broken at C::WT-MAKE-CLOSURE.
                                               0))
                                    tag7)
                                   f10-2)))
-                     (if (evenp (%f10 0 0)) 0 2140390)))))
+                     (if (evenp (%f10 0 0)) 0 2140390))))
   2140390)
 
 ;;; Error in APPLY [or a callee]: fixnum or bignum expected
 ;;; Broken at COMPILER::CMP-ANON.
 
 (deftest misc.519
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (compilation-speed 0) (speed 1) (debug 1)
                           (space 1) (safety 3)))
@@ -9605,16 +8804,14 @@ Broken at C::WT-MAKE-CLOSURE.
                               (make-array nil :initial-element 0)
                             (shiftf (aref *s3*) 0)))
                          2)))))
-         1))))
+         1)))
   1)
 
 ;;; sbcl 0.8.18 (sparc solaris)
 ;;;  identity ASH not transformed away
 
 (deftest misc.520
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a c e)
       (declare (type (integer -44330 64753) c))
       (declare (type (integer -301534047 4291509) e))
@@ -9624,7 +8821,7 @@ Broken at C::WT-MAKE-CLOSURE.
            (ash (logorc2 c e)
                 (min 2 (mask-field (byte 0 0) (mod 0 (max 69 0))))))
        a
-       0)))
+       0))
    1 -8156 -229264929)
   0)
 
@@ -9632,9 +8829,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error: In a call to AREF, the type of the form *S6* is FIXNUM, not (ARRAY *).
 
 (deftest misc.521
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (speed 0) (safety 1) (debug 1) (compilation-speed 3)
                           (space 0)))
@@ -9642,16 +8837,14 @@ Broken at C::WT-MAKE-CLOSURE.
            (let ((*s6* 0))
              0)
          (let* ((*s6* (make-array nil :initial-element 0)))
-           (aref *s6*)))))
+           (aref *s6*))))
    nil)
   0)
 
 ;;; nil is not of type number.
 
 (deftest misc.522
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -25 38) a))
        (declare (optimize (compilation-speed 3) (safety 3) (debug 1) (space 2) (speed 1)))
@@ -9665,16 +8858,14 @@ Broken at C::WT-MAKE-CLOSURE.
                      0)))
          (reduce #'(lambda (lmv1 lmv6) a)
                  (vector 0 0 0 (%f2 a a) 0 a 0 a 0)
-                 :start 4 :from-end t))))
+                 :start 4 :from-end t)))
    35)
   35)
 
 ;;; Incorrect return value
 
 (deftest misc.523
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -1011 978) a))
        (declare (optimize (compilation-speed 1) (safety 3) (debug 0) (speed 2) (space 1)))
@@ -9689,16 +8880,14 @@ Broken at C::WT-MAKE-CLOSURE.
                             (lognor (throw 'ct8 (shiftf a 332))
                                     (let ((v1 (setf a 371)))
                                       a))))))))
-         a)))
+         a))
    99)
   332)
 
 ;;; Seg fault
 
 (deftest misc.524
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer -2432551 871) a))
        (declare (type (integer -6390 -1) b))
@@ -9712,16 +8901,14 @@ Broken at C::WT-MAKE-CLOSURE.
                                &allow-other-keys)
                               0))
                       (%f12 a))))
-         (%f18 a 0 0))))
+         (%f18 a 0 0)))
    -925293 -1603)
   0)
 
 ;;; Internal error: tried to advance stack.
 
 (deftest misc.525
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -17179869184 -2147483648) a))
        (declare (ignorable a))
@@ -9729,16 +8916,14 @@ Broken at C::WT-MAKE-CLOSURE.
         (optimize (space 2) (debug 3) (speed 3) (compilation-speed 3) (safety 1)))
        (catch 'ct4
          (max (conjugate (unwind-protect 0 (catch 'ct4 (values 0))))
-              (throw 'ct4 0)))))
+              (throw 'ct4 0))))
    -17179869184)
   0)
 
 ;;; integer does not specify a sequence type
 
 (deftest misc.526
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -4 3025867) a))
        (declare (ignorable a))
@@ -9772,7 +8957,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                        0)))
                                (if (%f11 f14-1 (%f11 0 f14-3) f14-1) 0 0)))))
                       0)))
-         (%f14 0 a a))))
+         (%f14 0 a a)))
    857304)
   0)
 
@@ -9787,15 +8972,13 @@ Broken at C::WT-MAKE-CLOSURE.
                         :initial-contents '(1)
                         :fill-pointer 1))
         (r (make-array nil)))
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       `(lambda  (r p2)
          (declare (optimize speed (safety 1))
                   (type (simple-array t nil) r)
                   (type (array *) p2))
          (setf (aref r) (bit-and ,v1 (the (bit-vector *) p2)))
-         (values)))
+         (values))
      r v2)
     (let ((result (aref r)))
       (values
@@ -9817,7 +9000,7 @@ Broken at C::WT-MAKE-CLOSURE.
                   (values)))
          (r (make-array nil :element-type 'single-float))
          (expected (* x y)))
-    (funcall (compile nil form) r y)
+    (call-compiled form r y)
     (let ((actual (aref r)))
       (unless (eql expected actual)
         (list expected actual))))
@@ -9836,7 +9019,7 @@ Broken at C::WT-MAKE-CLOSURE.
                   (values)))
          (r (make-array nil :element-type 'single-float))
          (expected (+ x y)))
-    (funcall (compile nil form) r y)
+    (call-compiled form r y)
     (let ((actual (aref r)))
       (unless (eql expected actual)
         (list expected actual))))
@@ -9861,7 +9044,7 @@ Broken at C::WT-MAKE-CLOSURE.
              (setf (aref r)
                    (array-has-fill-pointer-p ,v))))
          (r (make-array nil)))
-    (funcall (compile nil form) r)
+    (call-compiled form r)
     (eqlt (aref r) (array-has-fill-pointer-p v)))
   t)
 
@@ -9871,15 +9054,13 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.532
   (let ((r (make-array nil :element-type 'base-char)))
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       '(lambda (r c)
          (declare (optimize speed (safety 1))
                   (type (simple-array base-char nil) r)
                   (type base-char c))
          (setf (aref r) c)
-         (values)))
+         (values))
      r #\Z)
     (aref r))
   #\Z)
@@ -9895,9 +9076,8 @@ Broken at C::WT-MAKE-CLOSURE.
                            (type (simple-array t nil) r)
                            (type number p1))
                   (setf (aref r) (+ (the (eql ,c) p1) -319284))
-                  (values)))
-         (fn (compile nil form)))
-    (funcall fn r c)
+                  (values))))
+    (call-compiled form r c)
     (eqlt (aref r) (+ -319284 c)))
   t)
 
@@ -9906,9 +9086,7 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.534
   (let ((r0 (make-array nil)))
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       '(lambda (r p1 p2 p3)
          (declare (optimize speed (safety 1))
                   (type (eql 4134713351/6105637898) p2)
@@ -9916,7 +9094,7 @@ Broken at C::WT-MAKE-CLOSURE.
          (setf (aref r)
                (if p1
                    (the (eql 4134713351/6105637898) p2)
-                 (the (integer * 8391301) p3)))))
+                 (the (integer * 8391301) p3))))
      r0 t 4134713351/6105637898 2685)
     (aref r0))
   4134713351/6105637898)
@@ -9935,28 +9113,24 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.535
   (let ((c0 #c(4196.088977268509d0 -15943.3603515625d0)))
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       `(lambda (p1 p2)
          (declare (optimize speed (safety 1))
                   (type (simple-array t nil) r)
                   (type (eql ,c0) p1)
                   (type number p2))
-         (eql (the (complex double-float) p1) p2)))
+         (eql (the (complex double-float) p1) p2))
      c0 #c(12 612/979)))
   nil)
 
 ;;; Similar to misc.535
 (deftest misc.536
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1 p2)
        (declare (optimize speed (safety 1))
                 (type (eql #c(11963908204 1/6)) p1)
                 (type (complex rational) p2))
-       (eql p1 (the complex p2))))
+       (eql p1 (the complex p2)))
    #c(11963908204 1/6) #c(2343315619 5252231066))
   nil)
 
@@ -9965,14 +9139,12 @@ Broken at C::WT-MAKE-CLOSURE.
   (let ((p1 (make-array '(0) :element-type 'bit
                         :adjustable t)))
     (notnot
-     (funcall
-      (compile
-       nil
+     (call-compiled 
        `(lambda (p2)
           (declare (optimize speed (safety 1))
                    (type (simple-array t nil) r)
                    (type (simple-bit-vector 0) p2))
-          (equal ,p1 (the (bit-vector 0) p2))))
+          (equal ,p1 (the (bit-vector 0) p2)))
       #*)))
   t)
 
@@ -9989,11 +9161,10 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.539
   (notnot-mv
    (complexp
-    (funcall
-     (compile nil '(lambda (x)
+    (call-compiled '(lambda (x)
                      (declare (OPTIMIZE SPEED (SAFETY 1))
                               (type (eql #c(0 -8)) x))
-                     (sqrt x)))
+                     (sqrt x))
      #c(0 -8))))
   t)
 
@@ -10034,26 +9205,22 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Object identity for bit vectors
 
 (deftest misc.542
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     (let ((bv1 (copy-seq #*1))
           (bv2 (copy-seq #*1)))
-      `(lambda () (eq ,bv1 ,bv2)))))
+      `(lambda () (eq ,bv1 ,bv2))))
   nil)
 
 ;;; Lispworks personal edition 4.3 (x86 linux)
 ;;; Error: In PLUSP of (#C(1123113 -260528)) arguments should be of type REAL.
 
 (deftest misc.543
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1)
         (declare (optimize speed (safety 1))
                  ; (type (simple-array t nil) r)
                  (type (integer 2493220 2495515) p1))
-        (* p1 #c(1123113 -260528))))
+        (* p1 #c(1123113 -260528)))
    2493726)
   #C(2800736089038 -649685447328))
 
@@ -10063,13 +9230,11 @@ Broken at C::WT-MAKE-CLOSURE.
   (let ((n -1.0l0))
     (notnot-mv
      (complexp
-      (funcall
-       (compile
-        nil
+      (call-compiled 
         `(lambda (p1)
            (declare (optimize speed (safety 1))
                     (type (long-float ,n 0.0l0) p1))
-           (sqrt p1)))
+           (sqrt p1))
          n))))
   t)
 
@@ -10087,26 +9252,22 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; The function SB-KERNEL:CHARACTER-STRING-P is undefined.
 
 (deftest misc.546
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1)
        (declare (optimize (speed 0) (safety 1) (debug 2) (space 3))
                 (type (eql a) p1))
-       (typep p1 (type-of ""))))
+       (typep p1 (type-of "")))
    'a)
   nil)
 
 ;;; The function SB-KERNEL:SIMPLE-CHARACTER-STRING-P is undefined.
 
 (deftest misc.547
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1)
        (declare (optimize (speed 3) (safety 3) (debug 0) (space 3))
                 (type symbol p1))
-       (typep (the (eql :c1) p1) (type-of "b"))))
+       (typep (the (eql :c1) p1) (type-of "b")))
    :c1)
   nil)
 
@@ -10114,70 +9275,59 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.548
   (notnot
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
         (declare (optimize (speed 2) (safety 1) (debug 3) (space 2)))
-        (atom (the (member f assoc-if write-line t w) p1))))
+        (atom (the (member f assoc-if write-line t w) p1)))
     t))
   t)
 
 ;;; IR2 type checking of unused values in [sic] not implemented. 
 
 (deftest misc.549
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p2)
        (declare (optimize (speed 1) (safety 1) (debug 0) (space 3))
                 (type symbol p2))
-       (and :a (the (eql t) p2))))
+       (and :a (the (eql t) p2)))
    t)
   t)
 
 (deftest misc.550
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1 p2)
        (declare (optimize (speed 3) (safety 2) (debug 3) (space 3))
                 (type atom p1)
                 (type symbol p2))
-       (or p1 (the (eql t) p2))))
+       (or p1 (the (eql t) p2)))
    nil t)
   t)
 
 (deftest misc.551
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1 p2)
        (declare (optimize (speed 1) (safety 1) (debug 3) (space 3))
                 (type symbol p1)
                 (type (integer * 55687) p2))
-       (funcall (the (eql +) p1) (the (integer -93015310 16215) p2) 2952)))
+       (funcall (the (eql +) p1) (the (integer -93015310 16215) p2) 2952))
    '+ 823)
   3775)
 
 (deftest misc.551a
-  (funcall
-   (compile nil '(lambda (x) (declare (optimize (speed 2))
+  (call-compiled '(lambda (x) (declare (optimize (speed 2))
                                       (type symbol x))
-                   (the (eql t) x)))
+                   (the (eql t) x))
    t)
   t)
 
 ;;; cmucl (mar 2005 snapshot)
 
 (deftest misc.552
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1)
        (declare (optimize (speed 3) (safety 1) (debug 2) (space 2))
                 (type unsigned-byte p1))
-       (logbitp (the (integer -780969457 *) p1) 9)))
+       (logbitp (the (integer -780969457 *) p1) 9))
    26)
   nil)
 
@@ -10185,13 +9335,13 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; REAL is not of type REAL.
 
 (deftest misc.553
-  (funcall (compile nil '(lambda (x) (declare (type (eql #c(1.0 2.0)) x)) x))
+  (call-compiled '(lambda (x) (declare (type (eql #c(1.0 2.0)) x)) x)
            #c(1.0 2.0))
   #c(1.0 2.0))
 
 ;;; 1 is not of type SEQUENCE
 (deftest misc.554
-  (funcall (compile nil '(lambda (x) (declare (type (array t 1) x)) x)) #(a))
+  (call-compiled '(lambda (x) (declare (type (array t 1) x)) x) #(a))
   #(a))
 
 ;;; sbcl 5 Mar 2005
@@ -10199,11 +9349,10 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.555
   (notnot
-   (funcall
-    (compile nil '(lambda (p1)
+   (call-compiled '(lambda (p1)
                     (declare (optimize (speed 1) (safety 2) (debug 2) (space 0))
                              (type keyword p1))
-                    (keywordp p1)))
+                    (keywordp p1))
     :c))
   t)
 
@@ -10211,14 +9360,13 @@ Broken at C::WT-MAKE-CLOSURE.
 ; Wrong return value
 (deftest misc.556
   (values
-   (funcall
-    (compile nil '(lambda (p1 p2)
+   (call-compiled '(lambda (p1 p2)
                     (declare
                      (optimize (speed 1) (safety 0)
                                (debug 0) (space 0))
                      (type (member 8174.8604) p1)
                      (type (member -95195347) p2))
-                    (floor p1 p2)))
+                    (floor p1 p2))
     8174.8604 -95195347))
   -1)
 
@@ -10226,13 +9374,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ; (possible removal of code due to type fumble)
 (deftest misc.557
   (values
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
         (declare (optimize (speed 3) (safety 0) (debug 3) (space 1))
                  (type (member -94430.086f0) p1))
-        (floor (the single-float p1) 19311235)))
+        (floor (the single-float p1) 19311235))
     -94430.086f0))
   -1)
 
@@ -10240,14 +9386,12 @@ Broken at C::WT-MAKE-CLOSURE.
 ; Wrong return value
 (deftest misc.558
   (values
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
               (declare (optimize (speed 1) (safety 2)
                                  (debug 2) (space 3))
                        (type (eql -39466.56f0) p1))
-              (ffloor p1 305598613)))
+              (ffloor p1 305598613))
     -39466.56f0))
   -1.0f0)
 
@@ -10255,27 +9399,23 @@ Broken at C::WT-MAKE-CLOSURE.
 ;  invalid number of arguments: 1
 (deftest misc.559
   (values
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
         (declare (optimize (speed 1) (safety 1) (debug 1) (space 2))
                  (type (eql -83232.09f0) p1))
-        (ceiling p1 -83381228)))
+        (ceiling p1 -83381228))
     -83232.09f0))
   1)
 
 ; wrong return value
 (deftest misc.560
   (values
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
         (declare (optimize (speed 1) (safety 1)
                            (debug 1) (space 0))
                  (type (member -66414.414f0) p1))
-        (ceiling p1 -63019173f0)))
+        (ceiling p1 -63019173f0))
     -66414.414f0))
   1)
 
@@ -10283,14 +9423,12 @@ Broken at C::WT-MAKE-CLOSURE.
 ; wrong return value
 (deftest misc.561
   (values
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1)
         (declare (optimize (speed 0) (safety 1)
                            (debug 0) (space 1))
                  (type (eql 20851.398f0) p1))
-        (fceiling p1 80839863)))
+        (fceiling p1 80839863))
     20851.398f0))
   1.0f0)
 
@@ -10302,17 +9440,17 @@ Broken at C::WT-MAKE-CLOSURE.
                (declare (optimize (speed 0) (safety 0) (debug 0) (space 2))
                         (type (complex rational) p1))
                (log p1))))
-    (notnot (complexp (funcall (compile nil fn) #C(-215549 39/40)))))
+    (notnot (complexp (call-compiled fn #C(-215549 39/40)))))
   t)
 
 ;;; CONJUGATE
 ;;; Wrong result (#c(1 2))
 
 (deftest misc.563
-  (funcall (compile nil '(lambda (x)
+  (call-compiled '(lambda (x)
                            (declare (optimize (speed 1) (safety 0) (debug 3) (space 1))
                                     (type (complex rational) x))
-                           (conjugate (the (eql #c(1 2)) x))))
+                           (conjugate (the (eql #c(1 2)) x)))
            #c(1 2))
   #c(1 -2))
 
@@ -10322,13 +9460,11 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.564
   (notnot
    (typep
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       '(lambda (p1)
          (declare (optimize (speed 3) (safety 2) (debug 3) (space 0))
                   (type complex p1))
-         (phase (the (eql #c(1.0d0 2.0d0)) p1))))
+         (phase (the (eql #c(1.0d0 2.0d0)) p1)))
      #c(1.0d0 2.0d0))
     'double-float))
   t)
@@ -10337,13 +9473,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect return value (t instead of nil)
 
 (deftest misc.565
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (x)
        (declare (optimize (speed 2) (safety 1) (debug 3) (space 0))
                 (type double-float x))
-       (not (the (eql 1.0d0) x))))
+       (not (the (eql 1.0d0) x)))
    1.0d0)
   nil)
 
@@ -10351,13 +9485,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect value (59 == (ash p1 -3))
 
 (deftest misc.566
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p1)
                  (declare (optimize (speed 3) (safety 2) (debug 2) (space 0))
                           (type (integer 465 127871) p1))
-                 (ash p1 -35)))
+                 (ash p1 -35))
    477)
   0)
 
@@ -10366,13 +9498,11 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.567
   (eqlt
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p2)
         (declare (optimize (speed 3) (safety 1) (debug 0) (space 1))
                  (type (integer -26794287907 505600792) p2))
-        (scale-float -15193.341216130497d0 (the (integer * 25) p2))))
+        (scale-float -15193.341216130497d0 (the (integer * 25) p2)))
     -4)
    (scale-float -15193.341216130497d0 -4))
   t)
@@ -10383,31 +9513,28 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error: Attempt to divide 13026.059 by zero.
 (deftest misc.568
   (values
-   (funcall
-   (compile nil '(lambda (p2)
+   (call-compiled '(lambda (p2)
                   (declare (optimize (speed 1) (safety 3) (debug 3) (space 1))
                    (type (rational * 5325/3112) p2))
-                  (floor 13026.059 (the (member 5325/3112 0 -2316/167 -449/460) p2))))
+                  (floor 13026.059 (the (member 5325/3112 0 -2316/167 -449/460) p2)))
    5325/3112))
   7612)
 
 ;;; Error: Attempt to take the car of #2\%b which is not listp.
 (deftest misc.569
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p2)
       (declare (optimize (speed 3) (safety 2) (debug 1) (space 2))
        (type t p2))
-      (ash -2609443 (the (integer -3 0) p2))))
+      (ash -2609443 (the (integer -3 0) p2)))
    -1)
   -1304722)
 
 ;;; Incorrect return value
 (deftest misc.570
-  (funcall (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                           (declare (optimize (speed 3) (safety 1)))
-                          (char-equal #\: #\: #\;))))
+                          (char-equal #\: #\: #\;)))
   nil)
 
 ;;; CODE-CHAR returns incorrect result
@@ -10417,9 +9544,9 @@ Broken at C::WT-MAKE-CLOSURE.
   (and (< 1000 char-code-limit)
        (let ((c1 (code-char 1000))
              (c2
-              (funcall (compile nil '(lambda (x)
+              (call-compiled '(lambda (x)
                                       (declare (optimize speed (safety 1)))
-                                      (code-char x)))
+                                      (code-char x))
                        1000)))
          (if (not (eql c1 c2))
              (list c1 c2)
@@ -10430,40 +9557,34 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; The value 22 is not of type (MOD 22).
 
 (deftest misc.572
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p4)
        (declare (optimize (speed 1) (safety 2) (debug 1) (space 1))
                 (type (integer -59 65558) p4))
        (string<= #.(coerce "1yapt1l7eeenz72u6xqhdfimcyk" 'base-string)
                  #.(coerce "bababababbbabbabbababb" 'base-string)
                  :start2
-                 (the (integer -3735 *) p4))))
+                 (the (integer -3735 *) p4)))
    22)
   nil)
 
 ;;; The value 0 is not of type NIL.
 
 (deftest misc.573
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p4)
        (declare (optimize (speed 2) (safety 1) (debug 2) (space 2))
                 (type unsigned-byte p4))
        (string<= (coerce "pdhd5oeynvqlthz3xrrdycotf" 'base-string)
                  (coerce "" 'base-string)
-                 :start1 (the (integer * 81) p4))))
+                 :start1 (the (integer * 81) p4)))
    10)
   nil)
 
 ;;; incorrect return value
 
 (deftest misc.574
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p4)
        (declare (optimize (speed 3) (safety 1)
                           (debug 1) (space 2))
@@ -10478,7 +9599,7 @@ Broken at C::WT-MAKE-CLOSURE.
                                    9
                                    -3305367300
                                    335)
-                         p4))))
+                         p4)))
    9)
   9)
 
@@ -10505,7 +9626,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; The value "" is not of type (STRING 1).
 
 (deftest misc.578
-  (funcall (compile nil '(lambda (p1) (declare (optimize safety)) (the (string 1) p1)))
+  (call-compiled '(lambda (p1) (declare (optimize safety)) (the (string 1) p1))
            (make-array '(1) :element-type 'base-char :initial-element #\x
                        :fill-pointer 0))
   "")
@@ -10515,10 +9636,9 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; *** - SYSTEM::%RPLACA: NIL is not a pair
 
 (deftest misc.579
-  (funcall
-   (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                    (declare (optimize (speed 3) (safety 3) (debug 3) (space 0)))
-                   (member 61 '(432445) :allow-other-keys t :foo t))))
+                   (member 61 '(432445) :allow-other-keys t :foo t)))
   nil)
 
 ;;; sbcl 0.8.20.19
@@ -10533,21 +9653,19 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.581
   (notnot
    (floatp
-    (funcall
-     (compile nil '(lambda (x)
+    (call-compiled '(lambda (x)
                      (declare (type (eql -5067.2056) x))
-                     (+ 213734822 x)))
+                     (+ 213734822 x))
      -5067.2056)))
   t)
 
 (deftest misc.581a
   (notnot
    (typep
-    (funcall
-     (compile nil '(lambda (x) (declare (type (eql -1.0) x))
+    (call-compiled '(lambda (x) (declare (type (eql -1.0) x))
                      ;;; Note!  #x1000001 is the least positive integer
                      ;;; for which this fails on x86
-                     (+ #x1000001 x)))
+                     (+ #x1000001 x))
      -1.0f0)
     'single-float))
   t)
@@ -10556,13 +9674,11 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.582
   (let ((result
-         (funcall
-          (compile
-           nil
+         (call-compiled 
            ' (lambda (p1)
                (declare (optimize (speed 0) (safety 1) (debug 1) (space 1))
                         (type (eql -39887.645) p1))
-               (mod p1 382352925)))
+               (mod p1 382352925))
           -39887.645)))
     (if (plusp result)
         t
@@ -10574,13 +9690,11 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.583
   (notnot-mv
    (complexp
-    (funcall
-     (compile
-      nil
+    (call-compiled 
       '(lambda (p1)
          (declare (optimize (speed 0) (safety 0) (debug 2) (space 3))
                   (type (complex rational) p1))
-         (sqrt p1)))
+         (sqrt p1))
      #c(-9003 -121))))
   t)
 
@@ -10588,14 +9702,12 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.584
   (approx=
-   (funcall
-    (compile
-     nil
+   (call-compiled 
      '(lambda (p1 p2)
         (declare (optimize (speed 1) (safety 1) (debug 0) (space 1))
                  (type (member -3712.8447) p1)
                  (type (integer -34359738403 -24) p2))
-        (scale-float p1 p2)))
+        (scale-float p1 p2))
     -3712.8447 -27)
    (scale-float -3712.8447 -27))
   t)
@@ -10604,26 +9716,23 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (note that this test has no THE form)
 
 (deftest misc.585
-  (funcall
-   (compile nil '(lambda (p1)
+  (call-compiled '(lambda (p1)
                    (declare (optimize (speed 0) (safety 0) (debug 3) (space 3))
                             (type symbol p1))
-                   (copy-list p1)))
+                   (copy-list p1))
    nil)
   nil)
 
 ;;; The value 4 is not of type (UNSIGNED-BYTE 2).
 
 (deftest misc.586
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p6)
        (declare (optimize (speed 0) (safety 2) (debug 0) (space 0))
                 (type (integer -2 3009181) p6))
        (string> (coerce "ababaaabb" 'base-string)
                 (coerce "ubbm" 'base-string)
-                :start1 2 :start2 p6 :end1 8)))
+                :start1 2 :start2 p6 :end1 8))
    4)
   2)
 
@@ -10631,13 +9740,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Control stack exhausted
 
 (deftest misc.587
-  (let ((result (funcall
-                 (compile
-                  nil
+  (let ((result (call-compiled 
                   '(lambda (p2)
                      (declare (optimize (speed 0) (safety 3) (debug 1) (space 0))
                               (type (eql 33558541) p2))
-                     (- 92215.266 p2)))
+                     (- 92215.266 p2))
                  33558541)))
     (notnot (typep result 'single-float)))
   t)
@@ -10646,8 +9753,8 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect return value (T instead of NIL)
 
 (deftest misc.588
-  (funcall (compile nil '(lambda nil (declare (optimize (speed 2) (safety 1) (debug 1) (space 1)))
-                           (functionp 3502843))))
+  (call-compiled '(lambda nil (declare (optimize (speed 2) (safety 1) (debug 1) (space 1)))
+                           (functionp 3502843)))
   nil)
 
 ;;;  (ARRAY NIL) is an illegal type specifier.
@@ -10659,7 +9766,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Segmentation violation
 
 (deftest misc.590
-  (funcall (compile nil '(lambda nil (declare (optimize debug)) (symbolp -86755))))
+  (call-compiled '(lambda nil (declare (optimize debug)) (symbolp -86755)))
   nil)
 
 ;;; parse-integer fails on displaced base strings
@@ -10684,9 +9791,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; *** - Compiler bug!! Occurred in SP-DEPTH at <0.
 
 (deftest misc.593
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (ignorable a b))
        (declare (optimize (space 3) (debug 0) (safety 1)
@@ -10695,7 +9800,7 @@ Broken at C::WT-MAKE-CLOSURE.
            (catch 'ct1 (if (or (and t (not (and (and (or a t) nil) nil))) nil)
                            a
                          (reduce #'(lambda (lmv5 lmv2) 0) (vector b 0 a))))
-           0)))
+           0))
    2212755 3154856)
   0)
 
@@ -10703,9 +9808,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; 28192897: value doesn't match constraint :U8CONST in template for CCL::MATCH-VREG
 
 (deftest misc.594
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (ignorable a b c))
        (declare (type (integer -1 0) a)
@@ -10713,7 +9816,7 @@ Broken at C::WT-MAKE-CLOSURE.
                 (type (integer 30074 1948824693) c))
        (declare (optimize (safety 2) (compilation-speed 1) (speed 2)
                           (space 0) (debug 0)))
-       (ash c (min 82 -28192897))))
+       (ash c (min 82 -28192897)))
    0 -714979492 1474663829)
   0)
 
@@ -10730,12 +9833,10 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.596
   (notnot
    (let ((s (coerce "a" 'base-string)))
-     (funcall
-      (compile
-       nil
+     (call-compiled 
        `(lambda ()
           (declare (optimize (speed 0) (safety 3) (debug 2) (space 1)))
-          (typep ,s '(string 1)))))))
+          (typep ,s '(string 1))))))
   t)
 
 
@@ -10743,11 +9844,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect value
 
 (deftest misc.597
-  (funcall (compile nil '(lambda (c)
+  (call-compiled '(lambda (c)
                            (declare (optimize (speed 1) (compilation-speed 2)
                                               (space 1) (debug 1) (safety 2)))
                            (declare (type (integer 1 41) c))
-                           (logxor -1 c)))
+                           (logxor -1 c))
            8)
   -9)
 
@@ -10755,25 +9856,23 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Failure of IMAGPART in compiled code
 
 (deftest misc.598
-  (funcall (compile nil '(lambda (p1)
+  (call-compiled '(lambda (p1)
                            (declare (optimize (speed 2) (safety 0) (debug 3)
                                               (space 1))
                                     (type short-float p1))
-                           (imagpart (the short-float p1))))
+                           (imagpart (the short-float p1)))
            -79916.61s0)
   -0.0s0)
 
 ;;; The value 20408096470 is not of type (INTEGER 19856842407 20640917103)
 
 (deftest misc.599
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (type (integer 19856842407 20640917103) b))
        (declare (optimize (debug 1) (speed 3) (compilation-speed 2)
                           (safety 3) (space 3)))
-       (lognand b (deposit-field b (byte 0 0) 3762528061))))
+       (lognand b (deposit-field b (byte 0 0) 3762528061)))
    20408096470)
   -3225589269)
 
@@ -10781,26 +9880,22 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; The function SB-C::SPECIFER-TYPE is undefined.
 
 (deftest misc.600
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (notinline min ash))
        (declare (optimize (speed 0) (debug 1) (safety 1)
                           (space 1) (compilation-speed 3)))
-       (logxor (ash 0 (min 90 0)) 0))))
+       (logxor (ash 0 (min 90 0)) 0)))
   0)
 
 (deftest misc.601
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (notinline gcd))
        (declare
         (optimize (debug 3) (space 3) (safety 3)
                   (compilation-speed 2) (speed 3)))
-       (logeqv 0 (gcd 0)))))
+       (logeqv 0 (gcd 0))))
   -1)
 
 ;;; Lispworks 4450
@@ -10808,14 +9903,14 @@ Broken at C::WT-MAKE-CLOSURE.
 
 (deftest misc.602
   (let ((form '(lambda () (if (oddp (progn (vector) 3747237)) 'a nil))))
-    (loop repeat 10 collect (funcall (compile nil form))))
+    (loop repeat 10 collect (call-compiled form)))
   (a a a a a a a a a a))
 
 ;;; gcl 2.7.0 (12 Jul 2005)
 ;;; Error in WHEN [or a callee]: The GO tag #:G3614 is missing.
 
 (deftest misc.603
-  (funcall (compile nil '(lambda () (let ((x (values 0))) 0))))
+  (call-compiled '(lambda () (let ((x (values 0))) 0)))
   0)
 
 ;;; gcl 2.7.0 (23 Jul 2005, experimental cvs HEAD)
@@ -10827,7 +9922,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 2) (safety 1) (debug 3) (space 3))
                           (type real p1) (type t p2))
                  (eql (the (rational -55253767/37931089) p1) (the atom p2)))))
-    (funcall (compile nil form) -55253767/37931089 'a))
+    (call-compiled form -55253767/37931089 'a))
   nil)
 
 ;;; Error in FUNCALL [or a callee]: LOAD-TIME-VALUE is not of type NUMBER.
@@ -10837,7 +9932,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 3) (safety 1) (debug 0) (space 0))
                           (type number p1) (type (float 0.0 3579.314s0) p2))
                  (eql (the real p1) p2))))
-    (not (funcall (compile nil form) 3579.314s0 3579.314s0)))
+    (not (call-compiled form 3579.314s0 3579.314s0)))
   nil)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: #\a is not of type FIXNUM.
@@ -10846,52 +9941,52 @@ Broken at C::WT-MAKE-CLOSURE.
   (let ((form '(lambda ()
                  (declare (optimize (speed 3) (safety 2) (debug 3) (space 2)))
                  (equal #\a #c(-1775806.0s0 88367.29s0)))))
-    (funcall (compile nil form)))
+    (call-compiled form))
   nil)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: #*1 is not of type FIXNUM.
 
 (deftest misc.607
-  (funcall (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                            (declare (optimize (speed 0) (safety 2) (debug 2) (space 2)))
-                           (equal #*1 1))))
+                           (equal #*1 1)))
   nil)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: #\& is not of type FIXNUM.
 
 (deftest misc.608
-  (funcall (compile nil '(lambda (p1)
+  (call-compiled '(lambda (p1)
                            (declare (optimize (speed 3) (safety 2) (debug 3) (space 3))
                                     (type (integer -62603278 -31187) p1))
-                           (equal p1 #\&)))
+                           (equal p1 #\&))
            -31228)
   nil)
 
 ;;; Wrong return value (was returning T)
 
 (deftest misc.609
-  (funcall (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                            (declare (optimize (speed 0) (safety 0) (debug 0) (space 3)))
-                           (equalp "b" #*))))
+                           (equalp "b" #*)))
   nil)
 
 ;;; Error in COMPILER::CMP-ANON [or a callee]: 7933992 is not of type SYMBOL.
 
 (deftest misc.610
-  (not (funcall (compile nil '(lambda (p2)
+  (not (call-compiled '(lambda (p2)
                                 (declare (optimize (speed 1) (safety 1) (debug 3) (space 2))
                                          (type (cons symbol) p2))
-                                (typep -32 p2)))
+                                (typep -32 p2))
                 '(eql -32)))
   nil)
 
 ;;; Error in CAR [or a callee]: -757161859 is not of type LIST.
 
 (deftest misc.611
-  (funcall (compile nil '(lambda (p1)
+  (call-compiled '(lambda (p1)
                            (declare (optimize (speed 1) (safety 3) (debug 0) (space 2))
                                     (type (cons atom) p1))
-                           (car p1)))
+                           (car p1))
            '(48144509 . a))
   48144509)
 
@@ -10899,34 +9994,29 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Error in COMPILER::POSSIBLE-EQ-LIST-SEARCH [or a callee]: COMPILER::POSSIBLE-EQ-LIST-SEARCH does not allow the keyword :B.
 
 (deftest misc.612
-  (funcall
-   (compile nil '(lambda (p1 p2)
+  (call-compiled '(lambda (p1 p2)
                   ((lambda (x y) (typep x (type-of y))) p1
-                   (the (member "foo" #\- :b "bar") p2))))
+                   (the (member "foo" #\- :b "bar") p2)))
    #*1 :b)
   nil)
 
 ;;; Error in APPLY [or a callee]: The tag CT1 is undefined.
 
 (deftest misc.613
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
       (declare (optimize (space 3) (safety 1) (debug 3)
 		(speed 1) (compilation-speed 3)))
       (catch 'ct1
 	(reduce #'(lambda (lmv6 lmv5) (throw 'ct1 0))
-		(list a 0 0) :end 2))))
+		(list a 0 0) :end 2)))
    1)
   0)
 
 ;;; Error in MULTIPLE-VALUE-BIND [or a callee]: Cannot get relocated section contents
 
 (deftest misc.614
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
       (declare (type (integer -3873004182 -3717314779) a))
       (declare (ignorable a))
@@ -10935,7 +10025,7 @@ Broken at C::WT-MAKE-CLOSURE.
       (let* ((v1 (make-array nil :initial-element
 			     (reduce #'logand (list a 0 a)))))
 	(declare (dynamic-extent v1))
-	0)))
+	0))
    -3755148485)
   0)
 
@@ -10944,16 +10034,14 @@ Broken at C::WT-MAKE-CLOSURE.
 (deftest misc.615
   (let* ((x -8183.7625s0)
 	 (form `(lambda (p1) (eql p1 ,x))))
-    (not (not (funcall (compile nil form) x))))
+    (not (not (call-compiled form x))))
   t)
 
 ;;; cmucl 19c
 ;;; Wrong return value
 
 (deftest misc.616
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b c)
        (declare (type (integer -153105 -36629) a))
        (declare (type (integer -7811721705 3704985368) b))
@@ -10974,7 +10062,7 @@ Broken at C::WT-MAKE-CLOSURE.
 				   :from-end t))
 			  &allow-other-keys)
 		   a))
-		 c))))
+		 c)))
    -134217 -3699719058 10)
   10)
 
@@ -10987,9 +10075,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;                            (SIGNED-BYTE 13)).
 
 (deftest misc.617
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
        (declare (optimize (space 3) (safety 2) (debug 1) (speed 3)
               (compilation-speed 2)))
@@ -10997,7 +10083,7 @@ Broken at C::WT-MAKE-CLOSURE.
      (lognand (loop for lv3 below 0 sum (setf v2 lv3))
           (if (typep v2 '(integer -39 7))
               b
-            0)))))
+            0))))
    -10298)
   -1)
 
@@ -11005,9 +10091,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (same on sparc solaris)
 
 (deftest misc.618
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (c)
        (declare (optimize (space 0) (compilation-speed 2) (debug 0)
               (speed 3) (safety 0)))
@@ -11017,7 +10101,7 @@ Broken at C::WT-MAKE-CLOSURE.
                      (apply (constantly 0)
                         c
                         (catch 'ct2 (return-from b1 0))
-                        nil))))))
+                        nil)))))
    -4951)
   0)
 
@@ -11025,40 +10109,36 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Incorrect return value
 
 (deftest misc.619
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (b)
       (declare (type (integer 75 206) b))
       (declare (optimize (speed 0) (compilation-speed 2) (debug 2)
         (space 2) (safety 2)))
-      (mask-field (byte 4 28) (ash b 70))))
+      (mask-field (byte 4 28) (ash b 70)))
    79)
   0)
 
 ;;;  The value 64 is not of type (OR SB-C:TN (UNSIGNED-BYTE 6) NULL).
 
 (deftest misc.620
-  (funcall (compile nil '(lambda ()
+  (call-compiled '(lambda ()
                           (declare (optimize (safety 3) (compilation-speed 3)
                                     (debug 1) (space 3) (speed 1)))
-                          (loop for lv2 below 1 sum (ash lv2 64)))))
+                          (loop for lv2 below 1 sum (ash lv2 64))))
   0)
 
 ;;; sbcl 0.9.8.17, x86 linux
 ;;;   The value 32 is not of type (OR (INTEGER -67 -67) (INTEGER -63 -63)).
 
 (deftest misc.621
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (debug 1) (space 0) (compilation-speed 3)
 			  (speed 1) (safety 3)))
        (loop for lv1 below 2 sum
 	     (dotimes (iv2 2 0)
 	       (mod (dotimes (iv4 2 0) (progn (count lv1 #*0) 0))
-		    (min -63 (rem 0 (min -67 0)))))))))
+		    (min -63 (rem 0 (min -67 0))))))))
   
   0)
 
@@ -11066,13 +10146,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; TYPE-ERROR: The value 17549.955 is not of type REAL.
 
 (deftest misc.622
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (p2)
        (declare (optimize (speed 3) (safety 2) (debug 3) (space 0))
 		(type real p2))
-       (+ 81535869 (the (member 17549.955 #:g35917) p2))))
+       (+ 81535869 (the (member 17549.955 #:g35917) p2)))
    17549.955)
   #.(+ 81535869 17549.955))
 
@@ -11080,9 +10158,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;;   The function SB-VM::%LOGBITP is undefined.
 
 (deftest misc.623
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (space 2) (speed 0) (debug 2)
 			  (compilation-speed 3) (safety 0)))
@@ -11091,15 +10167,13 @@ Broken at C::WT-MAKE-CLOSURE.
 		    (loop for lv2 below 2
                         count (logbitp 0
 				       (bit #*1001101001001
-					    (min 12 (max 0 lv3))))))))))
+					    (min 12 (max 0 lv3)))))))))
   0)
 
 ;;;     failed AVER: "(< Y 29)"
 
 (deftest misc.624
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer 21 28) a))
        (declare	(optimize (compilation-speed 1) (safety 2)
@@ -11111,7 +10185,7 @@ Broken at C::WT-MAKE-CLOSURE.
 					     (sbit #*10101111
 						   (min 7 (max 0 (eval '0))))))))
                      (%f3 0 a))))
-	 0)))
+	 0))
    22)
   0)
 
@@ -11124,9 +10198,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; TYPE-ERROR: The value 0 is not of type (INTEGER 3 3).
 
 (deftest misc.625
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -2 -1) a))
        (declare (optimize (speed 0) (space 0) (safety 1)
@@ -11148,16 +10220,14 @@ Broken at C::WT-MAKE-CLOSURE.
 				     &key (key1 (progn (%f7 0 a) a))
 				     (key2 0))
 				    0))
-				  (%f7 a a))))))))
+				  (%f7 a a)))))))
    -2)
   47119)
 
 ;;; TYPE-ERROR: The value 2 is not of type (INTEGER 12 12)
 
 (deftest misc.625a
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a b)
        (declare (type (integer 1 5) b))
        (declare (optimize (safety 2) (speed 2)
@@ -11169,21 +10239,19 @@ Broken at C::WT-MAKE-CLOSURE.
 		 f3-1))
 	       (%f3 0 (%f3 0 a 0 a) a 0 a))
 	 (elt '(a b c d) (min 3 b))
-	 )))
+	 ))
    0 2)
   c)
 
 ;;; failed AVER: "(<= Y 29)"
 
 (deftest misc.626
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda (a)
        (declare (type (integer -902970 2) a))
        (declare (optimize (space 2) (debug 0) (compilation-speed 1)
 			  (speed 0) (safety 3)))
-       (prog2 (if (logbitp 30 a) 0 (block b3 0)) a)))
+       (prog2 (if (logbitp 30 a) 0 (block b3 0)) a))
    -829253)
   -829253)
 
@@ -11192,13 +10260,11 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (LOGBITP -93368855 0)
 
 (deftest misc.628
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (safety 3) (space 3) (compilation-speed 3)
 			  (speed 0) (debug 1)))
-       (not (not (logbitp 0 (floor 2147483651 (min -23 0))))))))
+       (not (not (logbitp 0 (floor 2147483651 (min -23 0)))))))
   t)
 
 ;;; sbcl 0.9.9.35
@@ -11212,7 +10278,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		   (declare (optimize (speed 1) (safety 3) (debug 0) (space 2))
 			    (type (member 0 2 ,s) x))
 		   (misc-629-a x))))
-    (funcall (compile nil form) s))
+    (call-compiled form s))
   1)
 
 ;;; sbcl 0.9.10.11
@@ -11221,14 +10287,12 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; (SB-KERNEL:TWO-ARG-/ NIL 1)
 
 (deftest misc.630
-  (funcall
-   (compile
-    nil
+  (call-compiled 
     '(lambda ()
        (declare (optimize (speed 1) (debug 0)
 			  (space 2) (safety 0) (compilation-speed 0)))
        (unwind-protect 0
-	 (* (/ (multiple-value-prog1 -29457482 -5602513511) 1))))))
+	 (* (/ (multiple-value-prog1 -29457482 -5602513511) 1)))))
   0)
 
 ;;; Argument X is not a INTEGER: NIL
@@ -11246,7 +10310,7 @@ Broken at C::WT-MAKE-CLOSURE.
 ;;; Wrong value -- NIL
 
 (deftest misc.632
-  (funcall (compile nil '(lambda () (let (b) (multiple-value-setq (b) 10)))))
+  (call-compiled '(lambda () (let (b) (multiple-value-setq (b) 10))))
   10)
 
 ;;; sbcl (x86 linux) 0.9.10.43
@@ -11269,7 +10333,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		       (the (member 1+ ,x #\b #:|u4m7k0jz6o|) p4)
 		       -1506/1283
 		       65681158/19740963))))
-    (funcall (compile nil form) 1861 x))
+    (call-compiled form 1861 x))
   -17045.0)
 
 ;;; sbcl (x86 linux) 0.9.10.48
@@ -11280,7 +10344,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		 (declare (optimize (speed 0) (safety 3) (debug 3) (space 2))
 			  (type number p2))
 		 (- -83659.0 (the (member 35182846) p2)))))
-    (funcall (compile nil form) 35182846))
+    (call-compiled form 35182846))
   #.(- -83659.0 35182846))
 
 ;;; sbcl (x86 linux) 0.9.11.4
@@ -11292,7 +10356,7 @@ Broken at C::WT-MAKE-CLOSURE.
 				    (debug 2) (space 2))
 			  (type (member -19261719) p2))
 		 (ceiling -46022.094 p2))))
-    (values (funcall (compile nil form) -19261719)))
+    (values (call-compiled form -19261719)))
   1)
 
 ;;; TYPE-ERROR: The value 26899.875 is not of type NUMBER.
@@ -11303,7 +10367,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		  (declare (optimize (speed 3) (safety 1) (debug 3) (space 1))
 			   (type (member ,x #:g5437 char-code #:g5438) p2))
 		  (* 104102267 p2))))
-    (not (not (floatp (funcall (compile nil form) x)))))
+    (not (not (floatp (call-compiled form x)))))
   t)
 
 ;;;   attempt to THROW to a tag that does not exist: SB-C::LOCALL-ALREADY-LET-CONVERTED
@@ -11337,7 +10401,7 @@ Broken at C::WT-MAKE-CLOSURE.
 			     ,s)
 		     p1)
 		    21))))
-      (not (not (eql c (funcall (compile nil form) s))))))
+      (not (not (eql c (call-compiled form s))))))
   t)
 
 ;;; sbcl 0.9.11.24 (x86 linux)
@@ -11351,7 +10415,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		 (labels ((%f8 (f8-1 &optional (f8-4 (if (if (eql 0 -16) (>= d) nil) 0 0)))
 			       a))
 			 (%f8 b)))))
-    (funcall (compile nil form) :good 18 0))
+    (call-compiled form :good 18 0))
   :good)
 
 ;;; sbcl 0.9.11.45 (x86 linux)
@@ -11366,7 +10430,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		       sum (if (<= g lv1)
 			       (labels ((%f7 () (prog1 b 0))) (%f7))
 			     (setf g -16188661082))))))
-    (funcall (compile nil form) 335562 4655131896))
+    (call-compiled form 335562 4655131896))
   -16188325520)
 
 ;;; sbcl 0.9.12.27 (x86 linux)
@@ -11379,7 +10443,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		 (flet ((%f3 (f3-1 &key (key1 (count (floor 0 (min -74 0)) #())))
 			     0))
 		       (apply #'%f3 0 nil)))))
-    (funcall (compile nil form)))
+    (call-compiled form))
   0)
 
 ;;; cmucl 19c (x86 linux)
@@ -11480,7 +10544,7 @@ Broken at C::WT-MAKE-CLOSURE.
 					    'integer)
 					   1)))))
 			    0))))
-    (funcall (compile nil form) 58162926 -3652 -63561386 935157597 63716 -504 108893677 -146677 308 99009))
+    (call-compiled form 58162926 -3652 -63561386 935157597 63716 -504 108893677 -146677 308 99009))
   0)
 
 ;;; Wrong return value
@@ -11490,7 +10554,7 @@ Broken at C::WT-MAKE-CLOSURE.
 		 (declare (type (integer 6 1273) a))
 		 (declare (optimize (space 0) (safety 0) (debug 3) (compilation-speed 2) (speed 3)))
 		 (logorc2 0 (restart-bind nil (shiftf a 522))))))
-    (funcall (compile nil form) 807))
+    (call-compiled form 807))
   -808)
 
 ;;;   -1520586839 is not of type INTEGER
@@ -11509,7 +10573,7 @@ Broken at C::WT-MAKE-CLOSURE.
 			 (progv '(*s4* *s3*) (list a a) (expt *s3* 0))))))))
     (let ((*s3* 0))
       (declare (special *s3*))
-      (funcall (compile nil form) -1520586839)))
+      (call-compiled form -1520586839)))
   0)
 
 ;;;    NIL is not of type C::CBLOCK
@@ -11545,7 +10609,7 @@ Broken at C::WT-MAKE-CLOSURE.
 				    (safety 3)))
 		 (mask-field (byte 0 0)
 			     (block b3 (isqrt (abs (catch 'ct2 (return-from b3 0)))))))))
-    (funcall (compile nil form) -50))
+    (call-compiled form -50))
   0)
 
 ;;; 1928431123 is not of type (MOD 536870911)
@@ -11569,7 +10633,7 @@ Broken at C::WT-MAKE-CLOSURE.
 						(list 0 0 0 1928431123 iv3 iv3 a a)
 						:end 5
 						:from-end t))))))))
-    (funcall (compile nil form) 1))
+    (call-compiled form 1))
   0)
 
 ;;;  The assertion (AND C::SUCC (NULL (CDR C::SUCC))) failed.
@@ -11591,7 +10655,7 @@ Broken at C::WT-MAKE-CLOSURE.
 					       (return-from %f13 a)
 					       a))))))
 			 0))))
-    (funcall (compile nil form) 2582756596))
+    (call-compiled form 2582756596))
   0)
 
 ;;; sbcl 0.9.13.8 (x86 linux)
@@ -11602,7 +10666,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 0) (debug 2) (space 2))
                           (type (member integer *) p2))
                  (coerce 523242 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   523242)
 
 ;;; The symbol AND is not valid as a type specifier
@@ -11612,7 +10676,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer and) p2))
                  (coerce -12 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   -12)
 
 ;;; The symbol OR is not valid as a type specifier
@@ -11622,7 +10686,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer or) p2))
                  (coerce 1 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   1)
 
 ;;; The symbol NOT is not valid as a type specifier.
@@ -11632,7 +10696,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer not) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
 ;;;   The symbol SATISFIES is not valid as a type specifier.
@@ -11642,7 +10706,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer satisfies) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
 ;;;  error while parsing arguments to DEFTYPE EQL:
@@ -11657,7 +10721,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer eql) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
 ;;;  The symbol MEMBER is not valid as a type specifier.
@@ -11667,7 +10731,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer member) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
 ;;;  error while parsing arguments to DEFTYPE MOD:
@@ -11682,7 +10746,7 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer mod) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
 ;;; The symbol VALUES is not valid as a type specifier.
@@ -11692,6 +10756,6 @@ Broken at C::WT-MAKE-CLOSURE.
                  (declare (optimize (speed 0) (safety 2) (debug 0) (space 2))
                           (type (member integer values) p2))
                  (coerce 2 p2))))
-    (funcall (compile nil form) 'integer))
+    (call-compiled form 'integer))
   2)
 
