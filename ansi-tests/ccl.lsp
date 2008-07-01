@@ -283,6 +283,34 @@
       (ccl.42923 'foo :y 1 :z 2 :a 1 :b 2 :c 3))
   foo)
 
+(deftest ccl.bug#252a
+    (let ((pn "bug252.dat"))
+      (delete-file pn)
+      (let ((stream (open pn :direction :output :if-exists :error)))
+        (print "something" stream)
+        (close stream :abort t)
+        (probe-file pn)))
+  nil)
+
+(deftest ccl.bug#252b
+    (let ((pn "bug252.dat"))
+      (delete-file pn)
+      (let ((stream (open pn :direction :output)))
+        (format stream "something~%")
+        (close stream))
+      (let ((stream (open pn :direction :output :if-exists :supersede)))
+        (format stream "other~%")
+        (force-output stream)
+        (close stream :abort t))
+      (with-open-file (stream pn)
+        (let ((line  (read-line stream)))
+          (if (equalp line "something") :something line))))
+  :something)
+
+(deftest ccl.bug#310
+    (remove-duplicates '(1 0 1 1 1 0 0 0 1 0 1 0 1) :end 11)
+  (0 1 0 1))
+
 (deftest ccl.bug#294-1
   (handler-case
       (let ((ccl::*nx-safety* 1)) ;; At safety 3, we don't know from EQ...
