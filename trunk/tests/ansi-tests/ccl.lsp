@@ -11,17 +11,19 @@
       (terpri s)
       (truename s))))
 
-(defun test-compile (lambda-or-file &key suppress-warnings (safety 1) load)
+(defun test-compile (lambda-or-file &rest args &key hide-warnings (safety 1) &allow-other-keys)
   ;; Compile in a more-or-less standard environment
-  (let ((ccl::*suppress-compiler-warnings* suppress-warnings)
+  (let ((*error-output* (if hide-warnings (make-broadcast-stream) *error-output*))
         (ccl::*nx-speed* 1)
         (ccl::*nx-space* 1)
         (ccl::*nx-safety* safety)
         (ccl::*nx-cspeed* 1)
         (ccl::*nx-debug* 1))
+    (remf args :hide-warnings)
+    (remf args :safety)
     (if (consp lambda-or-file)
-      (compile nil lambda-or-file)
-      (compile-file lambda-or-file :load load))))
+      (apply #'compile nil lambda-or-file args)
+      (apply #'compile-file lambda-or-file args))))
 
 ;;; CCL-specific regression tests, for CCL-specific behavior.
 
@@ -46,11 +48,16 @@
   :good)
 
 (deftest ccl.40207  ;; fixed in r9163 and r9165
+  (progn
+    (fmakunbound 'cl-test::ccl.40207-fn)
     ;; Check that these compile-time errors don't abort compilation.
-    (and (typep (lambda (x) (setq x)) 'function)
-         (typep (lambda (x) (setf x)) 'function)
-         (typep (lambda (((foo))) foo) 'function)
-         :good)
+    (let* ((test (test-source-file "(defun cl-test::ccl.40207-fn ()
+                                     (and (typep (lambda (x) (setq x)) 'function)
+                                          (typep (lambda (x) (setf x)) 'function)
+                                          (typep (lambda (((foo))) foo) 'function)
+                                          :good))")))
+      (test-compile test :hide-warnings t :load t)
+      (funcall 'cl-test::ccl.40207-fn)))
   :good)
 
 (deftest ccl.40927  ;; fixed in r9183 and r9184
@@ -70,12 +77,14 @@
            (signals-error (setf (ccl.40055-a (make-ccl.40055)) nil) type-error)))
   t)
 
+
 (deftest ccl.bug#235
     (handler-case
-        (test-compile '(lambda (x)
-                        (make-array x :element-type 'ccl.bug#235-unknown-type)))
-      (warning (c) (when (typep c 'ccl::compiler-warning)
-                     (ccl::compiler-warning-warning-type c))))
+        (test-compile `(lambda (x)
+                         (make-array x :element-type ',(gensym))))
+      (warning (c)
+        (when (typep c 'ccl::compiler-warning)
+          (ccl::compiler-warning-warning-type c))))
   :unknown-type-declaration)
 
 
@@ -92,10 +101,10 @@
 (deftest ccl.bug#286
     (and (test-compile '(lambda ()
                          (typep nil '(or ccl.bug#286-unknown-type-1 null)))
-                       :suppress-warnings t)
+                       :hide-warnings t)
          (test-compile '(lambda ()
                          (ccl:require-type nil '(or ccl.bug#286-unknown-type-2 null)))
-                       :suppress-warnings t)
+                       :hide-warnings t)
          :no-crash)
   :no-crash)
 
@@ -113,19 +122,23 @@
 
 (deftest ccl.41226
     (let ((file (test-source-file "(defmacro ccl.41226 (x) (eq (caar x)))")))
-      (test-compile file :suppress-warnings t)
+      (handler-case
+          (test-compile file :hide-warnings t :break-on-program-errors nil)
+        ;; Might still signal due to macros being implicitly eval-when compile.
+        ;; Ok so long as it's not the make-load-form error (which is not a program-error).
+        (program-error () nil))
       :no-crash)
   :no-crash)
 
 (deftest ccl.bug#288
     (let ((file (test-source-file "(prog1 (declare (ignore foo)))")))
-      (test-compile file :suppress-warnings t)
+      (test-compile file :hide-warnings t)
       :no-crash)
   :no-crash)
 
 (deftest ccl.bug#288-1 ;; follow-on bug, not really the same
     (let ((file (test-source-file "(defun cl-test::ccl.bug#288-1-fn ((x integer)) x)")))
-      (test-compile file :suppress-warnings t :load t)
+      (test-compile file :hide-warnings t :load t)
       (handler-case
 	  (progn (ccl.bug#288-1-fn 17) :no-warnings)
 	(program-error (c) (if (search "(X INTEGER)" (princ-to-string c)) :lambda-list-error c))))
@@ -269,6 +282,79 @@
       (ccl:advise ccl.42923 'advise)
       (ccl.42923 'foo :y 1 :z 2 :a 1 :b 2 :c 3))
   foo)
+
+(deftest ccl.bug#294-1
+  (handler-case
+      (let ((ccl::*nx-safety* 1)) ;; At safety 3, we don't know from EQ...
+        (eval '(defun cl-test::ccl.bug#294-1 (x y)
+                (eq x) y)))
+    (program-error () :program-error))
+  :program-error)
+
+(deftest ccl.bug#294-2
+  (let* ((file (test-source-file
+                "(defun cl-test::ccl.bug#294-2 (x y) (eq x) y)")))
+    (fmakunbound ' cl-test::ccl.bug#294-2)
+    (handler-case (test-compile file :break-on-program-errors t)
+      (program-error () :program-error)))
+  :program-error)
+
+(deftest ccl.buf#294-3
+  (let* ((file (test-source-file
+                "(defun cl-test::ccl.bug#294-3 (x y) (eq x) y)"))
+         (warnings 0))
+    (fmakunbound ' cl-test::ccl.bug#294-3)
+    (list
+     (let ((*error-output* (make-broadcast-stream)))
+       (handler-case
+           (handler-bind ((warning (lambda (c) (incf warnings))))
+             (test-compile file :break-on-program-errors :defer))
+         (error (c) :error)))
+     warnings))
+  (:error 1))
+
+
+(deftest ccl.buf#294-4
+  (let* ((file (test-source-file
+                "(defun cl-test::ccl.bug#294-4 (x y) (eq x) y)"))
+         (warnings 0))
+    (fmakunbound 'cl-test::ccl.bug#294-4)
+    (list
+     (let ((*error-output* (make-broadcast-stream)))
+       (handler-bind ((warning (lambda (c) (incf warnings))))
+         (test-compile file :break-on-program-errors nil :load t))
+       (handler-case (and (fboundp 'cl-test::ccl.bug#294-4)
+                          (funcall 'cl-test::ccl.bug#294-4 1 2))
+         (program-error (c) :program-error)))
+     warnings))
+  (:program-error 1))
+
+
+(deftest ccl.43101a
+    (progn
+      (untrace)
+      (fmakunbound 'ccl.43101a-fun)
+      (defun ccl.43101a-fun (x) x)
+      (trace ccl.43101a-fun)
+      (let ((file (test-source-file "(defun cl-test::ccl.43101a-fun (x) (1+ x))")))
+        (test-compile file :hide-warnings t :load t))
+      (not (equal "" (with-output-to-string (*trace-output*)
+                       (assert (eql (ccl.43101a-fun 4) 5))))))
+  t)
+
+(deftest ccl.43101b
+    (progn
+      (untrace)
+      (fmakunbound 'ccl.43101b-gf)
+      (defmethod ccl.43101b-gf (x) x)
+      (trace ccl.43101b-gf)
+      (let ((file (test-source-file "(defmethod cl-test::ccl.43101b-gf (x) (1+ x))")))
+        (test-compile file :hide-warnings t :load t))
+      (not (equal "" (with-output-to-string (*trace-output*)
+                       (assert (eql (ccl.43101b-gf 4) 5))))))
+  t)
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
