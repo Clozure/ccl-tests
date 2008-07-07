@@ -348,6 +348,7 @@
 (defun do-tests (&key (out *standard-output*)
                       ((:verbose *test-verbose*) *test-verbose*)
 		      ((:catch-errors *catch-errors*) *catch-errors*)
+                      ((:optimization-settings *optimization-settings*) *optimization-settings*)
 		      ((:compile *compile-tests*) *compile-tests*))
   (setq *failed-tests* nil
 	*passed-tests* nil)
