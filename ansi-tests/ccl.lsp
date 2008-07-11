@@ -399,6 +399,14 @@
 
 
 
+(deftest ccl.file-stream-typep
+    (with-open-file (f "temp.dat" :direction :output :if-exists :supersede)
+      (funcall (lambda (f) (let ((type (type-of f)))
+                             (and (typep f 'file-stream) (subtypep type 'file-stream) t)))
+               f))
+  t)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
