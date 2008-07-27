@@ -411,6 +411,17 @@
     (< (imagpart (cos (complex 1 1))) 0)
   t)
 
+(deftest ccl.space-symbol
+    (let* ((list '(|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|
+		   | | | | | | | | | | | | | | | | | | | | | |
+		   |aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|))
+	   (result (read-from-string
+		    (with-output-to-string (s)
+		      (let ((*print-readably* t))
+			(pprint list s))))))
+      (or (equal list result) result))
+  t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
