@@ -422,6 +422,19 @@
       (or (equal list result) result))
   t)
 
+(deftest ccl.46016
+    (let ((file (test-source-file "
+  (defvar var.46016 nil)
+  (declaim (boolean var.46016))")))
+      (handler-case (progn (test-compile file :load t :break-on-program-errors nil) :no-warnings)
+        (warning (c) :warning)))
+  :no-warnings)
+
+
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
