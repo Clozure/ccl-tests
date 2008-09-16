@@ -39,6 +39,7 @@
    unless (and (equal return-vals1 '(nil))
 	       (equal return-vals2 '(nil))
 	       (string= s1 "#<" :end1 2)
+	       #+bogus-test
 	       (string= s1 s2 :end1 (- (length s1) 1)
 			:end2 (- (length s2) 2))
 	       (string= s2 " X>" :start1 (- (length s2) 3)))
