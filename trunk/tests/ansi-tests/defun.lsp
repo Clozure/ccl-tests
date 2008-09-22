@@ -112,7 +112,9 @@
 	  for args = nil then (cons nil args)
 	  for expected = '(1 2 3)
 	  for fn = (eval `(prog2 (proclaim '(optimize (safety 0)))
-				 (defun ,name ,params (values ,@expected))
+				 (defun ,name ,params
+                                   (declare (ignorable ,@params))
+                                   (values ,@expected))
 				 (proclaim '(optimize safety))))
 	  when
 	  (cond

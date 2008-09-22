@@ -431,8 +431,27 @@
   :no-warnings)
 
 
+#+ccl-0711
+(deftest ccl.47102
+    (handler-case
+        (progn
+          (defclass ccl.47102 () ((slot :allocation :class)))
+          ;; This happens as part of snap-reader-methods optimization
+          (ccl::optimize-make-instance-for-class-cell (gethash 'ccl.47102 ccl::%find-classes%))
+          :no-warnings)
+      (warning (c) :warning))
+  :no-warnings)
+ 
 
-
+(deftest ccl.47762
+    (let ((file (test-source-file
+                  "(defun ccl.47762 ()
+                     (funcall (find-symbol \"TEST.47762a\" \"NO_SUCH_PACKAGE\"))
+                     (funcall (intern \"TEST.47762b\" \"NO_SUCH_PACKAGE-1\")))")))
+      (handler-case
+          (progn (test-compile file :load t) :no-error)
+        (error (c) c)))
+  :no-error)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
