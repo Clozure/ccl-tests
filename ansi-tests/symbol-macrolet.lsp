@@ -32,8 +32,8 @@
        (list x
 	     y
 	     (let ((x 20)) x)
-	     (let ((y 30)) x)
-	     (let ((y 50)) y)
+	     (let ((y 30)) (declare (ignorable y)) x)
+	     (let ((y 50)) (declare (ignorable x)) y)
 	     x
 	     y)))
   (10 10 20 10 50 10 10))
@@ -57,7 +57,7 @@
 (deftest symbol-macrolet.error.1
   (signals-error
    (symbol-macrolet ((x 10))
-     (declare (special x))
+     (declare (special x) (ignorable x))
      20)
    program-error)
   t)
