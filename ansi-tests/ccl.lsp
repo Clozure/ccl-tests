@@ -4,8 +4,10 @@
 
 (in-package :cl-test)
 
+(defvar *test-source-file-counter* 0)
+
 (defun test-source-file (format-string &rest format-args)
-  (let ((file "temp.dat"))
+  (let ((file (format nil "temp~s.dat" (incf *test-source-file-counter*))))
     (with-open-file (s file :direction :output :if-exists :supersede)
       (apply #'format s format-string format-args)
       (terpri s)
@@ -181,7 +183,7 @@
     (let ((file (test-source-file "
  (defclass ccl.40055-3-class () ())
  (defun ccl.40055-3-cfn () (require-type nil '(or ccl.40055-3-class null)))
- (defstruct ccl.40055-3-struct () ())
+ (defstruct ccl.40055-3-struct)
  (defun ccl.40055-3-rfn () (require-type nil '(or ccl.40055-3-struct null)))")))
       (handler-case
           (progn (test-compile file :break-on-program-errors nil) :no-warnings)
@@ -452,6 +454,86 @@
           (progn (test-compile file :load t) :no-error)
         (error (c) c)))
   :no-error)
+
+
+(defun test-dup-warnings (test1 &optional test2)
+  (let ((warnings nil))
+    (handler-bind ((warning (lambda (c)
+                              (let ((msg (format nil "~a" c)))
+                                (push (if (search "Duplicate" msg :test #'equalp)
+                                        :duplicate-definition
+                                        c) warnings)
+                                (muffle-warning c)))))
+      (if test2
+        (with-compilation-unit ()
+          (test-compile (test-source-file test1) :hide-warnings t)
+          (test-compile (test-source-file test2) :hide-warnings t))
+        (test-compile (test-source-file test1 :hide-warnings t))))
+    warnings))
+
+
+
+(deftest ccl.41334-1
+    (test-dup-warnings
+     "(defun test.ccl-41334-1 (x) x)
+      (defun test.ccl-41334-1 (x) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-2
+    (test-dup-warnings
+     "(defmethod test.ccl-41334-2 ((x stream)) x)
+      (defmethod test.ccl-41334-2 ((x stream)) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-3
+    (test-dup-warnings
+     "(defmacro test.ccl-41334-3 (x) x)
+      (defmacro test.ccl-41334-3 (x) x)")
+  (:duplicate-definition))
+
+(deftest ccl.41334-4
+    (test-dup-warnings
+     "(defgeneric test.ccl-41334-4 (x))
+      (defun test.ccl-41334-4 (x) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-1a
+    (test-dup-warnings
+     "(defun test.ccl-41334-1 (x) x)"
+     "(defun test.ccl-41334-1 (x) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-2a
+    (test-dup-warnings
+     "(defmethod test.ccl-41334-2 ((x stream)) x)"
+     "(defmethod test.ccl-41334-2 ((x stream)) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-3a
+    (test-dup-warnings
+     "(defmacro test.ccl-41334-3 (x) x)"
+     "(defmacro test.ccl-41334-3 (x) x)")
+  (:duplicate-definition))
+
+(deftest ccl.41334-4a
+    (test-dup-warnings
+     "(defgeneric test.ccl-41334-4 (x &key foo))"
+     "(defmacro test.ccl-41334-4 (x) x)")
+  (:duplicate-definition))
+
+
+(deftest ccl.41334-5
+    (test-dup-warnings
+     "(defclass test.41334-5 () ((41334-5-slot :accessor test.41334-5-slot)))"
+     "(defmethod (setf test.41334-5-slot) (v (x test.41334-5)) v)")
+  (:duplicate-definition))
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
