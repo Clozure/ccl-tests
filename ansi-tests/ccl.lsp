@@ -534,8 +534,15 @@
   (:duplicate-definition))
 
 
+#+not-yet
+(deftest ccl.bug#340
+    (labels ((fact (n) (if (zerop n) 1 (* n (fact (1- n))))))
+      (let ((res (format nil "~s" (log (fact 1000) 10.0d0))))
+        (or (string-equal "2567.60464" res :end2 10) res)))
+  t)
+
 (deftest ccl.bug#344
-    (flet ((try (n)
+    (flet ((try (count)
              (let ((cname (gensym))
                    (gname (gensym)))
                (eval `(progn
