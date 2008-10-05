@@ -534,6 +534,18 @@
   (:duplicate-definition))
 
 
+(deftest ccl.bug#344
+    (flet ((try (n)
+             (let ((cname (gensym))
+                   (gname (gensym)))
+               (eval `(progn
+                        (defclass ,cname () ())
+                        ,.(loop for n from 1 to count
+                                collect `(defmethod ,gname ((arg0 ,cname) (arg1 (eql ,n)))))))
+               (handler-case (progn (funcall gname (make-instance cname) 1) nil)
+                 (error (c) :error)))))
+      (list (try 46) (try 200)))
+  (nil nil))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
