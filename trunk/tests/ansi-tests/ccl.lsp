@@ -534,6 +534,20 @@
   (:duplicate-definition))
 
 
+(deftest ccl.41334-6
+    (test-dup-warnings
+     "(defun test.41334-6 () nil)"
+     "(let ((closed nil))
+        (defun test.41334-6 () closed))")
+  (:duplicate-definition))
+
+(deftest ccl.41334-7
+    (test-dup-warnings
+     "(defun test.41334-7 () nil)"
+     "(unless (fboundp 'test.31334-7)
+        (defun test.41334-7 () t))")
+  nil)
+
 #+not-yet
 (deftest ccl.bug#340
     (labels ((fact (n) (if (zerop n) 1 (* n (fact (1- n))))))
