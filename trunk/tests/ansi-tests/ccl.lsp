@@ -548,6 +548,22 @@
         (defun test.41334-7 () t))")
   nil)
 
+(deftest ccl.41334-8
+    (test-dup-warnings
+     "(defun (setf test.41334-8) (val) val)"
+     "(let ((closed nil))
+         (defun (setf test.41334-8) (val) val closed))")
+  (:duplicate-definition))
+
+(deftest ccl.49321
+    (test-dup-warnings
+     "(defclass ccl.49321 () ((x :initarg :x)))
+      (progn
+         (print 'ccl.49321)
+         (let ((go (defun make-ccl.49321 (&key x) (make-instance 'ccl.49321 :x x))))
+            go))")
+  nil)
+
 #+not-yet
 (deftest ccl.bug#340
     (labels ((fact (n) (if (zerop n) 1 (* n (fact (1- n))))))
