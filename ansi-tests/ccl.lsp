@@ -456,6 +456,41 @@
   :no-error)
 
 
+(deftest ccl.bug#254
+  (let ((warnings nil)
+        (test "
+(define-method-combination ccl.bug#254 ()
+         ((around (:around))
+          (before (:before))
+          (primary () :required t)
+          (after (:after)))
+   (:arguments &optional args)
+
+   (flet ((call-methods (methods)
+            (mapcar #'(lambda (method)
+                        `(call-method ,method))
+                    methods)))
+     (let ((form (if (or before after (rest primary))
+                     `(multiple-value-prog1
+                        (progn ,@(call-methods before)
+                               (call-method ,(first primary)
+                                            ,(rest primary)))
+                        ,@(call-methods (reverse after)))
+                     `(call-method ,(first primary)))))
+        `(progn (print ,args)
+       ,(if around
+           `(call-method ,(first around)
+                         (,@(rest around)
+                          (make-method ,form)))
+           form)))))
+"))
+    (handler-bind ((warning (lambda (c)
+                              (push c warnings)
+                              (muffle-warning c))))
+      (test-compile (test-source-file test)))
+    warnings)
+  ())
+
 (defun test-dup-warnings (test1 &optional test2)
   (let ((warnings nil))
     (handler-bind ((warning (lambda (c)
