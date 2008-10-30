@@ -620,6 +620,16 @@
   (nil nil))
 
 
+(deftest ccl.50130
+    ;; The compiler policy hack is just to have a predicatable way to catch the bug.
+    ;; It doesn't have anything to do with causing the bug to happen.
+    (let ((ccl::*default-file-compilation-policy* (ccl::new-compiler-policy :the-typechecks t))
+          (f (test-source-file "(defun cl-test::ccl.50130-fn (arr idx)
+                                  (aref (the (or (vector fixnum) (vector (unsigned-byte 8))) arr) idx))")))
+      (test-compile f :load t)
+      (funcall 'cl-test::ccl.50130-fn (make-array 4 :element-type 'fixnum :initial-element 17) 2))
+  17)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
