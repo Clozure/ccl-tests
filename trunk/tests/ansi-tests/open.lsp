@@ -252,10 +252,11 @@
 (def-open-test open.56 (:direction :input)
   (let ((seq (make-array 10))) (read-sequence seq s) seq)
   (#(0 1 2 3 4 5 6 7 8 9)) :element-type (unsigned-byte 32))
-
+#+(or (not ccl) (not 32-bit-target))
 (def-open-test open.57 ()
   (let ((seq (make-array 10))) (read-sequence seq s) seq)
   (#(0 1 2 3 4 5 6 7 8 9)) :element-type (unsigned-byte 33))
+#+(or (not ccl) (not 32-bit-target))
 (def-open-test open.58 (:direction :input)
   (let ((seq (make-array 10))) (read-sequence seq s) seq)
   (#(0 1 2 3 4 5 6 7 8 9)) :element-type (unsigned-byte 33))
@@ -520,6 +521,7 @@
   (#(0 1 2 3 4 5 6 7 8 9))
   :element-type (unsigned-byte 32))
 
+#+(or (not ccl) (not 32-bit-target))
 (def-open-output-test open.output.18 ()
   (progn (close s) (with-open-file (is #p"tmp.dat"
 				       :element-type '(unsigned-byte 64))
@@ -859,6 +861,7 @@
   (#(0 1 2 3 4 5 6 7 8 9))
   :element-type (unsigned-byte 32))
 
+#+(or (not ccl) (not 32-bit-target))
 (def-open-io-test open.io.18 ()
   (progn (file-position s :start)
 	 (let ((seq (make-array 10)))
@@ -1094,7 +1097,9 @@
 (def-open-probe-test open.probe.32 (:element-type '(unsigned-byte 17)) t)
 (def-open-probe-test open.probe.33 (:element-type '(unsigned-byte 31)) t)
 (def-open-probe-test open.probe.34 (:element-type '(unsigned-byte 32)) t)
+#+(or (not ccl) (not 32-bit-target))
 (def-open-probe-test open.probe.35 (:element-type '(unsigned-byte 33)) t)
+#+(or (not ccl) (not 32-bit-target))
 (def-open-probe-test open.probe.36 (:element-type '(integer -1002 13112)) t)
 
 ;;;; Error tests
