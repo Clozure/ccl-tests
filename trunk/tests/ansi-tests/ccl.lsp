@@ -630,6 +630,17 @@
       (funcall 'cl-test::ccl.50130-fn (make-array 4 :element-type 'fixnum :initial-element 17) 2))
   17)
 
+(deftest ccl.50646-bug#378
+    (progn
+      (define-method-combination ccl.50646-method-combination ()
+        ((around (:around)) (primary ()))
+        `(call-method ,(first around) ((make-method (call-method ,(first primary))))))
+      (defgeneric ccl.50646-gf (x) (:method-combination ccl.50646-method-combination))
+      (defmethod ccl.50646-gf ((x integer)) x)
+      (defmethod ccl.50646-gf :around ((x integer)) (call-next-method x))
+      (ccl.50646-gf 23))
+  23)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
