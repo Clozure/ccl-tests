@@ -641,6 +641,14 @@
       (ccl.50646-gf 23))
   23)
 
+(deftest ccl.50911
+    (progn
+      (defclass ccl.50911-class () ((slot-a :initarg :a :reader ccl.50911-slot-a)))
+      (ccl::%snap-reader-method #'ccl.50911-slot-a)
+      (ccl:finalize-inheritance (find-class 'ccl.50911-class))
+      (ccl.50911-slot-a (make-instance 'ccl.50911-class :a :test)))
+  :test)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
