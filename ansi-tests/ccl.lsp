@@ -649,6 +649,20 @@
       (ccl.50911-slot-a (make-instance 'ccl.50911-class :a :test)))
   :test)
 
+(deftest ccl.50911-a
+    (let ((called 0))
+      (defclass ccl.50911-a () ())
+      (defun ccl.50911-a-fn () (make-instance 'ccl.50911-a))
+      (defmethod initialize-instance ((x ccl.50911-a) &rest keys) keys (incf called))
+      (ccl.50911-a-fn)
+      (defmethod initialize-instance :after ((x ccl.50911-a) &rest keys) keys (incf called))
+      (ccl.50911-a-fn)
+      (ccl::optimize-make-instance-for-class-name 'ccl.50911-a)
+      (ccl.50911-a-fn)
+      called)
+  5)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
