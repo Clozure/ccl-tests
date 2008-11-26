@@ -663,6 +663,13 @@
   5)
 
 
+(deftest ccl.bug-misc-init
+    (progn
+      (funcall (lambda () (make-array 1 :element-type '(signed-byte 16) :initial-element -1)))
+      t)
+  t)
+  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
