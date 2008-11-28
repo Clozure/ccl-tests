@@ -287,7 +287,8 @@
 
 (deftest ccl.bug#252a
     (let ((pn "bug252.dat"))
-      (delete-file pn)
+      (when (probe-file pn)
+	(delete-file pn))
       (let ((stream (open pn :direction :output :if-exists :error)))
         (print "something" stream)
         (close stream :abort t)
@@ -296,7 +297,8 @@
 
 (deftest ccl.bug#252b
     (let ((pn "bug252.dat"))
-      (delete-file pn)
+      (when (probe-file pn)
+	(delete-file pn))
       (let ((stream (open pn :direction :output)))
         (format stream "something~%")
         (close stream))
@@ -669,7 +671,12 @@
       t)
   t)
   
-
+(deftest ccl.bug#382
+    (string= (with-output-to-string (s)
+	       (funcall #'(lambda () (write-string "foobar" s :end 2))))
+	     "fo")
+  t)
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
