@@ -677,6 +677,15 @@
 	     "fo")
   t)
   
+(deftest ccl.52006
+    (progn
+      (defclass ccl.52006-class () ((slot :initarg :slot)) (:default-initargs :slot nil))
+      (defun test-1 (args) (apply #'make-instance 'ccl.52006-class args))
+      (ccl::optimize-make-instance-for-class-name 'ccl.52006-class)
+      (slot-value (test-1 nil) 'slot))
+  nil)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
