@@ -686,6 +686,12 @@
   nil)
 
 
+(deftest ccl.bug#387
+    (handler-case
+        (coerce #(127 0 0 256) '(simple-array (unsigned-byte 8) (*)))
+      (type-error () :type-error))
+  :type-error)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
