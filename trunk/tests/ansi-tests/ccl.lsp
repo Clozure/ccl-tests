@@ -692,6 +692,22 @@
       (type-error () :type-error))
   :type-error)
 
+(deftest ccl.49462
+    (let ((file (test-source-file "(defun ccl.49462-fn (x) x)
+(defmacro ccl.49462-macro (x) (error \"(macro ~~s)\" x))
+(ccl.49462-macro 1)")))
+      (handler-case
+          (with-compilation-unit (:override t)
+            (handler-bind ((error (lambda (c)
+                                    (declare (ignore c))
+                                    (with-open-file (f file :direction :output)
+                                      (format f "(defun ccl.49462-fn (x) x)"))
+                                    (invoke-restart 'ccl::retry-compile-file))))
+              (test-compile file :hide-warnings t))
+            nil)
+        (warning (c) c)))
+  nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
