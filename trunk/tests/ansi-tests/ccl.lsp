@@ -731,6 +731,13 @@
   1)
 
 
+(deftest ccl.bug-overflow-handling
+    (funcall (test-compile '(lambda ()
+                             (let ((upper-bound most-positive-fixnum))
+                               (let ((lower-bound (- (1+ upper-bound))))
+                                 lower-bound)))))
+  #.most-negative-fixnum)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
