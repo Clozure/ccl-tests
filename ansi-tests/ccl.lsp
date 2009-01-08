@@ -502,7 +502,7 @@
                                         c) warnings)
                                 (muffle-warning c)))))
       (if test2
-        (with-compilation-unit ()
+        (with-compilation-unit (:override t)
           (test-compile (test-source-file test1) :hide-warnings t)
           (test-compile (test-source-file test2) :hide-warnings t))
         (test-compile (test-source-file test1 :hide-warnings t))))
@@ -707,6 +707,29 @@
             nil)
         (warning (c) c)))
   nil)
+
+(deftest ccl.49462-redux-1
+    (let ((file (test-source-file "(defun ccl.49462-redux-1-fn (x) x)")))
+      (handler-case 
+          (with-compilation-unit (:override t)
+            (test-compile file :hide-warnings t)
+            (test-compile file :hide-warnings t)
+            nil)
+        (warning (c) c)))
+  nil)
+
+
+(deftest ccl.49462-redux-2
+    (let ((file (test-source-file "(defun ccl.49462-redux-2-fn (x) x)"))
+          (warnings ()))
+      (handler-bind ((warning (lambda (c) (push c warnings))))
+        (with-compilation-unit (:override t)
+          (with-compilation-unit ()
+            (test-compile file))
+          (test-compile file :hide-warnings t)))
+      (length warnings))
+  1)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
