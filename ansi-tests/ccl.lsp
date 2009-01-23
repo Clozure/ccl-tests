@@ -738,6 +738,17 @@
                                  lower-bound)))))
   #.most-negative-fixnum)
 
+
+(deftest ccl.51790
+    (let ((var))
+      (setq var t)
+      (list
+       (handler-case (format nil "~:[First case;second case~]" var)
+         (error () :error))
+       (handler-case (format nil "~:[First case;second case~]" (not var))
+         (error () :error))))
+  (:error :error))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
