@@ -731,7 +731,6 @@
   1)
 
 
-#-ccl-0711 ;; backed out of fix temporarily because triggers bug#411
 (deftest ccl.bug-overflow-handling
     (funcall (test-compile '(lambda ()
                              (let ((upper-bound most-positive-fixnum))
@@ -739,6 +738,13 @@
                                  lower-bound)))))
   #.most-negative-fixnum)
 
+
+(deftest ccl.bug#412
+    (funcall (test-compile '(lambda ()
+                             (let* ((x most-negative-fixnum)
+                                    (y 1))
+                               (- x y)))))
+  #.(1- most-negative-fixnum))
 
 (deftest ccl.bug#411
     (funcall (test-compile '(lambda ()
