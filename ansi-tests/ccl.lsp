@@ -739,6 +739,11 @@
   #.most-negative-fixnum)
 
 
+(deftest ccl.bug#411
+    (funcall (test-compile '(lambda ()
+                             (let ((x 0)) (+ 3416133997 x)))))
+  3416133997)
+
 (deftest ccl.51790
     (let ((var))
       (setq var t)
