@@ -731,6 +731,7 @@
   1)
 
 
+#-ccl-0711 ;; backed out of fix temporarily because triggers bug#411
 (deftest ccl.bug-overflow-handling
     (funcall (test-compile '(lambda ()
                              (let ((upper-bound most-positive-fixnum))
