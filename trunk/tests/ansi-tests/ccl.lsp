@@ -761,6 +761,14 @@
          (error () :error))))
   (:error :error))
 
+(deftest ccl.bug#321
+    (handler-case
+        (progn
+          (format nil "~a" (make-condition 'style-warning))
+          :no-error)
+      (error () :error))
+  :no-error)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
