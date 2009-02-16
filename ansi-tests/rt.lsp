@@ -386,8 +386,9 @@
 		 unless (gethash pend expected-table)
 		 collect pend)))
       (if (null pending)
-	  (format s "~&No tests failed.")
+	  (format s "~2&=============== All tests succeeded ===============~2%")
 	(progn
+          (format s "~2&================ Test suite failed ================~2%")
 	  (format s "~&~A out of ~A ~
                    total tests failed: ~
                    ~:@(~{~<~%   ~1:;~S~>~
