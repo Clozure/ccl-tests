@@ -761,6 +761,47 @@
          (error () :error))))
   (:error :error))
 
+(deftest ccl.bug#409
+    (let ((errors ()))
+      (handler-bind ((ccl::compiler-warning
+                      (lambda (c)
+                        (push (ccl::compiler-warning-function-name c) errors)
+                        (muffle-warning c))))
+        (let ((file (test-source-file "(in-package :cl-test)
+                                       (defun ccl.bug#409a1 (x) (declare (type 17 x)) x)
+                                       (defun ccl.bug#409a2 (x) x (the 17 x))
+                                       (defun ccl.bug#409a3 (x) x (typep x 17))
+                                       (defun ccl.bug#409a4 (x) x (make-array 3 :element-type 17))
+
+                                       (defun ccl.bug#409b1 (x) (declare (type (cons number number list) x)) x)
+                                       (defun ccl.bug#409b2 (x) x (the (cons number number list) x))
+                                       (defun ccl.bug#409b3 (x) x (typep x '(cons number number list)))
+                                       (defun ccl.bug#409b4 (x) x (make-array 3 :element-type '(cons number number list)))
+
+                                       (defun ccl.bug#409c1 (x) (declare (type (sequence symbol) x)) x)
+                                       (defun ccl.bug#409c2 (x) x (the (sequence symbol) x))
+                                       (defun ccl.bug#409c3 (x) x (typep x '(sequence symbol)))
+                                       (defun ccl.bug#409c4 (x) x (make-array 3 :element-type '(sequence symbol) :initial-element x))
+                                      ")))
+          (test-compile file :hide-warnings t :break-on-program-errors nil)))
+      errors)
+  ((ccl.bug#409c4) (ccl.bug#409c3) (ccl.bug#409c2) (ccl.bug#409c1)
+   (ccl.bug#409b4) (ccl.bug#409b3) (ccl.bug#409b2) (ccl.bug#409b1)
+   (ccl.bug#409a4) (ccl.bug#409a3) (ccl.bug#409a2) (ccl.bug#409a1)))
+
+(deftest ccl.53584
+    (let ((file (test-source-file "(defclass cl-test::ccl.53584 () ((x :type (sequence integer) :initarg :x)))"))
+          (warnings ()))
+      (handler-case
+          (handler-bind ((ccl::compiler-warning
+                          (lambda (c) (push :compile-time warnings) (muffle-warning c)))
+                         (warning
+                          (lambda (c) (push :load-time warnings) (muffle-warning c))))
+            (test-compile file :hide-warnings t :load t)
+            (make-instance 'ccl.53584 :x '(17)))
+        (error () (push :run-time warnings)  warnings)))
+  (:run-time :load-time :compile-time))
+
 (deftest ccl.bug#321
     (handler-case
         (progn
