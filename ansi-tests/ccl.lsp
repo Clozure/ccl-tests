@@ -622,6 +622,7 @@
   (nil nil))
 
 
+#+not-yet
 (deftest ccl.50130
     ;; The compiler policy hack is just to have a predicatable way to catch the bug.
     ;; It doesn't have anything to do with causing the bug to happen.
