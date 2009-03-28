@@ -622,7 +622,6 @@
   (nil nil))
 
 
-#+not-yet
 (deftest ccl.50130
     ;; The compiler policy hack is just to have a predicatable way to catch the bug.
     ;; It doesn't have anything to do with causing the bug to happen.
@@ -812,6 +811,21 @@
           :no-error)
       (error () :error))
   :no-error)
+
+(deftest ccl.loop-array
+    (let ((x nil))
+      (declare (optimize (safety 3) (speed 1)))
+      (setq x nil)
+      (handler-case
+          (loop for a across x collect a)
+        (type-error () :error)))
+  :error)
+
+(deftest ccl.loop-on
+    (locally (declare (optimize (safety 3) (speed 1)))
+      (loop for (head . tail) on '(a . b) when head collect tail))
+  (b))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
