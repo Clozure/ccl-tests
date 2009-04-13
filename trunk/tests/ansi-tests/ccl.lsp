@@ -827,6 +827,18 @@
   (b))
 
 
+(deftest ccl.57900.1 ;; don't crash on simple access errors
+    (handler-case (funcall (lambda (x) (declare (optimize (safety 1) (speed 1))) (ccl::%caar x))
+                           *standard-input*)
+      (storage-condition () :storage-condition))
+  :storage-condition)
+
+(deftest ccl.57900.2
+    (handler-case (funcall (lambda (x) (declare (optimize (safety 1) (speed 1))) (ccl::%caar x))
+                           0)
+      (storage-condition () :storage-condition))
+  :storage-condition)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
