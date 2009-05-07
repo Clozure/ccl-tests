@@ -812,6 +812,7 @@
       (error () :error))
   :no-error)
 
+#+ccl-0711
 (deftest ccl.loop-array
     (let ((x nil))
       (declare (optimize (safety 3) (speed 1)))
@@ -838,6 +839,13 @@
                            0)
       (storage-condition () :storage-condition))
   :storage-condition)
+
+(deftest ccl.next-method-p
+    (let ((file (test-source-file "(defmethod cl-test::ccl.next-method-gf (x) (if (next-method-p) (call-next-method) x))")))
+      (fmakunbound 'cl-test::ccl.next-method-gf)
+      (test-compile file :load t)
+      (funcall 'cl-test::ccl.next-method-gf 3))
+  3)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
