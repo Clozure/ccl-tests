@@ -197,3 +197,32 @@
 (deftest keyword-and-boolean-are-disjoint
   (classes-are-disjoint 'keyword 'boolean)
   nil)
+
+
+(defclass proper-class nil nil)
+
+(deftest proper-class-defines-type
+  (not (signals-error (typep 5 'proper-class) error))
+  t)
+  
+(deftest proper-class-type-undisturbed-by-alias
+  (progn
+    (setf (find-class 'improper-alias) (find-class 'proper-class))
+    (not (signals-error (typep 5 'proper-class) error)))
+  t)
+  
+(deftest class-alias-defines-type?
+  ;; will define a type for the improper name on SBCL, ECL
+  ;; but not in CLISP, CCL.
+  ;; Apparently the behavior of the latter is correct.
+  (progn
+    (setf (find-class 'improper-alias) (find-class 'proper-class))
+    (signals-error (typep 5 'improper-alias) error))
+  t)
+
+(deftest define-type-for-class-alias
+  (progn
+    (setf (find-class 'improper-alias) (find-class 'proper-class))
+    (not (signals-error
+           (deftype improper-alias nil 'proper-class) error)))
+  t)
