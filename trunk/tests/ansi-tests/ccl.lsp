@@ -956,6 +956,17 @@
                             (defclass ccl.49345-fwd-type () ())")
   ())
 
+(deftest ccl.bug#470
+    (funcall (lambda ()
+               (declare (optimize (safety 1) (speed 1)))
+               (let ((array (make-array '(1 1) :initial-element 2.0
+                                        :element-type 'single-float))
+                     (var 1.0))
+                 (setf (aref array 0 0) var
+                       var nil))))
+  nil)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
