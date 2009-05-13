@@ -239,6 +239,12 @@
     (let* ((*in-test* t)
 	   ;; (*break-on-warnings* t)
 	   (aborted nil)
+           ;; Don't let tests change the global optimize settings.
+           #+ccl (ccl::*nx-speed* ccl::*nx-speed*)
+           #+ccl (ccl::*nx-space* ccl::*nx-space*)
+           #+ccl (ccl::*nx-safety* ccl::*nx-safety*)
+           #+ccl (ccl::*nx-cspeed* ccl::*nx-cspeed*)
+           #+ccl (ccl::*nx-debug* ccl::*nx-debug*)
 	   r)
       ;; (declare (special *break-on-warnings*))
 
