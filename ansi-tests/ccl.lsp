@@ -87,7 +87,7 @@
       (warning (c)
         (when (typep c 'ccl::compiler-warning)
           (ccl::compiler-warning-warning-type c))))
-  :unknown-type-declaration)
+  :undefined-type)
 
 
 (defclass ccl.bug#285 () ())
@@ -505,7 +505,7 @@
         (with-compilation-unit (:override t)
           (test-compile (test-source-file test1) :hide-warnings t)
           (test-compile (test-source-file test2) :hide-warnings t))
-        (test-compile (test-source-file test1 :hide-warnings t))))
+        (test-compile (test-source-file test1) :hide-warnings t)))
     warnings))
 
 
@@ -822,6 +822,7 @@
         (type-error () :error)))
   :error)
 
+#+ccl-0711 ;; typechecking declarations
 (deftest ccl.loop-on
     (locally (declare (optimize (safety 3) (speed 1)))
       (loop for (head . tail) on '(a . b) when head collect tail))
@@ -846,6 +847,114 @@
       (test-compile file :load t)
       (funcall 'cl-test::ccl.next-method-gf 3))
   3)
+
+(deftest ccl.49345-1
+    (test-dup-warnings
+     "(defclass test.ccl-49345-1 () ())
+      (defclass test.ccl-49345-1 () ())")
+  (:duplicate-definition))
+
+(deftest ccl.49345-2
+    (test-dup-warnings
+     "(defstruct (test.ccl-49345-2 (:copier  nil) (:predicate nil) (:constructor nil)))
+      (defstruct (test.ccl-49345-2 (:copier  nil) (:predicate nil) (:constructor nil)))")
+  (:duplicate-definition))
+
+(deftest ccl.49345-3
+    (test-dup-warnings
+     "(deftype test.ccl-49345-3 () 'integer)
+      (deftype test.ccl-49345-3 () 'integer)")
+  (:duplicate-definition))
+
+(deftest ccl.49345-4
+    (test-dup-warnings
+     "(defclass test.ccl-49345-4 () ())
+      (deftype test.ccl-49345-4 () 'integer)")
+  (:duplicate-definition))
+
+#+not-yet
+(deftest ccl.49345-5
+    (test-dup-warnings
+     "(defclass test.ccl-49345-5 () ())
+      (let ((closed nil))
+         (defclass test.ccl-49345-5 () ((slot :initform closed))))")
+  (:duplicate-definition))
+
+#+not-yet
+(deftest ccl.49345-6
+    (test-dup-warnings
+     "(defclass test.ccl-49345-6 () ())"
+     "(let ((closed nil))
+         (defstruct test.ccl-49345-6 (x closed)))")
+  (:duplicate-definition))
+
+(deftest ccl.49345-7
+    (test-dup-warnings
+     "(defclass test.ccl-49345-7 () ())
+      (when (find-class 'test.ccl-49345-7 nil)
+         (defclass test.ccl-49345-7 () ()))")
+  ())
+
+(defun test-compiler-warning (text)
+  (let ((warnings nil))
+    (handler-bind ((ccl::compiler-warning (lambda (c)
+					    (push (ccl::compiler-warning-warning-type c) warnings)
+					    (muffle-warning c))))
+      (test-compile (test-source-file text) :hide-warnings t))
+    warnings))
+  
+(deftest ccl.49345-u1
+    (test-compiler-warning "(defun ccl.49345-u1 (x) (typep x 'ccl.49345-u1-type))")
+  (:undefined-type))
+
+(deftest ccl.49345-u2
+    (test-compiler-warning "(defun ccl.49345-u2 (x) (declare (type ccl.49345-u2-type x)) x)")
+  (:undefined-type))
+
+(deftest ccl.49345-u3
+    (test-compiler-warning "(defun ccl.49345-u3 (x) (the ccl.49345-u3-type x))")
+  (:undefined-type))
+
+(deftest ccl.49345-u4
+    (test-compiler-warning "(defun ccl.49345-u4 (x) (make-array x :element-type 'ccl.49345-u4-type))")
+  (:undefined-type))
+
+(deftest ccl.49345-u5
+    (test-compiler-warning "(defun ccl.49345-u5 (x) (coerce x 'ccl.49345-u5-type))")
+  (:undefined-type))
+
+(deftest ccl.49345-u6
+    (test-compiler-warning "(declaim (type ccl.49345-u6-type *ccl.49345-u6*))")
+  (:undefined-type))
+
+(deftest ccl.49345-i1
+    (test-compiler-warning "(defun ccl.49345-i1 (x) (typep x '(sequence integer)))")
+  (:invalid-type))
+
+(deftest ccl.49345-i2
+    (test-compiler-warning "(defun ccl.49345-i2 (x) (declare (type (sequence integer) x)) x)")
+  (:invalid-type))
+
+(deftest ccl.49345-i3
+    (test-compiler-warning "(defun ccl.49345-i3 (x) (the (sequence integer) x))")
+  (:invalid-type))
+
+(deftest ccl.49345-i4
+    (test-compiler-warning "(defun ccl.49345-i4 (x) (make-array x :element-type '(sequence integer)))")
+  (:invalid-type))
+
+(deftest ccl.49345-i5
+    (test-compiler-warning "(defun ccl.49345-i5 (x) (coerce x '(sequence integer)))")
+  (:invalid-type))
+
+(deftest ccl.49345-i6
+    (test-compiler-warning "(declaim (type (sequence integer) *ccl.49345-i6*))")
+  (:invalid-type))
+
+(deftest ccl.49345-fwd
+    (test-compiler-warning "(defun ccl.49345-fwd-fn (x ) (typep x 'ccl.49345-fwd-type))
+                            (defclass ccl.49345-fwd-type () ())")
+  ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
