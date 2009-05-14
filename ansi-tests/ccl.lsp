@@ -980,6 +980,10 @@
     (test-compiler-warning "(declaim (optimize (ccl.57879-5a ccl.57879-5b)))")
   (:unknown-declaration))
 
+(deftest ccl.59726
+    (test-compiler-warning "(defun ccl.59726-fn () #'ccl.59726-unknown)")
+  (:undefined-function))
+
 (deftest ccl.bug#470
     (funcall (lambda ()
                (declare (optimize (safety 1) (speed 1)))
