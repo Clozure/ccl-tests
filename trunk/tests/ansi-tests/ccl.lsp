@@ -956,6 +956,30 @@
                             (defclass ccl.49345-fwd-type () ())")
   ())
 
+(deftest ccl.57879-1
+    (test-compiler-warning "(defun foo (x) (declare (ccl.57879-1 'foo)) x)")
+  (:unknown-declaration))
+
+(deftest ccl.57879-2
+    (handler-case
+        (test-compile (test-source-file "(proclaim '(ccl.57879-2 3))") :hide-warnings t :load t)
+      (program-error () :error))
+  :error)
+
+(deftest ccl.57879-3
+    (test-compiler-warning "(declaim (ccl.57879-3 3))")
+  (:unknown-declaration))
+
+(deftest ccl.57879-4
+    (handler-case
+        (test-compile (test-source-file "(proclaim '(optimize (ccl.57879-4a ccl.57879-4b)))") :hide-warnings t :load t)
+      (program-error () :error))
+  :error)
+
+(deftest ccl.57879-5
+    (test-compiler-warning "(declaim (optimize (ccl.57879-5a ccl.57879-5b)))")
+  (:unknown-declaration))
+
 (deftest ccl.bug#470
     (funcall (lambda ()
                (declare (optimize (safety 1) (speed 1)))
