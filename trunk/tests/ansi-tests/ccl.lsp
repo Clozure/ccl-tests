@@ -994,6 +994,28 @@
                        var nil))))
   nil)
 
+(deftest ccl.55959.bug#474
+    (block test
+      (handler-bind ((program-error (lambda (c)
+                                      (declare (ignore c))
+                                      (return-from test
+                                        (handler-case (progn
+                                                        (with-output-to-string (s)
+                                                          (ccl:print-call-history :stream s))
+                                                        :success)
+                                          (error (c) c))))))
+        (labels ((inner (x &key a)
+                   ;; try to make sure this will use at least one saved register
+                   (loop (concatenate x a) (concatenate x a) (concatenate x a)))
+                 (outer (x)
+                   ;; try to make sure this will use a saved register for X so backtrace will try to find it.
+                   (setq x (list (list x) :bogus-key (list (list x) (list x))))
+                   ;; call inner with bad keyword arg, to cause error before it saves its saved regs
+                   (apply #'inner x)
+                   x))
+          (declare (notinline inner outer))
+          (outer 3))))
+  :success)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
