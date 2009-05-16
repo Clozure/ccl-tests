@@ -909,11 +909,11 @@
 
 (deftest ccl.49345-u2
     (test-compiler-warning "(defun ccl.49345-u2 (x) (declare (type ccl.49345-u2-type x)) x)")
-  (:undefined-type))
+  (:unknown-type-in-declaration))
 
 (deftest ccl.49345-u3
     (test-compiler-warning "(defun ccl.49345-u3 (x) (the ccl.49345-u3-type x))")
-  (:undefined-type))
+  (:unknown-type-in-declaration))
 
 (deftest ccl.49345-u4
     (test-compiler-warning "(defun ccl.49345-u4 (x) (make-array x :element-type 'ccl.49345-u4-type))")
@@ -933,7 +933,7 @@
 
 (deftest ccl.49345-i2
     (test-compiler-warning "(defun ccl.49345-i2 (x) (declare (type (sequence integer) x)) x)")
-  (:invalid-type))
+  (:unknown-type-in-declaration))
 
 (deftest ccl.49345-i3
     (test-compiler-warning "(defun ccl.49345-i3 (x) (the (sequence integer) x))")
@@ -958,7 +958,7 @@
 
 (deftest ccl.57879-1
     (test-compiler-warning "(defun foo (x) (declare (ccl.57879-1 'foo)) x)")
-  (:unknown-declaration))
+  (:unknown-type-in-declaration))
 
 (deftest ccl.57879-2
     (handler-case
@@ -968,7 +968,7 @@
 
 (deftest ccl.57879-3
     (test-compiler-warning "(declaim (ccl.57879-3 3))")
-  (:unknown-declaration))
+  (:bad-declaration))
 
 (deftest ccl.57879-4
     (handler-case
@@ -978,7 +978,7 @@
 
 (deftest ccl.57879-5
     (test-compiler-warning "(declaim (optimize (ccl.57879-5a ccl.57879-5b)))")
-  (:unknown-declaration))
+  (:bad-declaration))
 
 (deftest ccl.59726
     (test-compiler-warning "(defun ccl.59726-fn () #'ccl.59726-unknown)")
