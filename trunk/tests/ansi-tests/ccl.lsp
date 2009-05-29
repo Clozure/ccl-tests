@@ -958,7 +958,7 @@
 
 (deftest ccl.57879-1
     (test-compiler-warning "(defun foo (x) (declare (ccl.57879-1 'foo)) x)")
-  (:unknown-type-in-declaration))
+  (:bad-declaration))
 
 (deftest ccl.57879-2
     (handler-case
@@ -979,6 +979,14 @@
 (deftest ccl.57879-5
     (test-compiler-warning "(declaim (optimize (ccl.57879-5a ccl.57879-5b)))")
   (:bad-declaration))
+
+;; By special dispensation, don't complain, even though can't optimize the slot reference.
+(deftest ccl.57879-6
+    (test-compiler-warning "(defstruct ccl.57879-6-struct (slot nil :type (or null ccl.57879-6-type)))
+                            (defun ccl.57879-6-fn (x) (ccl.57879-6-struct-slot x))
+
+                            (deftype ccl.57879-6-type () 'null)")
+  ())
 
 (deftest ccl.59726
     (test-compiler-warning "(defun ccl.59726-fn () #'ccl.59726-unknown)")
