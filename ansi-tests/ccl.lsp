@@ -1025,6 +1025,11 @@
           (outer 3))))
   :success)
 
+(deftest ccl.r12217
+    (with-input-from-string (s "123")
+      (file-position s 3))
+  3)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
