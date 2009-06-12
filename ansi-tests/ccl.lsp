@@ -625,8 +625,7 @@
 (deftest ccl.50130
     ;; The compiler policy hack is just to have a predicatable way to catch the bug.
     ;; It doesn't have anything to do with causing the bug to happen.
-    (let ((ccl::*default-file-compilation-policy* (ccl::new-compiler-policy #+ccl-0711 :declarations-typecheck
-                                                                            #-ccl-0711 :the-typechecks
+    (let ((ccl::*default-file-compilation-policy* (ccl::new-compiler-policy :declarations-typecheck
                                                                             t))
           (f (test-source-file "(defun cl-test::ccl.50130-fn (arr idx)
                                   (aref (the (or (vector fixnum) (vector (unsigned-byte 8))) arr) idx))")))
@@ -812,7 +811,6 @@
       (error () :error))
   :no-error)
 
-#+ccl-0711
 (deftest ccl.loop-array
     (let ((x nil))
       (declare (optimize (safety 3) (speed 1)))
@@ -822,7 +820,6 @@
         (type-error () :error)))
   :error)
 
-#+ccl-0711 ;; typechecking declarations
 (deftest ccl.loop-on
     (locally (declare (optimize (safety 3) (speed 1)))
       (loop for (head . tail) on '(a . b) when head collect tail))
