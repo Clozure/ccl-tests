@@ -1027,6 +1027,11 @@
       (file-position s 3))
   3)
 
+(deftest ccl.the-with-constant-values
+  (eval '(the (values integer) 23))
+  23)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
