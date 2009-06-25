@@ -1031,6 +1031,12 @@
   (eval '(the (values integer) 23))
   23)
 
+(defmacro ccl.bug#543.macro (init) `(make-array (length ,init)))
+
+(deftest ccl.bug#543
+    (length (funcall (lambda () (progn (the array (ccl.bug#543.macro '(a b)))))))
+  2)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
