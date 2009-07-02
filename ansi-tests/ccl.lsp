@@ -1040,6 +1040,14 @@
     (length (funcall (lambda () (progn (the array (ccl.bug#543.macro '(a b)))))))
   2)
 
+(deftest ccl.bug#543a
+    (handler-case
+        (progn
+          (test-compile '(lambda (x y)
+                          (the fixnum (- (the fixnum (aref (the (array fixnum 1) x) (aref (the (simple-array fixnum 1) y) 0)))))))
+          :win)
+      (serious-condition (c) c))
+  :win)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
