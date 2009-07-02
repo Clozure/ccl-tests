@@ -264,6 +264,7 @@
 	      :nonsense-argument t)
   #(x x x x))
 
+#-(and clozure ppc32-target)         ; uses more stack than we have
 (deftest make-array.28
   (let ((*package* (find-package :cl-test)))
     (let ((len (1- (min 10000 array-rank-limit))))
