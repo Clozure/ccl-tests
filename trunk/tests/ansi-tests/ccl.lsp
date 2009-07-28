@@ -1049,6 +1049,12 @@
       (serious-condition (c) c))
   :win)
 
+(deftest ccl.r12429
+    (let ((ccl::*print-string-length* 10))
+      (with-standard-io-syntax
+	  (values (read-from-string (prin1-to-string "123456789012345")))))
+  "123456789012345")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
