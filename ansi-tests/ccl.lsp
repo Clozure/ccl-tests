@@ -901,7 +901,7 @@
 					    (push (ccl::compiler-warning-warning-type c) warnings)
 					    (muffle-warning c))))
       (test-compile (test-source-file text) :hide-warnings t))
-    warnings))
+    (nreverse warnings)))
   
 (deftest ccl.49345-u1
     (test-compiler-warning "(defun ccl.49345-u1 (x) (typep x 'ccl.49345-u1-type))")
@@ -1054,6 +1054,108 @@
       (with-standard-io-syntax
 	  (values (read-from-string (prin1-to-string "123456789012345")))))
   "123456789012345")
+
+(deftest ccl.decl.1
+    (test-compiler-warning "(defun ccl.decl.1 (a) (lambda () (declare (fixnum a)) a))")
+  ())
+
+(deftest ccl.decl.2
+    (test-compiler-warning "(defun ccl.decl.2 (a) (flet ((fn () (declare (fixnum a)) a)) #'fn))")
+  ())
+
+(deftest ccl.decl.3
+    (test-compiler-warning "(defun ccl.decl.3 ()
+                              (declare (dynamic-extent #'ccl.decl.3-none-such)
+                                       (notinline ccl.decl.3-none-other)))")
+  (:unknown-declaration-function :unknown-declaration-function))
+
+(deftest ccl.decl.4
+    (test-compiler-warning "(defun ccl.decl.4 () (flet ((fn () t) (fn1 () t)) (declare (inline fn) (dynamic-extent #'fn1)) (list (fn) (fn1))))")
+  ())
+
+(deftest ccl.decl.5
+    (test-compiler-warning "(defun ccl.decl.5 () (flet ((fn () t)) (declare (notinline ccl.decl.5-none-sch) (dynamic-extent #'ccl.decl.5-non-other)) #'fn))")
+  (:unknown-declaration-function :unknown-declaration-function))
+
+(deftest ccl.ftype.1
+    (test-compiler-warning "(lambda () (declare (ftype integer ccl.ftype.1)))")
+  (:bad-declaration))
+
+(deftest ccl.ftype.2
+    (test-compiler-warning "(lambda () (declare (ftype function ccl.ftype.2)) #'ccl.ftype.2)")
+  ())
+
+(deftest ccl.ftype.3
+    (test-compiler-warning "(declaim (ftype (function (t) (values integer)) ccl.ftype.3))
+                            (defun ccl.ftype.3-caller () (the cons (ccl.ftype.3 nil)))")
+  (:type-conflict))
+
+
+(deftest ccl.ftype.4
+    (test-compiler-warning "(declaim (ftype (function (t) (values integer)) ccl.ftype.4))
+                            (defun ccl.ftype.4-caller () (ccl.ftype.4))")
+  (:ftype-mismatch))
+
+(deftest ccl.ftype.5
+    (test-compiler-warning "(declaim (ftype (function (t &key (:a integer)) (values integer)) ccl.ftype.5))
+                            (defun ccl.ftype.5-caller () (ccl.ftype.5 1 :a :x))")
+  (:type))
+
+(deftest ccl.ftype.6
+    (test-compiler-warning "(declaim (ftype (function (t &key (:a integer)) (values integer)) ccl.ftype.6))
+                            (defun ccl.ftype.6-caller () (ccl.ftype.6 :b 17))")
+  (:ftype-mismatch))
+
+
+(deftest ccl.ftype.7
+    (test-compiler-warning "(declaim (ftype (function (t t t) t) ccl.ftype.7))
+                            (defun ccl.ftype.7-caller () (ccl.ftype.7))")
+  (:ftype-mismatch))
+
+(deftest ccl.ftype.8
+    (test-compiler-warning "(declaim (ftype (function (t t t) t) ccl.ftype.8))
+                            (defun ccl.ftype.8-caller ()
+                               (flet ((ccl.ftype.8 () t)) (ccl.ftype.8)))")
+  ())
+
+(deftest ccl.ftype.9-pre
+    (test-compiler-warning "(declaim (ftype (function (unknown) t) ccl.ftype.9-pre))")
+  (:undefined-type))
+
+(deftest ccl.ftype.9
+    (test-compiler-warning "(defun ccl.ftype.9 (x) x)
+                            (declaim (ftype (function (unknown) t) ccl.ftype.9))
+                            (defun ccl.ftype.9-caller () (ccl.ftype.9 17))")
+  ;; The :undefined-type is from the declaim itself (see ccl.ftype.9-pre).  There
+  ;; should be no added type warnings from the actual use of the fn
+  (:undefined-type))
+
+(deftest ccl.ftype.10
+    (test-compiler-warning "(defun ccl.ftype.10-caller (x)
+                              (declare (ftype (function (t) t) ccl.ftype.10))
+                              (ccl.ftype.10 x))")
+  ())
+
+
+(deftest ccl.ftype.11-pre
+    (test-compiler-warning "(defun ccl.ftype.11-pre-caller (x)
+                              (declare (ftype (function (unknown) t) ccl.ftype.11-pre))
+                              x)")
+  (:unknown-type-in-declaration))
+
+(deftest ccl.ftype.11
+    (test-compiler-warning "(defun ccl.ftype.11-caller (x)
+                              (declare (ftype (function (unknown) t) ccl.ftype.11))
+                              (ccl.ftype.11 x))")
+  ;; The :unknown-type-in-declaration is from the declare itself (see ccl.ftype.11-pre).  There
+  ;; should be no added type warnings from the actual use of the fn
+  (:unknown-type-in-declaration :undefined-function))
+
+(deftest ccl.ftype.54161
+  (test-compiler-warning "(declaim (ftype (function (integer) (values integer)) ccl.ftype.54161))
+  (defun ccl.ftype.54161-caller () (ccl.ftype.54161 :x))")
+  (:type))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
