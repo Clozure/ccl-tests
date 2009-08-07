@@ -1157,6 +1157,15 @@
   (:type))
 
 
+(deftest ccl.macroexpand-all.r12550a
+  (ccl:macroexpand-all '(macrolet ((foo () 'macro)) (flet ((foo () (foo))) (foo))))
+  (progn (flet ((foo () macro)) (foo))))
+
+(deftest ccl.macroexpand-all.r12550b
+  (ccl:macroexpand-all '(macrolet ((foo () 'macro)) (labels ((foo () (foo))) (foo))))
+  (progn (labels ((foo () (foo))) (foo))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
