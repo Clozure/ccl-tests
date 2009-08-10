@@ -1055,6 +1055,14 @@
 	  (values (read-from-string (prin1-to-string "123456789012345")))))
   "123456789012345")
 
+(deftest ccl.63842a
+    (test-compiler-warning "(defun ccl.63842a-1 () (declare (inline ccl.63842a-2)))")
+  (:unknown-declaration-function))
+
+(deftest ccl.63842b
+    (test-compiler-warning "(defun ccl.63842b-1 () (declare (dynamic-extent #'ccl.63842b-2)))")
+  (:unknown-declaration-function))
+
 (deftest ccl.decl.1
     (test-compiler-warning "(defun ccl.decl.1 (a) (lambda () (declare (fixnum a)) a))")
   ())
@@ -1447,3 +1455,12 @@
      (advise.18-2 advise.18-2 advise.18-1 advise.18-2 none)))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftest ccl.56248a
+    (test-compiler-warning "(defmacro ccl.56248a (&whole whole) t)")
+  (:unused))
+
+(deftest ccl.56248b
+    (test-compiler-warning "(defmacro ccl.56248b (&environment env) t)")
+  (:unused))
