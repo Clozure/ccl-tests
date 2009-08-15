@@ -1472,3 +1472,58 @@
            (typep path `(member ,path))
            t))
   t)
+
+
+(deftest ccl.61783-1
+    (test-compiler-warning "(defgeneric ccl.61783-1 (x y))
+                            (defmethod ccl.61783-1 ((x integer)) x)")
+  (:incongruent-method-lambda-list))
+
+(deftest ccl.61783-1-rev
+    (test-compiler-warning "(defmethod ccl.61783-1-rev ((x integer)) x)
+                            (defgeneric ccl.61783-1-rev (x y))")
+  (:incongruent-gf-lambda-list))
+
+
+(deftest ccl.61783-2
+    (test-compiler-warning "(defmethod ccl.61783-2 ((x integer)) x)
+                            (defmethod ccl.61783-2 ((x string) &key) x)")
+  (:incongruent-method-lambda-list))
+
+(deftest ccl.61783-3
+    (test-compiler-warning "(defgeneric ccl.61783-3 (&key a b))
+                            (defmethod ccl.61783-3 (&key a) a)")
+  (:gf-keys-not-accepted))
+
+(deftest ccl.61783-3-rev
+    (test-compiler-warning "(defmethod ccl.61783-3-rev (&key a) a)
+                            (defgeneric ccl.61783-3-rev (&key a b))")
+  (:gf-keys-not-accepted))
+
+(deftest ccl.61783-4
+    (test-compiler-warning "(defgeneric ccl.61783-4 (&key a))
+                            (defgeneric ccl.61783-4 (&key a))")
+  (:duplicate-definition))
+
+(deftest ccl.61783-5
+    (test-compiler-warning "(defmethod ccl.61783-5 ((x integer) &key a) a)
+                            (defun ccl.61783-5-caller () (ccl.61783-5 1 :a 12 :b 0))")
+  (:environment-mismatch))
+
+(deftest ccl.61783-5-rev
+    (test-compiler-warning "(defun ccl.61783-5-rev-caller () (ccl.61783-5-rev 1 :a 12 :b 0))
+                            (defmethod ccl.61783-5-rev ((x integer) &key a) a)")
+  (:environment-mismatch))
+
+
+(deftest ccl.61783-6
+    (test-compiler-warning "(defgeneric ccl.61783-6 (x &key a &allow-other-keys))
+                            (defun ccl.61783-6-caller () (ccl.61783-6 1 :a 12 :b 0))")
+  ())
+
+(deftest ccl.61783-6-rev
+    (test-compiler-warning "(defun ccl.61783-6-rev-caller () (ccl.61783-6-rev 1 :a 12 :b 0))
+                            (defgeneric ccl.61783-6-rev (x &key a &allow-other-keys))")
+  ())
+
+
