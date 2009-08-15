@@ -9,12 +9,13 @@
   (the (values) (values)))
 
 (deftest the.2
-  (the (values) 'a)
+    (let ((a 'a))
+      (the (values) a))
   a)
 
 (deftest the.3
   (check-predicate #'(lambda (e)
-		       (let ((x (multiple-value-list (eval `(the (values) (quote ,e))))))
+		       (let ((x (multiple-value-list (eval `(let ((e (quote ,e))) (the (values) e))))))
 			 (and x (not (cdr x)) (eql (car x) e)))))
   nil)
 
