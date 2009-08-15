@@ -1464,3 +1464,11 @@
 (deftest ccl.56248b
     (test-compiler-warning "(defmacro ccl.56248b (&environment env) t)")
   (:unused))
+
+
+(deftest ccl.ctype-hashing
+    (let ((path #P"x"))
+      (and (not (typep path '(member #P"x")))
+           (typep path `(member ,path))
+           t))
+  t)
