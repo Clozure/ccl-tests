@@ -1534,3 +1534,16 @@
                               (eval-when (:compile-toplevel :load-toplevel :execute)
                                 (assert (= 1 (tag)))))")
   ())
+
+(deftest ccl.bug#601
+    (flet ((dispatch-macro-char-p (char &optional (rt *readtable*))
+             (handler-case
+                 (prog1 t
+                   (get-dispatch-macro-character char #\x rt))
+               (error () nil))))
+      (let ((*readtable* (copy-readtable nil)))
+        (values (dispatch-macro-char-p #\$)
+                (make-dispatch-macro-character #\$ nil)
+                (dispatch-macro-char-p #\$))))
+  nil t t)
+
