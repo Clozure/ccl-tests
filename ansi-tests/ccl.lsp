@@ -1474,6 +1474,7 @@
   t)
 
 
+#+ccl-0711 (progn ;; not merged yet
 (deftest ccl.61783-1
     (test-compiler-warning "(defgeneric ccl.61783-1 (x y))
                             (defmethod ccl.61783-1 ((x integer)) x)")
@@ -1525,5 +1526,11 @@
     (test-compiler-warning "(defun ccl.61783-6-rev-caller () (ccl.61783-6-rev 1 :a 12 :b 0))
                             (defgeneric ccl.61783-6-rev (x &key a &allow-other-keys))")
   ())
+) ;; #+ccl-0711
 
 
+(deftest ccl.bug#592
+    (test-compiler-warning "(macrolet ((tag () 1))
+                              (eval-when (:compile-toplevel :load-toplevel :execute)
+                                (assert (= 1 (tag)))))")
+  ())
