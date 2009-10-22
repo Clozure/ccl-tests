@@ -435,7 +435,6 @@
   :no-warnings)
 
 
-#+ccl-0711
 (deftest ccl.47102
     (handler-case
         (progn
@@ -1474,7 +1473,6 @@
   t)
 
 
-#+ccl-0711 (progn ;; not merged yet
 (deftest ccl.61783-1
     (test-compiler-warning "(defgeneric ccl.61783-1 (x y))
                             (defmethod ccl.61783-1 ((x integer)) x)")
@@ -1526,8 +1524,12 @@
     (test-compiler-warning "(defun ccl.61783-6-rev-caller () (ccl.61783-6-rev 1 :a 12 :b 0))
                             (defgeneric ccl.61783-6-rev (x &key a &allow-other-keys))")
   ())
-) ;; #+ccl-0711
 
+
+(deftest ccl.61783-7
+    (test-compiler-warning "(defgeneric ccl.61783-7 (x &key a &allow-other-keys))
+                            (defmethod ccl.61783-7 ((x integer) &rest args) args)")
+  ())
 
 (deftest ccl.bug#592
     (test-compiler-warning "(macrolet ((tag () 1))
@@ -1547,3 +1549,25 @@
                 (dispatch-macro-char-p #\$))))
   nil t t)
 
+(deftest ccl.bug#612-1
+    (flet ((fn (x)
+             (declare (optimize (safety 2) (speed 1)))
+             (+ (load-time-value -14930786 t) 1826522792 x)
+             ))
+      (fn 0))
+  1811592006)
+
+(deftest ccl.bug#612-2
+    (flet ((fn (x)
+             (declare (optimize (safety 2)))
+             (+ (load-time-value 1) 1826522792 x)))
+      (fn 0))
+  1826522793)
+
+(deftest ccl.bug#612-3
+    (flet ((fn (p)
+             (declare (optimize (safety 1) (speed 1)))
+             (ccl::%inc-ptr p (expt 2 31))))
+      (fn (ccl::%null-ptr))
+      t)
+  t)
