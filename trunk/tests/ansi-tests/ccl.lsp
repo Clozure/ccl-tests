@@ -1571,3 +1571,11 @@
       (fn (ccl::%null-ptr))
       t)
   t)
+
+(deftest ccl.symbol-macrolet-special
+    (let ((x :special))
+      (declare (special x))
+      (symbol-macrolet ((x :symbol-macro))
+        (values x (locally (declare (special x)) x))))
+  :symbol-macro
+  :special)
