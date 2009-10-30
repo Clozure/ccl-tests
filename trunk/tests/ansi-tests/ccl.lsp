@@ -1579,3 +1579,20 @@
         (values x (locally (declare (special x)) x))))
   :symbol-macro
   :special)
+
+(deftest ccl.bug#617
+    (flet ((test ()
+             (declare (optimize (speed 1) (safety 1)))
+             (symbol-macrolet ((inc 0.5))
+               (loop with y = 0 do (incf y inc) while (< y 2)))))
+      (test))
+  nil)
+
+(deftest ccl.bug#620
+    (progn
+      (test-compile (test-source-file "(defun ccl.bug#620.fn (buckets x y)
+                                        (declare (type (simple-array t (* *)) buckets))
+                                        (let ((result (aref buckets x y)))
+                                            result))"))
+      :win)
+  :win)
