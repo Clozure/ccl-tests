@@ -1596,3 +1596,8 @@
                                             result))"))
       :win)
   :win)
+
+(deftest ccl.bug#621
+    (test-compiler-warning "(defun ccl.bug#621.fn ()
+                              (the (values integer real) (round 2.5)))")
+  ())
