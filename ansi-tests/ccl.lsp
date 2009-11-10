@@ -1601,3 +1601,13 @@
     (test-compiler-warning "(defun ccl.bug#621.fn ()
                               (the (values integer real) (round 2.5)))")
   ())
+
+(deftest ccl.bug-defmethod-key-warning
+         (progn
+           (fmakunbound 'ccl.bug-defmethod-key-warning.gf)
+           (defmethod ccl.bug-defmethod-key-warning.gf ((x integer) &key a))
+           (test-compiler-warning "(in-package :cl-test)
+                                   (defmethod ccl.bug-defmethod-key-warning.gf ((x string) &key) t)
+                                   (defun ccl.bug-defmethod-key-warning.gf-caller (x a)
+                                     (ccl.bug-defmethod-key-warning.gf x :a a))"))
+  nil)
