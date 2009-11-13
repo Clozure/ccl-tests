@@ -899,7 +899,7 @@
     (handler-bind ((ccl::compiler-warning (lambda (c)
 					    (push (ccl::compiler-warning-warning-type c) warnings)
 					    (muffle-warning c))))
-      (test-compile (test-source-file text) :hide-warnings t))
+      (test-compile (test-source-file "~a" text) :hide-warnings t))
     (nreverse warnings)))
   
 (deftest ccl.49345-u1
@@ -1611,3 +1611,19 @@
                                    (defun ccl.bug-defmethod-key-warning.gf-caller (x a)
                                      (ccl.bug-defmethod-key-warning.gf x :a a))"))
   nil)
+
+(deftest ccl.58983-1
+    (test-compiler-warning "(defun ccl.58983-1 () (format t \"~A ~A\" 2 3 4))")
+  (:format-error))
+
+(deftest ccl.58983-2
+    (test-compiler-warning "(defun ccl.58983-2 () (format t \"~a ~a ~2:*~a\" 1 2))")
+  ())
+
+(deftest ccl.58983-3
+    (test-compiler-warning "(defun ccl.58983-3 () (format t \"~a ~a ~2:*\" 1 2))")
+  (:format-error))
+
+(deftest ccl.58983-4
+    (test-compiler-warning "(defun ccl.58983-3 () (format t \"M~A ~A ~0@*~A\" 'adam \"I'M\"))")
+  ())
