@@ -1627,3 +1627,8 @@
 (deftest ccl.58983-4
     (test-compiler-warning "(defun ccl.58983-3 () (format t \"M~A ~A ~0@*~A\" 'adam \"I'M\"))")
   ())
+
+(deftest ccl.defmethod-bad-lambda-list
+    ;; This should warn, but not err out.
+    (test-compiler-warning "(defmethod ccl.defmethod-bad-lambda-list ((s stream) s) s)")
+  (:program-error))
