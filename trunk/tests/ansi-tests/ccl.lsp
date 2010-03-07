@@ -1632,3 +1632,10 @@
     ;; This should warn, but not err out.
     (test-compiler-warning "(defmethod ccl.defmethod-bad-lambda-list ((s stream) s) s)")
   (:program-error))
+
+(deftest ccl.bug#644
+    (progn
+      (test-compile (test-source-file "(defun test.bug#644 (x) (declare (optimize (speed 0) (safety 2) (debug 3)) (type (or null (function (t) t)) x)) x)
+                                     (test.bug#644 (lambda (x) x))") :load t)
+      :win)
+  :win)
