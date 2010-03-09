@@ -1639,3 +1639,13 @@
                                      (test.bug#644 (lambda (x) x))") :load t)
       :win)
   :win)
+
+(deftest ccl.bug#645
+    (let ((arr (make-array 5 :element-type 'single-float))
+          (f (test-source-file  "~,,v,va" 30 #\null "")))
+      (with-open-file (s f :direction :input :element-type '(unsigned-byte 8))
+        (ccl:stream-read-ivector s arr 0 20)
+        (aref arr 0)))
+  0.0s0)
+
+        
