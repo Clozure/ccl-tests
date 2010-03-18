@@ -1648,4 +1648,36 @@
         (aref arr 0)))
   0.0s0)
 
-        
+(deftest ccl.bug#660
+    (progn
+      (fmakunbound 'test.bug#660)
+      (test-compile
+       (test-source-file "(defun cl-test::test.bug#660 (x)
+                           (declare (type (unsigned-byte ~d) x))
+                           (ash x -1000))"
+                         target::nbits-in-word)
+       :load t)
+      (test.bug#660 (ash 1 (1- target::nbits-in-word))))
+  0)
+
+(deftest ccl.bug#666
+    (progn
+      (fmakunbound 'test.bug#666)
+      (test-compile
+       (test-source-file "(defun cl-test::test.bug#666 (x y)
+                            (declare (type fixnum x y))
+                            (truncate x y))")
+       :load t)
+      (eql (test.bug#666 most-negative-fixnum -1) (abs most-negative-fixnum)))
+  t)
+
+(deftest ccl.bug#588
+    (let ((*readtable* (copy-readtable)))
+      (set-macro-character #\Left-Pointing_Double_Angle_Quotation_Mark
+                           (lambda (stream ch)
+                             (declare (ignore stream ch))
+                             :win))
+      (prog1
+          (read-from-string (coerce '(#\Left-Pointing_Double_Angle_Quotation_Mark #\space) 'string))
+        (set-macro-character #\Left-Pointing_Double_Angle_Quotation_Mark nil)))
+  :win)
