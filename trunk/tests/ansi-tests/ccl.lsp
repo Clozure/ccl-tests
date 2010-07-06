@@ -899,7 +899,7 @@
     (handler-bind ((ccl::compiler-warning (lambda (c)
 					    (push (ccl::compiler-warning-warning-type c) warnings)
 					    (muffle-warning c))))
-      (test-compile (test-source-file "~a" text) :hide-warnings t))
+      (test-compile (test-source-file "~a" text) :hide-warnings t :break-on-program-errors nil))
     (nreverse warnings)))
   
 (deftest ccl.49345-u1
