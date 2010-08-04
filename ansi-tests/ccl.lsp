@@ -1564,6 +1564,13 @@
       (fn 0))
   1826522793)
 
+;;;  This test is bogus.  CCL::%INC-PTR's second argument
+;;;  is documented to be a FIXNUM; if some 32-bit ports
+;;;  complain that (EXPT 2 31) isn't a FIXNUM, they're
+;;;  just being reasonable.
+;;;  (This may have originally been intended to test the
+;;;  x8664 compiler's ability to deal with 32-bit constants.)
+#+bogus-test
 (deftest ccl.bug#612-3
     (flet ((fn (p)
              (declare (optimize (safety 1) (speed 1)))
