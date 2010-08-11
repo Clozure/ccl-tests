@@ -1688,3 +1688,12 @@
           (read-from-string (coerce '(#\Left-Pointing_Double_Angle_Quotation_Mark #\space) 'string))
         (set-macro-character #\Left-Pointing_Double_Angle_Quotation_Mark nil)))
   :win)
+
+(deftest ccl.bug#708
+    (flet ((one (b)
+	     (declare (type (integer 51357426816569 68500595286128) b))
+	     (logand b -2))
+	   (two (b)
+	     (logand b -2)))
+      (- (one 67660763903986) (two 67660763903986)))
+  0)
