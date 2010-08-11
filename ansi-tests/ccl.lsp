@@ -1691,7 +1691,8 @@
 
 (deftest ccl.bug#708
     (flet ((one (b)
-	     (declare (type (integer 51357426816569 68500595286128) b))
+	     (declare (type (integer 51357426816569 68500595286128) b)
+		      (optimize (speed 1) (safety 1)))
 	     (logand b -2))
 	   (two (b)
 	     (logand b -2)))
