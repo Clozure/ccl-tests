@@ -51,13 +51,13 @@
 		 floating-point-overflow)
   t)
 
-#-ccl-0711
+#-ccl-qres
 (deftest exp.error.6
   (signals-error (exp (+ (log most-positive-double-float) 100))
 		 floating-point-overflow)
   t)
 
-#-ccl-0711
+#-ccl-qres
 (deftest exp.error.7
   (signals-error (exp (+ (log most-positive-long-float) 100))
 		 floating-point-overflow)
