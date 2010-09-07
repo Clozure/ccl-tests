@@ -1698,3 +1698,20 @@
 	     (logand b -2)))
       (- (one 67660763903986) (two 67660763903986)))
   0)
+
+(deftest ccl.bug#735
+  (flet ((diff (x)
+	   (- (locally
+		  (declare (type (integer 1000000000 2000000000) x))
+		(lognor -10 x))
+	      (lognor -10 x))))
+    (diff 20))
+  0)
+
+(deftest ccl.bug#736
+  (flet ((foo (a b)
+	   (declare (type (integer -314476952 -84061465) a))
+	   (declare (type (integer 16008 1204497162) b))
+	   (logand b (the integer a))))
+    (foo -299404531 1081111751))
+  1075867653)
