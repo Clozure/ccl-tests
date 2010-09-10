@@ -827,7 +827,7 @@
 
 ;;; This is likely to return random nonsense (without necessarily
 ;;; getting a memory fault) on some platforms.
-#-ppc64-target
+#+bogus-test
 (deftest ccl.57900.1 ;; don't crash on simple access errors
     (handler-case (funcall (lambda (x) (declare (optimize (safety 1) (speed 1))) (ccl::%caar x))
                            *standard-input*)
