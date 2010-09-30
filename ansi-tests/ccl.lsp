@@ -894,12 +894,12 @@
          (defclass test.ccl-49345-7 () ()))")
   ())
 
-(defun test-compiler-warning (text)
+(defun test-compiler-warning (text &key (safety 1))
   (let ((warnings nil))
     (handler-bind ((ccl::compiler-warning (lambda (c)
 					    (push (ccl::compiler-warning-warning-type c) warnings)
 					    (muffle-warning c))))
-      (test-compile (test-source-file "~a" text) :hide-warnings t :break-on-program-errors nil))
+      (test-compile (test-source-file "~a" text) :hide-warnings t :break-on-program-errors nil :safety safety))
     (nreverse warnings)))
   
 (deftest ccl.49345-u1
@@ -985,6 +985,15 @@
                             (defun ccl.57879-6-fn (x) (ccl.57879-6-struct-slot x))
 
                             (deftype ccl.57879-6-type () 'null)")
+  ())
+
+;; Same as above, but at safety 3.
+(deftest ccl.86893
+    (test-compiler-warning "(defstruct ccl.86893-struct (slot nil :type (or null ccl.86893-type)))
+                            (defun ccl.86893-fn (x) (ccl.86893-struct-slot x))
+
+                            (deftype ccl.86893-type () 'null)"
+                           :safety 3)
   ())
 
 (deftest ccl.59726
