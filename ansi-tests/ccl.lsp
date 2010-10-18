@@ -932,7 +932,7 @@
 
 (deftest ccl.49345-i2
     (test-compiler-warning "(defun ccl.49345-i2 (x) (declare (type (sequence integer) x)) x)")
-  (:unknown-type-in-declaration))
+  (:invalid-type))
 
 (deftest ccl.49345-i3
     (test-compiler-warning "(defun ccl.49345-i3 (x) (the (sequence integer) x))")
@@ -995,6 +995,17 @@
                             (deftype ccl.86893-type () 'null)"
                            :safety 3)
   ())
+
+(deftest ccl.sbcl-bootstrap-1 ;; For sbcl bootstrap, undefined type needs to be a style warning.
+    (multiple-value-bind (truename warnings-p serious-p)
+	(test-compile (test-source-file "(defun ccl.sbcl-bootstrap-1a (x)
+                                           (declare (type unknown-type-ccl.sbcl-bootstrap-1a x))
+                                           x)")
+		      :hide-warnings t)
+      (declare (ignore truename))
+      (list warnings-p serious-p))
+    (t nil))
+
 
 (deftest ccl.59726
     (test-compiler-warning "(defun ccl.59726-fn () #'ccl.59726-unknown)")
