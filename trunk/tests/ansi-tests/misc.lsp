@@ -1276,7 +1276,7 @@
     (eval '(defun misc.106-fn (a b c)
              (declare (optimize speed))
              (block b6
-               (flet ((%f8 (f8-1 f8-2) b))
+               (flet ((%f8 (f8-1 f8-2) f8-1 f8-2 b))
                  (%f8 (%f8 c 338) (if t (return-from b6 a) c))))))
     (misc.106-fn -30271 -1 -3043))
   -30271)
@@ -1595,7 +1595,7 @@
 (deftest misc.123
   (let* ((fn1 '(lambda (b)
                  (declare (optimize (safety 1)))
-                 (labels ((%f7 (f7-1 f7-2)
+                 (labels ((%f7 (f7-1 f7-2) f7-1 f7-2
                                (let ((v2 (setq b 723149855)))
                                  25620)))
                    (max b
@@ -2069,6 +2069,7 @@
             '(lambda (a)
                (block b5
                  (let ((v1 (let ((v8 (unwind-protect 9365)))
+			     v8
                              8862008)))
                    (*
                     (return-from b5
@@ -3173,12 +3174,14 @@
              (declare (optimize (safety 3)))
              (declare (optimize (speed 0)))
              (declare (optimize (debug 0)))
-             (flet ((%f7 (&optional (f7-1 (catch (quote ct7) 0)) (f7-2 0))
+	     a b c
+             (flet ((%f7 (&optional (f7-1 (catch (quote ct7) 0)) (f7-2 0)) f7-1 f7-2
                          c))
                (let ((v8
                       (flet ((%f14 (f14-1 &optional (f14-2 (%f7 b)))
                                    0))
                         0)))
+		 v8
                  (%f7 b))))))
    '(2374299 70496 -6321798384))
   -6321798384)

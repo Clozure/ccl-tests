@@ -428,6 +428,7 @@
 	(let ((*read-default-float-format* 'short-float)
 	      (total 0)
 	      (len 0))
+	  total len
 	  (loop for i from (- 1 (ash 1 13)) below (ash 1 13)
 		unless (zerop i)
 		nconc

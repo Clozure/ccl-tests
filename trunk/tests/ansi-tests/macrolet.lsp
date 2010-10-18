@@ -388,6 +388,7 @@
       (declare (special *f*))
       (eval `(macrolet ((%m (*x-in-macrolet.43*)
 			    (declare (special *f*))
+			    *x-in-macrolet.43*
 			    (funcall *f*)))
 	       (%m t)))))
   nil)

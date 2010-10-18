@@ -33,7 +33,7 @@
 
 (deftest add-method.error.3
   (let* ((gf (eval '(defgeneric add-method-gf-05 (x &optional y)
-		      (:method ((x t) &optional y) 'a))))
+		      (:method ((x t) &optional y) y 'a))))
 	 (method (find-method #'add-method-gf-05 nil (list (find-class t))))
 	 (gf2 (eval '(defgeneric add-method-gf-06 (x y)))))
     (handler-case
@@ -74,7 +74,7 @@
 
 (deftest add-method.error.8
   (let* ((gf (eval '(defgeneric add-method-gf-11 (x &key y)
-		      (:method ((x t) &key y) 'a))))
+		      (:method ((x t) &key y) y 'a))))
 	 (method (find-method #'add-method-gf-11 nil (list (find-class t))))
 	 (gf2 (eval '(defgeneric add-method-gf-12 (x)))))
     (remove-method gf method)

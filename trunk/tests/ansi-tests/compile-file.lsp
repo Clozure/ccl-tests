@@ -37,7 +37,8 @@
 			 nil)))
 		   (with-output-to-string
 		     (*standard-output* str)
-		     (apply #'compile-file file :allow-other-keys t args))))))
+		     (let ((*error-output* *standard-output*))
+		       (apply #'compile-file file :allow-other-keys t args)))))))
       (assert (= (length vals) 3))
       (destructuring-bind
 	  (output-truename warnings-p failure-p)
