@@ -69,7 +69,7 @@
 
 (deftest macro-function.10
   (let ((sym (gensym)))
-    (eval `(defun ,sym (x) :bad))
+    (eval `(defun ,sym (x) x :bad))
     (handler-bind ((warning #'muffle-warning))
       (setf (macro-function sym) (macro-function 'pop)))
     (eval `(let ((x '(a b c)))

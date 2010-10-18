@@ -100,7 +100,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.11 (x &optional y)
-	      (:method (x &optional y z) t)))
+	      (:method (x &optional y z) x y z t)))
      :bad)
    (error () :good))
   :good)
@@ -109,7 +109,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.12 (x &rest y)
-	      (:method (x) t)))
+	      (:method (x) x t)))
      :bad)
    (error () :good))
   :good)
@@ -118,7 +118,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.13 (x)
-	      (:method (x &rest y) t)))
+	      (:method (x &rest y) x y t)))
      :bad)
    (error () :good))
   :good)
@@ -127,7 +127,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.14 (x &key)
-	      (:method (x) t)))
+	      (:method (x) x t)))
      :bad)
    (error () :good))
   :good)
@@ -136,7 +136,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.15 (x &key y)
-	      (:method (x) t)))
+	      (:method (x) x t)))
      :bad)
    (error () :good))
   :good)
@@ -145,7 +145,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.16 (x)
-	      (:method (x &key) t)))
+	      (:method (x &key) x t)))
      :bad)
    (error () :good))
   :good)
@@ -154,7 +154,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.17 (x)
-	      (:method (x &key foo) t)))
+	      (:method (x &key foo) x foo t)))
      :bad)
    (error () :good))
   :good)
@@ -163,7 +163,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.18 (x &key foo)
-	      (:method (x &key) t)))
+	      (:method (x &key) x t)))
      :bad)
    (error () :good))
   :good)
@@ -172,7 +172,7 @@
   (handler-case
    (progn
      (eval '(defgeneric defgeneric-error-fn.19 (x &key foo)
-	      (:method (x &key bar) t)))
+	      (:method (x &key bar) x bar t)))
      :bad)
    (error () :good))
   :good)

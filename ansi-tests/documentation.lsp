@@ -309,7 +309,7 @@
 	 (doc "FOO11"))
     (eval `(defun ,sym () (declare (special *x*)) *x*))
     (eval `(define-setf-expander ,sym ()
-	     (let ((g (gemsym)))
+	     (let ((g (gensym)))
 	       (values nil nil (list g) `(locally (declare (special *x*)) (setf *x* ,g))
 		       '(locally (declare (special *x*)) *x*)))))
     (multiple-value-prog1
@@ -325,7 +325,7 @@
 	 (doc "FOO12"))
     (eval `(defmacro ,sym () `(locally (declare (special *x*)) *x*)))
     (eval `(define-setf-expander ,sym ()
-	     (let ((g (gemsym)))
+	     (let ((g (gensym)))
 	       (values nil nil (list g) `(locally (declare (special *x*)) (setf *x* ,g))
 		       '(locally (declare (special *x*)) *x*)))))
     (multiple-value-prog1

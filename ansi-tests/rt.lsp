@@ -276,7 +276,7 @@
 			      (eval (form entry))))))))
 		(if *catch-errors*
 		    (handler-bind
-		     (#-ecl (style-warning #'(lambda (c) (if (has-note entry :do-not-muffle-warnings)
+		     (#-(or ecl ccl) (style-warning #'(lambda (c) (if (has-note entry :do-not-muffle-warnings)
 							     c
 							   (muffle-warning c))))
 			    (error #'(lambda (c)
