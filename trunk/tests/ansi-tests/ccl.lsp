@@ -1735,3 +1735,7 @@
 	   (logand b (the integer a))))
     (foo -299404531 1081111751))
   1075867653)
+
+(deftest ccl.bug#829
+  (float-sign (imagpart (atanh #c(-2d0 -0d0))))
+  -1d0)
