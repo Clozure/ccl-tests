@@ -1736,6 +1736,11 @@
     (foo -299404531 1081111751))
   1075867653)
 
+(deftest ccl.bug#828
+  (float-sign (realpart (atan #c(-0d0 2d0))))
+  -1d0)
+
 (deftest ccl.bug#829
   (float-sign (imagpart (atanh #c(-2d0 -0d0))))
   -1d0)
+
