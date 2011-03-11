@@ -1744,3 +1744,11 @@
   (float-sign (imagpart (atanh #c(-2d0 -0d0))))
   -1d0)
 
+(deftest ccl.bug#830
+  (let ((val #c(1d300 1d300)))
+    (handler-case
+	(progn
+	  (abs val)
+	  :win)
+      (floating-point-overflow (c) c)))
+  :win)
