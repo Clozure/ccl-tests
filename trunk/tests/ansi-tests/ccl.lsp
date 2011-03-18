@@ -1770,3 +1770,12 @@
 	  :win)
       (floating-point-overflow (c) c)))
   :win)
+
+(deftest ccl.bug#674
+  (let ((val #c(1d160 1)))
+    (handler-case
+	(progn
+	  (/ val)
+	  :win)
+      (floating-point-overflow (c) c)))
+  :win)
