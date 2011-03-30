@@ -1779,3 +1779,20 @@
 	  :win)
       (floating-point-overflow (c) c)))
   :win)
+
+(deftest ccl.bug#840
+  (progn
+    (fmakunbound 'test.bug#840a)
+    (fmakunbound 'test.bug#840b)
+    (test-compile (test-source-file "(in-package :cl-test)
+				     (declaim (inline test.bug#840a))
+				     (defun test.bug#840a (x)
+				       (+ x 42))
+				     (defun test.bug#840b ()
+				       (flet ((test.bug#840a (x y)
+						(+ x y)))
+					 (test.bug#840a 1 2)))")
+		  :load t)
+    :win)
+  :win)
+
