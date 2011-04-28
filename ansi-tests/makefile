@@ -137,7 +137,7 @@ rt_1000_8:
 
 clean:
 	@rm -f test*.out *.cls *.fasl *.o *.so *~ *.fn *.x86f *.fasl *.ufsl *.abcl *.fas *.lib \#*\#
-	@rm -f *.dfsl *.d64fsl
+	@rm -f *.[dp]fsl *.[dp]64fsl *.[adl]afsl *.[dflsw]x64fsl *.[dflsw]x32fsl
 	@(cd beyond-ansi; $(MAKE) clean)
 	@rm -rf scratch/ scratch.txt
 	@rm -f foo.txt foo.lsp foo.dat
