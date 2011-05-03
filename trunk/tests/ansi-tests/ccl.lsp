@@ -1796,3 +1796,8 @@
     :win)
   :win)
 
+(deftest ccl.aset3
+  (let ((m (make-array '(3 4 5) :initial-element 0)))
+    (setf (aref m 2 3 4) 111)
+    (eql 111 (aref m 2 3 4)))
+  t)
