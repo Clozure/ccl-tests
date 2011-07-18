@@ -1801,3 +1801,13 @@
     (setf (aref m 2 3 4) 111)
     (eql 111 (aref m 2 3 4)))
   t)
+
+(deftest ccl.format-goto-error
+    (handler-case
+	(format nil "This is an error ~*~a")
+      (error (c)
+	(handler-case (progn
+			(ccl::report-condition c (make-broadcast-stream))
+			:win)
+	  (error (cc) :error))))
+  :win)
