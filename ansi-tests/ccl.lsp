@@ -1811,3 +1811,16 @@
 			:win)
 	  (error (cc) :error))))
   :win)
+
+;;; see http://clozure.com/pipermail/openmcl-devel/2011-July/012944.html
+(deftest ccl.mul-strength-reduce-botch
+  (flet ((foo ()
+	   (let ((a 1))
+	     (* 144115188075855873 a -1)))
+	 (bar ()
+	   (let ((a 1))
+	     (* 33554433 a -1))))
+    (values
+     (= (foo) -144115188075855873)
+     (= (bar) -33554433)))
+  t t)
