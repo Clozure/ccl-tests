@@ -4,7 +4,9 @@
 ;;;; Contains: Test code for structures, part 02
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 ;; Test initializers for fields
 

@@ -4,7 +4,9 @@
 ;;;; Contains: Common code for creating structure tests
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 (defun make-struct-test-name (structure-name n)
   ;; (declare (type (or string symbol character) structure-name)

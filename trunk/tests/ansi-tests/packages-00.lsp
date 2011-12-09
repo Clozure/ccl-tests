@@ -4,7 +4,9 @@
 ;;;; Contains: Package test code (common code)
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 (report-and-ignore-errors
   (defpackage "A"

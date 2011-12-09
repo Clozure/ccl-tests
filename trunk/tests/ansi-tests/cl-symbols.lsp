@@ -6,7 +6,9 @@
 
 (in-package :cl-test)
 
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 ;;; Test for the presence of every darned symbol
 ;;; the standard says should be in the CL package.

@@ -7,7 +7,9 @@
 
 (compile-and-load "package-aux.lsp")
 
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 (deftest do-symbols.1
   (progn
