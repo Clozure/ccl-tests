@@ -4,7 +4,9 @@
 ;;;; Contains: Tests of WITH-PACKAGE-ITERATOR
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 (compile-and-load "package-aux.lsp")
 

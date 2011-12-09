@@ -4,7 +4,9 @@
 ;;;; Contains: Tests of RENAME-PACKAGE
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; rename-package

@@ -9,7 +9,9 @@
 
 (compile-and-load "types-aux.lsp")
 
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 (deftest boolean-type.1
   (notnot-mv (typep nil 'boolean))

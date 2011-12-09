@@ -5,7 +5,9 @@
 
 (in-package :cl-test)
 
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
 
 ;;; Macros to avoid annoying sbcl warning notes
 

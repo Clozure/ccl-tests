@@ -4,7 +4,10 @@
 ;;;; Contains: Tests of UNINTERN
 
 (in-package :cl-test)
-(declaim (optimize (safety 3)))
+#-clozure
+(eval-when (:compile-toplevel)
+  (declaim (optimize (safety 3))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; unintern
