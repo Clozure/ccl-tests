@@ -1824,3 +1824,44 @@
      (= (foo) -144115188075855873)
      (= (bar) -33554433)))
   t t)
+
+(deftest ccl.r15134
+    (flet ((foo (a)
+	     (declare (optimize safety)
+		      (type (signed-byte 8) a))
+	     a))
+      (= (foo -41) -41))
+  t)
+
+(deftest ccl.arm-sbit-1
+    (flet ((foo (a)
+	     (sbit a 234)))
+      (= 0 (foo #*1010010110010111101001001011000001010110101111001101001010110110001101000101010110000010101110011110100111001001011111000111100010010010101100111001001110111001001011001100010110001101101100011011001000001001101101001101111110101011000)))
+  t)
+
+(deftest ccl.arm-sbit-2
+    (flet ((foo (a)
+	     (sbit a 2)))
+      (= 0 (foo #*1001)))
+  t)
+
+(deftest ccl.arm-char-constant
+    (flet ((foo ()
+	     #\LATIN_CAPITAL_LETTER_A_WITH_MACRON))
+      (char= (foo) #\LATIN_CAPITAL_LETTER_A_WITH_MACRON))
+  t)
+
+(deftest ccl.%ilogxor2
+    (let ((b (make-array 1 :element-type '(unsigned-byte 8)))
+	  (m (make-array 1 :element-type 'fixnum :initial-element 3)))
+      (setf (aref b 0) (logxor (aref m 0) (aref m 0)))
+      (= (aref b 0) 0))
+  t)
+
+(deftest ccl.one-arg-float
+    (flet ((foo (x)
+	     (declare (type double-float x))
+	     (float x)))
+      (typep (foo 1d0) 'double-float))
+  t)
+
