@@ -319,13 +319,13 @@
   (handler-case
       (let ((ccl::*nx-safety* 1)) ;; At safety 3, we don't know from EQ...
         (eval '(defun cl-test::ccl.bug#294-1 (x y)
-                (eq x) y)))
+                (if x) y)))
     (program-error () :program-error))
   :program-error)
 
 (deftest ccl.bug#294-2
   (let* ((file (test-source-file
-                "(defun cl-test::ccl.bug#294-2 (x y) (eq x) y)")))
+                "(defun cl-test::ccl.bug#294-2 (x y) (if x) y)")))
     (fmakunbound ' cl-test::ccl.bug#294-2)
     (handler-case (test-compile file :break-on-program-errors t)
       (program-error () :program-error)))
@@ -333,7 +333,7 @@
 
 (deftest ccl.buf#294-3
   (let* ((file (test-source-file
-                "(defun cl-test::ccl.bug#294-3 (x y) (eq x) y)"))
+                "(defun cl-test::ccl.bug#294-3 (x y) (if x) y)"))
          (warnings nil))
     (fmakunbound ' cl-test::ccl.bug#294-3)
     (list
