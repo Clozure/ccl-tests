@@ -70,7 +70,14 @@
       (count #\Newline (format nil "~a~&~a" line1 line2)))
   1)
 
-(defstruct ccl.40055 (a 0 :type integer))
+;;; It's not clear if it's ever been different, but typechecking done
+;;; by defstruct constructors depends on optimization settings in effect
+;;; when the constructor was compiled.
+;;; Do we inline constuctors ???
+
+(locally
+    (declare (optimize (safety 3)))
+  (defstruct ccl.40055 (a 0 :type integer)))
 
 (deftest ccl.40055 ;; fixed in r9237 and r9240
     (locally
