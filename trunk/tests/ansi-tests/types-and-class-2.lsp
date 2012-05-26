@@ -223,6 +223,8 @@
 (deftest define-type-for-class-alias
   (progn
     (setf (find-class 'improper-alias) (find-class 'proper-class))
-    (not (signals-error
-           (deftype improper-alias nil 'proper-class) error)))
+    (prog1
+        (not (signals-error
+           (deftype improper-alias nil 'proper-class) error))
+      #+clozure-common-lisp (ccl::%deftype 'improper-alias nil nil)))
   t)
