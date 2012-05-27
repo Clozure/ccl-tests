@@ -225,8 +225,9 @@
 
 
 (deftest ccl.42698  ;; fixed in r9589/r9590
-    (handler-case (schar "abc" -1) ;; used to crash hard
-      (error () :error))
+    (locally (declare (optimize (safety 3)))
+      (handler-case (schar "abc" -1) ;; used to crash hard
+        (error () :error)))
   :error)
 
 (deftest ccl.42232-1
