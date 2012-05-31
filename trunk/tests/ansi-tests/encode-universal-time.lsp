@@ -22,7 +22,7 @@
 	for hour = (random 24)
 	for minute = (random 60)
 	for second = (random 60)
-	for tz = (if (and (= year 1900) (= date 0) (= month 0))
+	for tz = (if (and (= year 1900) (= date 1) (= month 1))
 		     (random 25)
 		   (- (random 49) 24))
 	for time = (encode-universal-time second minute hour date month year tz)
