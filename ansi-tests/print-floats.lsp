@@ -75,7 +75,8 @@
 			for len1 = (length s1)
 			for s2 = (format nil "~A.0" i)
 			repeat 10000
-			unless (or (/= i (rational f))  ;; not enough bits
+			unless (or (= i -10000000)
+                                   (/= i (rational f))  ;; not enough bits
 				;; (> (nth-value 1 (integer-decode-float f)) 0)
 				(and (> len1 4)
 				     (string-equal s1 s2 :start1 0 :end1 (- len1 2))
@@ -171,7 +172,8 @@
 			for len1 = (length s1)
 			for s2 = (format nil "~A.0" i)
 			repeat 10000
-			unless (or (/= i (rational f))  ;; not enough bits
+			unless (or (= i -10000000)
+                                   (/= i (rational f))  ;; not enough bits
 				;; (> (nth-value 1 (integer-decode-float f)) 0)
 				(and (> len1 4)
 				     (string-equal s1 s2 :start1 0 :end1 (- len1 2))
@@ -267,7 +269,8 @@
 			for len1 = (length s1)
 			for s2 = (format nil "~A.0" i)
 			repeat 10000
-			unless (or (/= i (rational f))  ;; not enough bits
+			unless (or (= i -10000000)
+                                   (/= i (rational f))  ;; not enough bits
 				;; (> (nth-value 1 (integer-decode-float f)) 0)
 				(and (> len1 4)
 				     (string-equal s1 s2 :start1 0 :end1 (- len1 2))
@@ -363,7 +366,8 @@
 			for len1 = (length s1)
 			for s2 = (format nil "~A.0" i)
 			repeat 10000
-			unless (or (/= i (rational f))  ;; not enough bits
+			unless (or (= i -10000000)
+                                   (/= i (rational f))  ;; not enough bits
 				;; (> (nth-value 1 (integer-decode-float f)) 0)
 				(and (> len1 4)
 				     (string-equal s1 s2 :start1 0 :end1 (- len1 2))
