@@ -1,7 +1,7 @@
 ;-*- Mode:     Lisp -*-
 ;;;; Author:   Paul Dietz
 ;;;; Created:  Tue Feb 10 05:39:24 2004
-;;;; Contains: Tess of ACOS
+;;;; Contains: Tests of ACOS
 
 (in-package :cl-test)
 
