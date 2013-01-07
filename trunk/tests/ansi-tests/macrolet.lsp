@@ -424,7 +424,6 @@
 
 ;;; Free declarations in macrolet
 
-#+bogus-test
 (deftest macrolet.47
   (let ((x :good))
     (declare (special x))
