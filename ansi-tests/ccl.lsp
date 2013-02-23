@@ -1873,3 +1873,7 @@
       (typep (foo 1d0) 'double-float))
   t)
 
+(deftest ccl.bug#978
+         (let ((*default-pathname-defaults* #P"/default/for/lisp"))
+           (string= "foo.bar" (ccl:native-translated-namestring #P"foo.bar")))
+  t)
