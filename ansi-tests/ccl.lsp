@@ -1877,3 +1877,19 @@
          (let ((*default-pathname-defaults* #P"/default/for/lisp"))
            (string= "foo.bar" (ccl:native-translated-namestring #P"foo.bar")))
   t)
+
+(deftest ccl.bug#1070.a
+    (progn
+      (close (open "temp.dat" :direction :output :if-exists :supersede))
+      (and (probe-file "temp.dat")
+	   (not (let ((*default-pathname-defaults* #P"/no/such/place/"))
+		  (probe-file "temp.dat")))))
+ t)
+
+(deftest ccl.bug#1070.b
+    (progn
+      (close (open "temp.dat" :direction :output :if-exists :supersede))
+      (when (probe-file "temp") (delete-file "temp"))
+      (let ((*default-pathname-defaults* #P".dat"))
+	(with-open-file (f "temp") f t)))
+ t)
