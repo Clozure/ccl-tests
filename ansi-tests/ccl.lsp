@@ -1893,3 +1893,7 @@
       (let ((*default-pathname-defaults* #P".dat"))
 	(with-open-file (f "temp") f t)))
  t)
+
+(deftest ccl.bug#1103
+    (string-equal :a :ba :start2 1)
+  t)
