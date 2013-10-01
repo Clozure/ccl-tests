@@ -1897,3 +1897,9 @@
 (deftest ccl.bug#1103
     (string-equal :a :ba :start2 1)
   t)
+
+(deftest ccl.bug#1115
+    (mapcar (lambda (x)
+              (ignore-errors (not (null (ccl::require-type x '(unsigned-byte 64))))))
+            (list (ash 1 64) (ash 1 63) (ash 1 31) (ash 1 32) -1 1 4177526783))
+  (nil t t t nil t t))
