@@ -1903,3 +1903,9 @@
               (ignore-errors (not (null (ccl::require-type x '(unsigned-byte 64))))))
             (list (ash 1 64) (ash 1 63) (ash 1 31) (ash 1 32) -1 1 4177526783))
   (nil t t t nil t t))
+
+(deftest ccl.bug#1245
+    (let ((h (make-hash-table :test 'equalp)))
+      (setf (gethash #(#\a) h) t)
+      (gethash "a" h))
+  t t)
