@@ -1909,3 +1909,23 @@
       (setf (gethash #(#\a) h) t)
       (gethash "a" h))
   t t)
+
+(deftest ccl.bug#563
+    (= (length (format nil "~8,2e" 0.010009956)) 8)
+  t)
+
+(deftest ccl.bug#1186
+    (let ((actual
+	   (loop for d in '(1 2 3 4 5 6)
+		 collect
+		 (format nil "~,ve ~,ve" d 1.2345678e-10 d 1.2345678e+10)))
+	  (desired
+	   '("1.2E-10 1.2E+10"
+	     "1.23E-10 1.23E+10"
+	     "1.235E-10 1.235E+10"
+	     "1.2346E-10 1.2346E+10"
+	     "1.23457E-10 1.23457E+10"
+	     "1.234568E-10 1.234568E+10")))
+      (mapcar 'string-equal actual desired))
+  (t t t t t t))
+
