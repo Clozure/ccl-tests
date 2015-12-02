@@ -1929,3 +1929,6 @@
       (mapcar 'string-equal actual desired))
   (t t t t t t))
 
+(deftest ccl.bug#1330
+    (string= (format nil "~:(a ~~) b~)") "A ~) B")
+  t)
