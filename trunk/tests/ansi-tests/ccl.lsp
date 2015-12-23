@@ -1932,3 +1932,22 @@
 (deftest ccl.bug#1330
     (string= (format nil "~:(a ~~) b~)") "A ~) B")
   t)
+
+(deftest ccl.bug#1335
+    (flet ((grad (hash x y z)
+	     (declare (type fixnum hash)
+		      (type double-float x y z))
+	     (let* ((h (logand hash 15))
+		    (u (if (< h 8) x y))
+		    (v (cond ((< h 4)
+			      y)
+			     ((or (= h 12) (= h 14))
+			      x)
+			     (t z))))
+	       (the
+		double-float
+		(+
+		 (if (zerop (logand h 1)) u (- u))
+		 (if (zerop (logand h 2)) v (- v)))))))
+      (grad 226 0.14000000000000012D0 0.0D0 0.0D0))
+  0.14000000000000012D0)
