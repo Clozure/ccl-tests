@@ -1951,3 +1951,8 @@
 		 (if (zerop (logand h 2)) v (- v)))))))
       (grad 226 0.14000000000000012D0 0.0D0 0.0D0))
   0.14000000000000012D0)
+
+(deftest ccl.bug#1278
+    (and (not (null (code-char #xfffe)))
+	 (not (null (code-char #xffff))))
+  t)
