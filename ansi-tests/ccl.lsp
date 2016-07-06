@@ -1956,3 +1956,9 @@
     (and (not (null (code-char #xfffe)))
 	 (not (null (code-char #xffff))))
   t)
+
+(deftest ccl.bug#1203
+    (let ((p (make-pathname :directory "x")))
+      (equalp (pathname-directory p) '(:absolute "x")))
+  t)
+
