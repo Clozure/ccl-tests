@@ -141,6 +141,7 @@
     (values (string (progn (incf i) "")) i))
   "" 1)
 
+#+bogus-test ;; Nothing in the spec says that STRING returns a fresh string. Table-driven implementation is allowed.
 (def-fold-test string.fold.1 (string #\A))
 
 ;;; Error tests
