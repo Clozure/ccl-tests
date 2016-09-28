@@ -1962,3 +1962,6 @@
       (equalp (pathname-directory p) '(:absolute "x")))
   t)
 
+(deftest ccl.bug#1388
+    (minusp (coerce (- (/ (1+ (expt 2 278)) (expt 2 265))) 'short-float))
+  t)
