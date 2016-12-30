@@ -1965,3 +1965,10 @@
 (deftest ccl.bug#1388
     (minusp (coerce (- (/ (1+ (expt 2 278)) (expt 2 265))) 'short-float))
   t)
+
+(deftest ccl.bug#1398
+    (let ((a (make-array 2 :element-type '(complex double-float))))
+      (setf (aref a 0) #c(1d0 0d0)
+	    (aref a 1) #c(1d0 0d0))
+      (= (aref a 0) (aref a 1)))
+  t)
