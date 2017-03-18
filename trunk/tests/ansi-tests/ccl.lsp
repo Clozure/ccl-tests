@@ -1893,6 +1893,28 @@
       (let ((*default-pathname-defaults* #P".dat"))
 	(with-open-file (f "temp") f t)))
  t)
+(deftest ccl.bug#1068.a
+    (let* ((name "a\\*x")
+	   (name/ "a\\*x/")
+	   (name/* "a\\*x/*.*")
+	   (file "a\\*x/temp.dat"))
+      (when (probe-file name)
+	(if (ccl:directoryp name) (ccl:delete-directory name/) (delete-file name)))
+      (ensure-directories-exist name/)
+      ;; create a new file
+      (close (open file :direction :output :if-exists :error))
+      ;; supersede an old file
+      (close (open file :direction :output :if-exists :supersede))
+      (length (directory "a\\*x/*.*")))
+  1)
+
+(deftest ccl.bug#1068.b
+    (pathname-match-p (make-pathname :name "foo;bar") (make-pathname :name "foo;bar"))
+  t)
+
+(deftest ccl.bug#1068.c
+    (equal (namestring "a.b.c") "a.b.c")
+  t)
 
 (deftest ccl.bug#1103
     (string-equal :a :ba :start2 1)
@@ -1972,3 +1994,10 @@
 	    (aref a 1) #c(1d0 0d0))
       (= (aref a 0) (aref a 1)))
   t)
+
+(deftest ccl.bug#1403
+  (loop for nbits from (1+ (integer-length most-positive-fixnum)) to 80
+     for bound = (ash 1 nbits)
+     nconc (loop repeat 100 as num = (random bound)
+              unless (eql num (read-from-string (princ-to-string num))) collect num))
+  nil)
