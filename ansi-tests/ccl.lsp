@@ -1995,6 +1995,10 @@
       (= (aref a 0) (aref a 1)))
   t)
 
+(deftest ccl.bug#1400
+    (loop with (a b) = '(1) repeat 1 collect (list a b))
+  ((1 nil)))
+
 (deftest ccl.bug#1403
   (loop for nbits from (1+ (integer-length most-positive-fixnum)) to 80
      for bound = (ash 1 nbits)
