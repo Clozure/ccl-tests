@@ -141,8 +141,9 @@ clean:
 	@(cd beyond-ansi; $(MAKE) clean)
 	@rm -rf scratch/ scratch.txt
 	@rm -f foo.txt foo.lsp foo.dat
-	@rm -f tmp.txt tmp.dat tmp2.dat temp.dat
+	@rm -f tmp.txt tmp.dat tmp2.dat temp.dat temp*.dat bug252.dat
 	@rm -f gazonk* out.class
 	@rm -rf TMP/
 	@rm -f "CLTEST:file-that-was-renamed.txt" file-that-was-renamed.txt
 	@rm -f compile-file-test-lp.lsp compile-file-test-lp.out ldtest.lsp
+	@rm -rf a\*x
