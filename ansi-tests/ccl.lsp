@@ -2005,3 +2005,14 @@
      nconc (loop repeat 100 as num = (random bound)
               unless (eql num (read-from-string (princ-to-string num))) collect num))
   nil)
+
+(deftest ccl.issue#74
+    (flet ((junk (c)
+	     (block b1
+	       (if (and c nil)
+		 (return-from b1
+		   (ash (values 0 (list 1))
+			(min 87 (case 0 (t c)))))
+		 0))))
+      (junk 0))
+  0)
