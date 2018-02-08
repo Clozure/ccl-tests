@@ -3,7 +3,7 @@
 (setf (logical-pathname-translations "tests")
       `(("**;*.*" ,(merge-pathnames "**/*.*" *load-truename*))))
 
-(defun load-tests ()
+(defun load-tests (&key (ansi t) (ccl t))
   (handler-bind ((warning
 		  (lambda (c)
 		    (if (typep c 'ccl::shadowed-typecase-clause)
@@ -11,11 +11,13 @@
     (cwd "tests:ansi-tests;")
     ;; This loads the infrastructure
     (load "gclload1.lsp")
-    (load "gclload2.lsp")
-    (load "ccl.lsp")))
+    (when ansi
+      (load "gclload2.lsp"))
+    (when ccl
+      (load "ccl.lsp"))))
 
-(defun run-tests (&key verbose (compile t) exit)
-  (load-tests)
+(defun run-tests (&key verbose (compile t) exit (ansi t) (ccl t))
+  (load-tests :ansi ansi :ccl ccl)
   (ccl:cwd "tests:ansi-tests;")
   (ccl:run-program "make" '("clean"))
   (let ((do-tests (find-symbol "DO-TESTS" "RT"))
