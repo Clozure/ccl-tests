@@ -2016,3 +2016,12 @@
 		 0))))
       (junk 0))
   0)
+
+(deftest ccl.issue#23
+    (let ((a (make-array 4 :element-type '(complex double-float)))
+	  (b (make-array 4 :element-type '(complex double-float))))
+      (dotimes (i 4)
+	(setf (aref b i) (complex (* 1.0d0 i) (* 2.0d0 i))))
+      (replace a b)
+      (equalp a b))
+  t)
