@@ -2025,3 +2025,46 @@
       (replace a b)
       (equalp a b))
   t)
+
+(defun test-complex-keys-hash-table (x1 x2)
+  (let ((ht1 (make-hash-table :test 'eql))
+        (ht2 (make-hash-table :test 'eql))
+        (val :foo)
+        k1 v1 k2 v2)
+    (setf (gethash x1 ht1) val
+          (gethash x2 ht2) val)
+    (maphash (lambda (k v) (setf k1 k v1 v)) ht1)
+    (maphash (lambda (k v) (setf k2 k v2 v)) ht2)
+    (values
+     (equalp ht1 ht2)
+     (eql k1 k2)
+     ;;(eq k1 k2)
+     (eql v1 v2))))
+
+(deftest ccl.issue#134
+    (let ((csf-keys-ht1 (make-hash-table :test 'eql)) ;complex-single-float
+          (csf-keys-ht2 (make-hash-table :test 'eql))
+          (cdf-keys-ht1 (make-hash-table :test 'eql)) ;complex-double-float
+          (cdf-keys-ht2 (make-hash-table :test 'eql))
+          (csf1 #c(1f0 -2f0))
+          (csf2 #c(1f0 -2f0))
+          (cdf1 #c(1d0 -2d0))
+          (cdf2 #c(1d0 -2d0))
+          (val :foo)
+          k1 v1 k2 v2 k3 v3 k4 v4)
+      (setf (gethash csf1 csf-keys-ht1) val
+            (gethash csf2 csf-keys-ht2) val
+            (gethash cdf1 cdf-keys-ht1) val
+            (gethash cdf2 cdf-keys-ht2) val)
+      (maphash (lambda (k v) (setf k1 k v1 v)) csf-keys-ht1)
+      (maphash (lambda (k v) (setf k2 k v2 v)) csf-keys-ht2)
+      (maphash (lambda (k v) (setf k3 k v3 v)) cdf-keys-ht1)
+      (maphash (lambda (k v) (setf k4 k v4 v)) cdf-keys-ht2)
+               (values (equalp csf-keys-ht1 csf-keys-ht2)
+                       (eql k1 k2)
+                       (eql v1 v2)
+                       ;;
+                       (equalp cdf-keys-ht1 cdf-keys-ht2)
+                       (eql k3 k4)
+                       (eql v3 v4)))
+  t t t t t t)
