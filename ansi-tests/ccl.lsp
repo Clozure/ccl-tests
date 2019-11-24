@@ -1201,6 +1201,24 @@
   (progn (labels ((foo () (foo))) (foo))))
 
 
+(deftest ccl.rational-exponent-marker
+  (mapcar #'typep
+          '(1.5r0    1.0f0        1.0d0)
+          '(rational single-float double-float))
+  (t t t))
+
+(deftest ccl.rational-default-float-format
+  (typep (let ((*read-default-float-format* 'rational))
+           (read-from-string "1.5"))
+         'rational)
+  t)
+
+(deftest ccl.rational-math
+  (list (- 1.2f0 1.0f0)
+        (- 1.2r0 1.0r0))
+  (0.20000005 1/5))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ADVISE
 
