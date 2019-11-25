@@ -91,7 +91,7 @@
       (write-to-string s :level 0   :readably nil)
       (write-to-string s :level 1   :readably nil)
       (write-to-string s :level nil :readably nil))))
-  "#S(PRINT-LEVEL-STRUCT)"
+  "#"
   "#S(PRINT-LEVEL-STRUCT)"
   "#S(PRINT-LEVEL-STRUCT)")
 
@@ -104,7 +104,7 @@
       (write-to-string s :level 0   :readably nil)
       (write-to-string s :level 1   :readably nil)
       (write-to-string s :level nil :readably nil))))
-  "#S(PRINT-LEVEL-STRUCT)"
+  "#"
   "#S(PRINT-LEVEL-STRUCT)"
   "#S(PRINT-LEVEL-STRUCT)")
 
