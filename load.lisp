@@ -13,7 +13,7 @@
     (load "gclload1.lsp")
     (when ansi
       (load "gclload2.lsp"))
-    (load "tests:ansi-tests;package-local-nicknames.lisp")
+    (load "tests:ansi-tests;beyond-ansi;package-local-nicknames.lisp")
     (when ccl
       (load "ccl.lsp"))))
 
