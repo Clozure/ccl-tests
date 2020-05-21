@@ -2102,5 +2102,6 @@
   t)
 
 (deftest cccl.issue#314
-    (pprint-dispatch t nil))
+    (not (not (pprint-dispatch t nil)))
+  t)
          
