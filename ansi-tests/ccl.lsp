@@ -2101,6 +2101,10 @@
                -18446744073709551615/85070591730234615856620279821087277056))
   t)
 
+(deftest cccl.issue#314
+    (not (not (pprint-dispatch t nil)))
+  t)
+         
 (deftest ccl.issue#336
     (values (= (ccl::truncate-no-rem 635171/100000 1/60 nil) 381))
   t)
