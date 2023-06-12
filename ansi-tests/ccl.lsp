@@ -1911,6 +1911,9 @@
       (let ((*default-pathname-defaults* #P".dat"))
 	(with-open-file (f "temp") f t)))
  t)
+
+;;; Windows doesn't allow a literal #\* in directory or file names
+#-windows
 (deftest ccl.bug#1068.a
     (let* ((name "a\\*x")
 	   (name/ "a\\*x/")
