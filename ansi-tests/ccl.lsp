@@ -2108,3 +2108,21 @@
 (deftest ccl.issue#336
     (values (= (ccl::truncate-no-rem 635171/100000 1/60 nil) 381))
   t)
+
+(defun issue#446-arr-fieldi (i ar)
+  (declare (optimize (speed 3)))
+  (aref (the (simple-array (signed-byte 64) (10))
+             ar)
+        i))
+
+(defun issue#446-update-arr-fieldi (i v ar)
+  (declare (optimize (speed 3)))
+  (progn (setf (aref ar i) v)
+         ar))
+
+(deftest ccl.issue#446
+    (let ((ar (make-array 10 :element-type '(signed-byte 63) :initial-element 0)))
+      (issue#446-update-arr-fieldi 0 #x-7FFFFFFE47AFEF96 ar)
+      (values (= #x-7FFFFFFE47AFEF96 (issue#446-arr-fieldi 0 ar))))
+  t)
+
