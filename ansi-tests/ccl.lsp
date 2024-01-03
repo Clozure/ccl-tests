@@ -2129,3 +2129,14 @@
       (values (= #x-7FFFFFFE47AFEF96 (issue#446-arr-fieldi 0 ar))))
   t)
 
+
+(defun issue#473-aset (v a n)
+  (declare (optimize (speed 3) (safety 0))
+           (type (simple-array (signed-byte 64)) a)
+           (type fixnum n))
+  (setf (aref a n) v))
+
+(deftest ccl.issue#473
+    (values (signals-error (issue#473-aset -1 (make-array 10 :element-type '(signed-byte 64) :initial-element 0) 0)
+                           error))
+  nil)
