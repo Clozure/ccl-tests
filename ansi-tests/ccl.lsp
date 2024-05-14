@@ -2140,3 +2140,14 @@
     (values (signals-error (issue#473-aset -1 (make-array 10 :element-type '(signed-byte 64) :initial-element 0) 0)
                            error))
   nil)
+
+;;; When calling random with a float as the limit, it was possible to
+;;; get a value equal to the limit.  The value should always be less
+;;; than the limit.
+(deftest ccl.issue#342
+    (let ((state (make-random-state #.(CCL::INITIALIZE-MRG31K3P-STATE
+                                       267351351 1658092716 1369862252
+                                       257820909 1071609802 1939985399))))
+      (< (random 57.0f0 state) 57.0f0))
+  t)
+
