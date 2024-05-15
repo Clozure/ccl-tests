@@ -2151,3 +2151,15 @@
       (< (random 57.0f0 state) 57.0f0))
   t)
 
+;;; The typep compiler macro was botching it when an array has a fill pointer
+(deftest ccl.issue#135
+    (flet ((no-compiler-macro (x)
+             (declare (notinline typep))
+             (typep x '(bit-vector 1)))
+           (yes-compiler-macro (x)
+             (typep x '(bit-vector 1))))
+      (let ((a (make-array '(1) :element-type 'bit :fill-pointer 0)))
+        (values
+         (eq (no-compiler-macro a) t)
+         (eq (yes-compiler-macro a) (no-compiler-macro a)))))
+  t t)
