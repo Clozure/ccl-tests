@@ -2163,3 +2163,19 @@
          (eq (no-compiler-macro a) t)
          (eq (yes-compiler-macro a) (no-compiler-macro a)))))
   t t)
+
+;;; Incorrect acode rewriting.  While compiling the inner function
+;;; FOO, we don't see that X is ultimately setq'ed outside the inner
+;;; function, and therefore assumed that it was a fixnum.
+(deftest ccl.issue#171
+    (let ((x 0))
+      (labels ((foo () (1+ x)))
+        (let* ((v1 (foo))
+               (v2 (setq x pi))
+               (v3 (foo))
+               (v4 (1+ x)))
+          (values (= v1 1)
+                  (= v2 pi)
+                  (= v3 (1+ pi))
+                  (= v4 (1+ pi))))))
+  t t t t)
