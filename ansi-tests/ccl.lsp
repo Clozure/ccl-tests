@@ -2179,3 +2179,14 @@
                   (= v3 (1+ pi))
                   (= v4 (1+ pi))))))
   t t t t)
+
+;;; acode-rewrite-ash wanted to use (%nx1-operator fixnum-ash) here
+;;; but it can't (on x86 anyway, the shift count is masked to 6 bits)
+(deftest ccl.issue#130
+    (flet ((foo (p1 p2)
+             (declare (optimize (safety 0))
+                      (type (eql -1583694141057) p1)
+                      (type (eql -78) p2))
+             (ash p1 p2)))
+      (foo -1583694141057 -78))
+  -1)
