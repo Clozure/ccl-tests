@@ -2190,3 +2190,46 @@
              (ash p1 p2)))
       (foo -1583694141057 -78))
   -1)
+
+
+;;; bad register targeting with 2D double-float arrays
+(deftest ccl.issue#335
+  (let ((a (make-array '(2 2) :element-type 'double-float))
+        (b (make-array '(2 2) :element-type 'double-float)))
+    (flet ((init (a b)
+             (dotimes (i 4)
+               (setf
+                ;; 1 2 3 4
+                (row-major-aref a i) (float (+ 1 i) 0d0)
+                ;; 5 6 7 8
+                (row-major-aref b i) (float (+ 5 i) 0d0))))
+           (f1 (a b)
+             (declare (type (array double-float (* *)) a b))
+             (declare (optimize (speed 3) (safety 0)))
+             (incf (aref a 0 0) (aref b 0 0)))
+           (f1-simple (a b)
+             (declare (type (simple-array double-float (* *)) a b))
+             (declare (optimize (speed 3) (safety 0)))
+             (incf (aref a 0 0) (aref b 0 0)))
+           (f2 (a b)
+             (declare (type (array double-float (* *)) a b))
+             (declare (optimize (speed 3) (safety 0)))
+             (loop for j from 0 to 0 do
+               (loop for k from 0 to 0 do
+                 (setf (aref a 0 j)
+                       (aref b k j))))))
+      (values (progn (init a b)
+                     (f1 a b)
+                     (eql 6.0d0 (aref a 0 0)))
+              (progn (init a b)
+                     (f1-simple a b)
+                     (eql 6.0d0 (aref a 0 0)))
+              (handler-case (progn (init a b)
+                                   (f2 a b)
+                                   (eql (aref a 0 0) (aref b 0 0)))
+                (ccl::invalid-memory-access () :invalid-memory-access)))))
+  t t t)
+     
+  
+        
+        
