@@ -14,6 +14,5 @@
   (load "errors-data-and-control-flow-1.lsp")
   (load "errors-data-and-control-flow-2.lsp")
   (load "errors-data-and-control-flow-3.lsp")
-  (in-package :ba-test)
-  )
-
+  (load "processes.lsp")
+  (in-package :ba-test))
