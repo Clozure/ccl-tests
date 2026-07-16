@@ -2229,7 +2229,39 @@
                                    (eql (aref a 0 0) (aref b 0 0)))
                 (ccl::invalid-memory-access () :invalid-memory-access)))))
   t t t)
-     
-  
-        
-        
+
+(deftest ccl.bitvector-reader
+  (let ((failures '())
+        (test-cases '(("#* foo" t #* " foo")
+                      ("#0* foo" t #* " foo")
+                      ("#*101 foo" t #*101 " foo")
+                      ("#5*101 foo" t #*10111 " foo")
+                      ("#5*100 foo" t #*10000 " foo")
+                      ("#10* foo" t :ERROR " foo")
+                      ("#3*1111 foo" t :ERROR " foo")
+                      ("#*|hello there| foo" t :ERROR " foo")
+                      ("#*|101| foo" t :ERROR " foo")
+                      ("#*\\101 foo" t :ERROR " foo")
+                      ("#*" t #* NIL)
+                      ("#10*1" t #*1111111111 NIL)
+                      ("#*111 foo" nil #*111 "foo"))))
+    (dolist (wanted test-cases)
+      (let* ((s (car wanted))
+             (p (cadr wanted))
+             (got (list* s p
+                         (with-input-from-string (s s)
+                           (list
+                            (handler-case
+                                (funcall (if p
+                                           'read-preserving-whitespace
+                                           'read)
+                                         s)
+                              (error ()
+                                :error))
+                            (read-line s nil nil))))))
+        (unless (equalp got wanted)
+          (push (format nil "~&~@<Test ~S / ~S: got ~S, wanted ~S~:@>~%"
+                        (car wanted) (cadr wanted) (cddr got) (cddr wanted))
+                failures))))
+    (values (null failures) failures))
+  t nil)
