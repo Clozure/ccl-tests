@@ -2265,3 +2265,9 @@
                 failures))))
     (values (null failures) failures))
   t nil)
+
+(deftest ccl.constidx-csf-vector
+    (eval '(let ((a (make-array 4 :element-type '(complex single-float))))
+            (setf (aref a 0) #c(1.0f0 2.0f0))
+            (aref a 0)))
+  #c(1.0f0 2.0f0))
