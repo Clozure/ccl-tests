@@ -2271,3 +2271,13 @@
             (setf (aref a 0) #c(1.0f0 2.0f0))
             (aref a 0)))
   #c(1.0f0 2.0f0))
+
+;;; GitHub issue #530
+(deftest sharpsign-dot.values.multiple
+  (let ((*read-eval* t))
+    (read-from-string "#.(values 1 2 3)"))
+  1 16)
+(deftest sharpsign-dot.values.none
+  (let ((*read-eval* t))
+    (read-from-string "#.(values) 12"))
+  12 13)
