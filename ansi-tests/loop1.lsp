@@ -358,4 +358,17 @@
    (loop for i from 1 below (expand-in-current-env (%m 5)) collect i))
   (1 2 3 4))
 
-  
+;;; http://www.lispworks.com/documentation/lw51/CLHS/Body/06_abaa.htm
+;;; by The loop keyword by marks the increment or decrement supplied by form3.
+;;; The value of form3 can be any positive number. The default value is 1.
+(deftest loop.1.66
+  (signals-error
+   (loop for i below 10 for j by 0 collect (list i j))
+   program-error)
+  t)
+
+(deftest loop.1.67
+  (signals-error
+   (loop for i below 10 for j by -1 collect (list i j))
+   program-error)
+  t)  
