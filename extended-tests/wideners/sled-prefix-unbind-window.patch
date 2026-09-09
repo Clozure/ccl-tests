@@ -1,0 +1,34 @@
+From: Mauro DiBenedetto <maurodibenedetto@gmail.com>
+Subject: [PATCH] TEST ONLY 0241: sled the pre-fix unbind_interrupt_level race window
+
+Test instrumentation for the unbind_interrupt_level missed-suspend
+reproducer, PRE-FIX form.  Holds open the window between the
+pending-suspend flags test and the *INTERRUPT-LEVEL* restore, where a
+suspend signal is deferred against the old level after the flags were
+already read, so the unbind returns without delivering it.
+
+MUTUALLY EXCLUSIVE with 0239 and 0242: this sled targets the original
+instruction order and does not apply once 0239 has reordered it.  It
+therefore lives in tools/fixtures/, NEVER in the patch series, and is
+applied by hand to a scratch host tree for reproducer runs only.
+NEVER DELIVER.
+---
+
+--- a/lisp-kernel/x86-spentry64.s
++++ b/lisp-kernel/x86-spentry64.s
+@@ -3693,6 +3693,15 @@
+ 	__(movq rcontext(tcr.tlb_pointer),%arg_x)
+ 	__(movq INTERRUPT_LEVEL_BINDING_INDEX(%arg_x),%imm0)
+         __(jc 5f)
++        /* TEST ONLY: hold this window open so a suspend signal can
++           land inside it.  ~100us at current clocks.  imm1 is dead in
++           the pre-fix hole and live in the post-fix one; save it in
++           both so the two sleds stay byte-identical. */
++        __(pushq %imm1)
++        __(movq $300000,%imm1)
++9:      __(subq $1,%imm1)
++        __(jne 9b)
++        __(popq %imm1)
+ 0:      __(testq %imm0,%imm0)
+ 	__(movq binding.val(%imm1),%temp0)
+ 	__(movq binding.link(%imm1),%imm1)
