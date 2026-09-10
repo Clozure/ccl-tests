@@ -2281,3 +2281,57 @@
   (let ((*read-eval* t))
     (read-from-string "#.(values) 12"))
   12 13)
+
+;;; Check the complex-float +/-/* operations in such a way that the
+;;; specialized vinsns are exercised.  The inputs are selected such that
+;;; results are exact for both plain and fused-multiply (as used on arm64)
+;;; implementations.
+(deftest ccl.complex-double-float-add
+    (funcall (test-compile '(lambda (a b)
+                             (declare (type (complex double-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (+ a b)))
+             #c(1.5d0 2.25d0) #c(3.0d0 -0.5d0))
+  #c(4.5d0 1.75d0))
+
+(deftest ccl.complex-double-float-subtract
+    (funcall (test-compile '(lambda (a b)
+                             (declare (type (complex double-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (- a b)))
+             #c(1.5d0 2.25d0) #c(3.0d0 -0.5d0))
+  #c(-1.5d0 2.75d0))
+
+(deftest ccl.complex-double-float-multiply
+    (let ((f (test-compile '(lambda (a b)
+                             (declare (type (complex double-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (* a b)))))
+      (list (funcall f #c(1.0d0 2.0d0) #c(3.0d0 4.0d0))
+            (funcall f #c(0.0d0 1.0d0) #c(0.0d0 1.0d0))))
+  (#c(-5.0d0 10.0d0) #c(-1.0d0 0.0d0)))
+
+(deftest ccl.complex-single-float-add
+    (funcall (test-compile '(lambda (a b)
+                             (declare (type (complex single-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (+ a b)))
+             #c(1.5f0 2.25f0) #c(3.0f0 -0.5f0))
+  #c(4.5f0 1.75f0))
+
+(deftest ccl.complex-single-float-subtract
+    (funcall (test-compile '(lambda (a b)
+                             (declare (type (complex single-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (- a b)))
+             #c(1.5f0 2.25f0) #c(3.0f0 -0.5f0))
+  #c(-1.5f0 2.75f0))
+
+(deftest ccl.complex-single-float-multiply
+    (let ((f (test-compile '(lambda (a b)
+                             (declare (type (complex single-float) a b)
+                                      (optimize (speed 3) (safety 0)))
+                             (* a b)))))
+      (list (funcall f #c(1.0f0 2.0f0) #c(3.0f0 4.0f0))
+            (funcall f #c(0.0f0 1.0f0) #c(0.0f0 1.0f0))))
+  (#c(-5.0f0 10.0f0) #c(-1.0f0 0.0f0)))
