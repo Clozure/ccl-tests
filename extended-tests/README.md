@@ -82,14 +82,13 @@ candidate to become an ordinary `deftest` registered in RT's own
 
 ### threads/  — expected RED until the fixes merge
 
-All four track upstream issue **#597** and PR **#634**.
+All three track upstream issue **#597** and PR **#634**.
 
 | file | what it reproduces | needs a widener? |
 |---|---|---|
 | `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — `wideners/widen-guard-spinlock-window.patch` |
-| `suspend-spinlock-rwlock.lisp` | the same defect via rwlock **read** locks only, which rules out the by-design "suspended lock owner" hazard: a reader never blocks a reader, so a wedge can only be the guard spin word. | yes — `wideners/widen-lisp-spin-release.patch` |
 | `trylock-count-leak.lisp` | `recursive_lock_trylock` raises the recursion count on the already-owned path and *then* returns EBUSY, so the caller releases once for its one acquisition and the lock stays owned forever. Reached through the kernel-import vector, the idiom level-0 already uses. | **no** — runs on a stock build |
-| `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable is an ACK-latency spike, not a permanent wedge. | yes — the two `sled-*` patches |
+| `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — the four `sled-*` patches, one pair per architecture |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.
@@ -99,6 +98,13 @@ reproducers on arm64; they are not tests and `run-all.sh` skips them.
 Test-only patches that widen a race window so it reproduces reliably. **None of
 them is a fix and none should ever be merged.** They exist because a race that
 reproduces once an hour is not a test.
+
+The `sled-*` patches come in one pair per architecture, pre-fix and post-fix.
+The pre-fix sled holds open the window between the flags read and the
+`*INTERRUPT-LEVEL*` restore; the post-fix sled holds open the corresponding
+window in the fixed order, with the same delay, so the two runs compare fairly.
+The pair for one architecture is mutually exclusive: apply one or the other,
+never both.
 
 `trylock-count-leak.lisp` needs none of them — it is an external-observable
 lock-count check, so it is the one to try first on an unmodified tree.

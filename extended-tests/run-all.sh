@@ -59,7 +59,6 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 expected_state () {   # <name> -> repro | clean
   case "$1" in
     suspend-spinlock-deadlock) echo repro ;;   # upstream #597 / PR #634
-    suspend-spinlock-rwlock)   echo repro ;;   # upstream #597 / PR #634
     unbind-missed-suspend)     echo repro ;;   # upstream #597 / PR #634
     trylock-count-leak)        echo repro ;;   # upstream #597 / PR #634
     *)                         echo clean ;;

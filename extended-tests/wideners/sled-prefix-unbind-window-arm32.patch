@@ -1,0 +1,39 @@
+From: R. Matthew Emerson <rme@acm.org>
+Subject: [PATCH] TEST ONLY: sled the pre-fix unbind_interrupt_level window (32-bit ARM)
+
+Test instrumentation for the unbind_interrupt_level missed-suspend
+reproducer, PRE-FIX form, 32-bit ARM.  Holds open the window between
+the pending-suspend flags test and the *INTERRUPT-LEVEL* restore, where
+a suspend signal is deferred against the old level after the flags were
+already read, so the unbind returns without delivering it.
+
+Contributed by the maintainer on the pull request that adds this
+directory, with the measurement: under this sled the kernel wedges.  A
+worker takes SIGSEGV inside unbind_interrupt_level and then deadlocks on
+the exception lock while the suspending thread waits for it to
+acknowledge the suspend signal.  The 32-bit ARM failure is therefore not
+only a latency spike: the pre-fix code also read a register it had never
+loaded.
+
+Applies to the tree BEFORE the 32-bit ARM fix.  Mutually exclusive with
+the post-fix sled, which targets the restored instruction order.  NEVER
+MERGE.
+---
+
+diff --git a/lisp-kernel/arm-spentry.s b/lisp-kernel/arm-spentry.s
+index 174882e..4a43373 100644
+--- a/lisp-kernel/arm-spentry.s
++++ b/lisp-kernel/arm-spentry.s
+@@ -2683,6 +2683,12 @@ _spentry(unbind_interrupt_level)
+ 0:      
+         __(ldr temp1,[imm0,#binding.val])
+         __(ldr imm0,[imm0,#binding.link])
++        /* TEST ONLY, NEVER MERGE: hold the pre-fix window (flags read
++           -> *INTERRUPT-LEVEL* restore) open so a suspend can land in
++           it.  imm1 is dead here.  */
++        __(mov imm1,#0x400000)
++9:      __(subs imm1,imm1,#1)
++        __(bne 9b)
+         __(str temp1,[temp2,#INTERRUPT_LEVEL_BINDING_INDEX])
+         __(str imm0,[rcontext,#tcr.db_link])
+         __(cmp temp0,#0)
