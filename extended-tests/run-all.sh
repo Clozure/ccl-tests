@@ -98,11 +98,30 @@ for t in "$HERE"/threads/*.lisp; do
   trc=$?
   # 0 = ran clean.  124 = external timeout, i.e. it wedged.  Anything else is
   # the test's own non-zero verdict (trylock-count-leak exits 42 on a leak).
+  #
+  # ⚠ rc=0 IS NOT ENOUGH ON ITS OWN.  A lisp that fails to load its own
+  # level-1 drops into the kernel debugger, prints a register dump, and still
+  # EXITS 0.  Classifying that as `clean' turns a lisp that never ran the test
+  # into a passing row -- measured 2026-09-16, and it is the one failure a test
+  # runner must never have.  So a clean verdict also requires the test to have
+  # SAID something: every reproducer prints a result or completion line, and
+  # if none is present the run did not happen.
   case "$trc" in
-    0)   got=clean ;;
+    0)   if grep -qE 'REPRO-COMPLETE|-RESULT|VERDICT' "$HERE/.$name.out"; then
+           got=clean
+         else
+           got=norun
+         fi ;;
     124) got=repro ;;
     *)   got=repro ;;
   esac
+  if [ "$got" = norun ]; then
+    echo "DID NOT RUN -- exited 0 but printed no result line.  The lisp"
+    echo "      probably failed to start (a failed level-1 load exits 0)."
+    echo "      See .$name.out"
+    rc=1
+    continue
+  fi
   if [ "$got" = "$want" ]; then
     if [ "$got" = repro ]; then echo "reproduced, as expected (rc=$trc)"
     else                        echo "clean, as expected" ; fi
