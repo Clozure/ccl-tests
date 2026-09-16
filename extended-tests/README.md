@@ -60,10 +60,14 @@ reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
 green — that is the `XPASS` half of the pair, and it is the point of tracking
 state rather than simply skipping these tests.
 
+That state describes the **lisp under test**, not the test file. Every entry is
+currently `clean`, because every defect in `threads/` is fixed on master. A
+reproduction is therefore a real failure now, and it fails `run-all.sh`.
+
 `trylock-count-leak.lisp` is the one that does not wedge: it is bounded by a
-20-second wait and cleans up after itself, so it is also the natural first
-candidate to become an ordinary `deftest` registered in RT's own
-`*expected-failures*` once the fix lands.
+20-second wait and cleans up after itself. Its fix has now landed, so it is the
+natural first candidate to become an ordinary `deftest` in the main suite, with
+no `*expected-failures*` entry needed.
 
 ## What each test does
 
@@ -80,15 +84,34 @@ candidate to become an ordinary `deftest` registered in RT's own
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — expected RED until the fixes merge
+### threads/  — all three are GREEN at tip
 
-All three track upstream issue **#597** and PR **#634**.
+All three track upstream issue **#597** and PR **#634**. The C-side fixes are
+merged, so every row below is green and `run-all.sh` now expects each of them to
+run **clean**. Run them against a lisp that predates the named commit and they
+reproduce again, which is the point of naming the commit rather than a date.
 
-| file | what it reproduces | needs a widener? |
-|---|---|---|
-| `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — `wideners/widen-guard-spinlock-window.patch` |
-| `trylock-count-leak.lisp` | `recursive_lock_trylock` raises the recursion count on the already-owned path and *then* returns EBUSY, so the caller releases once for its one acquisition and the lock stays owned forever. Reached through the kernel-import vector, the idiom level-0 already uses. | **no** — runs on a stock build |
-| `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — the four `sled-*` patches, one pair per architecture |
+The Lisp half of #634 is still open: `*kernel-exception-lock*` and
+`*kernel-tcr-area-lock*` name the same memory as the C structures and Lisp
+reaches them, so suspend-awareness has to become a property of a particular
+lock. No reproducer here covers that half yet.
+
+⚠ **One unexplained stall, recorded because it is not reproducible.** On
+linuxarm64 with 24 workers on 2 cores, one run of `suspend-spinlock-deadlock`
+stopped emitting heartbeats at 75,750 of 500,000 iterations and then sat with 24
+live threads for nine minutes. The stall began 73 seconds before the harness
+signalled the process, so the signal did not cause it. A later run on the same
+kernel and image completed all 500,000 with 282 million allocations, and the
+maintainer measured 500,000 clean on darwinarm64, linuxarm64 and darwinx8664.
+One observation in three runs is not a state, so the row stays green and a stall
+now fails `run-all.sh`. If it recurs, the open Lisp half above is the first
+place to look.
+
+| file | what it reproduces | green at tip? | needs a widener? |
+|---|---|---|---|
+| `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — fixed by `04f1e0ac` and `088e706e` | yes — `wideners/widen-guard-spinlock-window.patch` |
+| `trylock-count-leak.lisp` | `recursive_lock_trylock` raises the recursion count on the already-owned path and *then* returns EBUSY, so the caller releases once for its one acquisition and the lock stays owned forever. Reached through the kernel-import vector, the idiom level-0 already uses. | yes — fixed by `b5a00d12` | **no** — runs on a stock build |
+| `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — fixed by `1606a83d`, and `53a509a6` for 32-bit ARM | yes — the four `sled-*` patches, one pair per architecture |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.

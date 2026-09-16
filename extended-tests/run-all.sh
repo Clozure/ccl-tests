@@ -19,8 +19,9 @@
 # watchdog you might write.  So each one runs in ITS OWN PROCESS under an
 # EXTERNAL timeout, and a timeout IS the reproduction.  They are expected to
 # reproduce -- that is, to fail -- on a lisp that does not yet carry the fix, so
-# their result is reported but does NOT set the exit status.  See README.md for
-# which fix each one waits on.
+# their result is reported but does NOT set the exit status.  A reproducer whose
+# fix HAS landed is expected clean, and then a reproduction DOES fail this
+# script.  See README.md for the commit that closed each one.
 
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,15 +53,38 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 # lands the test stops reproducing, and THAT is reported loudly as UNEXPECTED-OK
 # -- the signal to move the row to green in README.md and flip the state here.
 #
+# The state is a property of the LISP UNDER TEST, not of the test file.  Run a
+# `clean' row against a lisp that predates the commit it names and it will
+# report UNEXPECTED FAILURE and fail this script -- correctly, because against
+# that lisp the defect is present.
+#
+# Do not flip a row from a merge alone.  Every `clean' below was measured on a
+# kernel built from the commits it names.  One row that LOOKED ready to flip
+# still reproduces, and only running it showed that.
+#
 # This is the XFAIL/XPASS pair every mature suite has (DejaGnu XPASS, lit XFAIL,
 # pytest xfail(strict)).  RT's own *expected-failures* gives the XFAIL half but
 # not the XPASS half, and it cannot help at all for a test that wedges the
 # image, because a hung RT never reaches its report.
 expected_state () {   # <name> -> repro | clean
   case "$1" in
-    suspend-spinlock-deadlock) echo repro ;;   # upstream #597 / PR #634
-    unbind-missed-suspend)     echo repro ;;   # upstream #597 / PR #634
-    trylock-count-leak)        echo repro ;;   # upstream #597 / PR #634
+    # All three flipped to `clean' on 2026-09-16, each MEASURED against a kernel
+    # carrying the named commits, not inferred from them being merged.
+    unbind-missed-suspend)     echo clean ;;   # 1606a83d + 53a509a6 (32-bit ARM)
+    trylock-count-leak)        echo clean ;;   # b5a00d12
+    suspend-spinlock-deadlock) echo clean ;;   # 04f1e0ac + 088e706e
+    #
+    # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
+    # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
+    # one run of suspend-spinlock-deadlock stopped emitting heartbeats at
+    # 75,750 of 500,000 iterations and sat with 24 live threads for a further
+    # nine minutes.  The stall began 73 s before the harness signalled it, so
+    # the signal did not cause it.  A later run on the same kernel and image
+    # completed all 500,000 (282 M allocations), and the maintainer measured
+    # 500,000 clean on darwinarm64, linuxarm64 and darwinx8664.  So the state
+    # is `clean' -- a stall is now a real failure and fails this script, which
+    # is what we want if it recurs.  The Lisp half of PR #634 is still open and
+    # is the first place to look if it does.
     *)                         echo clean ;;
   esac
 }
