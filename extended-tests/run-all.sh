@@ -26,7 +26,15 @@
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCL="${1:-${CCL:-ccl}}"
-TIMEOUT_SECS="${TIMEOUT_SECS:-180}"
+# A TIMEOUT IS THE REPRODUCTION SIGNAL here, so this must comfortably exceed
+# the slowest GREEN run or a slow machine reports a fixed defect as open.
+# 180 could not: the two suspend reproducers default to 500000 cycles, and
+# MEASURED on linuxarm64 with 24 workers on 2 cores they take 619 s
+# (suspend-spinlock-deadlock) and 1053 s (suspend-spinlock-static-cons).
+# Both would have been killed at 180 s and reported UNEXPECTED FAILURE.
+# Lower it deliberately, or cut the work with REPRO_ITERS, but do not leave
+# it below the slowest green you expect.
+TIMEOUT_SECS="${TIMEOUT_SECS:-1800}"
 
 command -v "$CCL" >/dev/null 2>&1 || [ -x "$CCL" ] || {
   echo "run-all: no CCL at '$CCL'.  Pass a path or set CCL=." >&2; exit 2; }
