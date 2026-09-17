@@ -74,6 +74,11 @@ expected_state () {   # <name> -> repro | clean
     trylock-count-leak)        echo clean ;;   # b5a00d12
     suspend-spinlock-deadlock) echo clean ;;   # 04f1e0ac + 088e706e
     #
+    # Added by the maintainer as 17ec0a2 and MEASURED here before this row
+    # was written: pin 2b7422e6, unwidened, 24 workers on 2 cores,
+    # 500000 of 500000 cycles in 1053 s with 1.787G allocations.
+    suspend-spinlock-static-cons) echo clean ;;  # 2c382468
+    #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
     # one run of suspend-spinlock-deadlock stopped emitting heartbeats at
@@ -83,9 +88,22 @@ expected_state () {   # <name> -> repro | clean
     # completed all 500,000 (282 M allocations), and the maintainer measured
     # 500,000 clean on darwinarm64, linuxarm64 and darwinx8664.  So the state
     # is `clean' -- a stall is now a real failure and fails this script, which
-    # is what we want if it recurs.  The Lisp half of PR #634 is still open and
-    # is the first place to look if it does.
-    *)                         echo clean ;;
+    # is what we want if it recurs.
+    #
+    # UPDATE 2026-09-17: it has not recurred.  At pin 2b7422e6, which carries
+    # the lisp half (2c382468), this reproducer ran 500000 of 500000 with
+    # 285.8M allocations in 619 s.  We never captured a backtrace of OUR
+    # stall, so we cannot say 2c382468 explains it -- only that the run is
+    # clean on a lisp that carries it.
+    #
+    # A file with no row above has NO MEASURED STATE on this lisp.  Reporting
+    # it `clean' hands an unmeasured test the best available outcome by
+    # default, which contradicts the rule at the top of this function: the
+    # state is a property of the LISP UNDER TEST, and nobody has run this one
+    # here.  Measured 2026-09-17 -- suspend-spinlock-static-cons.lisp arrived
+    # in this directory and the runner reported it `clean, as expected'
+    # before anyone had run it once.
+    *)                         echo unknown ;;
   esac
 }
 unexpected=0
@@ -122,6 +140,15 @@ for t in "$HERE"/threads/*.lisp; do
     rc=1
     continue
   fi
+  if [ "$want" = unknown ]; then
+    echo "NO EXPECTED STATE -- it ran and reported '$got', but no row in"
+    echo "      expected_state() names this test, so nothing here has been"
+    echo "      measured against this lisp.  Add a row naming the commit that"
+    echo "      closes it, or 'repro' while the defect is open."
+    unexpected=$((unexpected+1))
+    rc=1
+    continue
+  fi
   if [ "$got" = "$want" ]; then
     if [ "$got" = repro ]; then echo "reproduced, as expected (rc=$trc)"
     else                        echo "clean, as expected" ; fi
@@ -139,5 +166,5 @@ done
 [ "$unexpected" = 0 ] || echo "  ($unexpected reproducer(s) did not match their expected state)"
 
 echo
-echo "=== run-all exit $rc (phase 1 only) ==="
+echo "=== run-all exit $rc ==="
 exit $rc
