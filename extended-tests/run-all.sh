@@ -87,6 +87,37 @@ expected_state () {   # <name> -> repro | clean
     # 500000 of 500000 cycles in 1053 s with 1.787G allocations.
     suspend-spinlock-static-cons) echo clean ;;  # 2c382468
     #
+    # ⛔ THE ONLY `repro' ROW HERE, and the only file in threads/ that is not
+    # part of the #597 family.  OPEN upstream as issue #639, so reproducing is
+    # the CORRECT outcome and does not fail this script.  When it stops
+    # reproducing, that is the UNEXPECTED-OK signal: the fix has landed, and
+    # this row and the README move to green together.
+    #
+    # MEASURED on stock builds at pin 6526e21c before this row was written --
+    # a row written from a merge or from a bug report, rather than from a run,
+    # is the defect the `*)' fall-through below exists to stop:
+    #
+    #   linuxx8664  t3.small, 2 vCPU   10 s sleep took  31.0 s  (ratio  3.1)
+    #                                  rc=42,   781,882 allocations
+    #   linuxarm64  t4g.small, 2 vCPU  10 s sleep took 168.0 s  (ratio 16.8)
+    #                                  rc=42, 6,474,520 allocations
+    #
+    # POSITIVE CONTROL, the same file with ONE variable changed -- the
+    # allocation cut from 160016 bytes to 176 -- so that a red here cannot be
+    # "this test always fails":
+    #
+    #   linuxx8664  rc=0, 10.6 s (ratio 1.1), 30,297,490 allocations
+    #   linuxarm64  rc=0, 11.7 s (ratio 1.2), 27,336,462 allocations
+    #
+    # The control allocates 39x and 4x MORE OFTEN than the runs that fail, and
+    # returns on time.  So the variable is object SIZE -- and therefore how
+    # long each collection takes -- not whether another thread allocates.
+    #
+    # ⚠ A THROTTLED OR LOW-CORE BOX REPRODUCES THIS MORE WEAKLY, not more
+    # strongly: fewer collections per second means less time lost per second.
+    # Both cells above are burstable instances, so both are conservative.
+    sleep-vs-alloc)            echo repro ;;   # OPEN -- issue #639
+    #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
     # one run of suspend-spinlock-deadlock stopped emitting heartbeats at

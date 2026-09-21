@@ -60,9 +60,13 @@ reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
 green — that is the `XPASS` half of the pair, and it is the point of tracking
 state rather than simply skipping these tests.
 
-That state describes the **lisp under test**, not the test file. Every entry is
-currently `clean`, because every defect in `threads/` is fixed on master. A
-reproduction is therefore a real failure now, and it fails `run-all.sh`.
+That state describes the **lisp under test**, not the test file. Four of the
+five entries are `clean`, because the defects behind them are fixed on master,
+and for those a reproduction is a real failure that fails `run-all.sh`.
+`sleep-vs-alloc` is `repro`: its defect is open upstream, so reproducing is the
+correct outcome and does not fail this script. It is the first `repro` row this
+directory has had, so it is also the first run that exercises the expected-state
+machinery in the direction the README has always described.
 
 `trylock-count-leak.lisp` is the one that does not wedge: it is bounded by a
 20-second wait and cleans up after itself. Its fix has now landed, so it is the
@@ -84,13 +88,18 @@ no `*expected-failures*` entry needed.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — all four are GREEN at tip
+### threads/  — four green at tip, one open
 
-All four track upstream issue **#597** and PR **#634**, which the maintainer
-closed on 2026-09-17. The C-side fixes and the Lisp half are both merged, so
-every row below is green and `run-all.sh` now expects each of them to run
-**clean**. Run them against a lisp that predates the named commit and they
+**Four** of these track upstream issue **#597** and PR **#634**, which the
+maintainer closed on 2026-09-17. The C-side fixes and the Lisp half are both
+merged, so those four rows are green and `run-all.sh` expects each of them to
+run **clean**. Run them against a lisp that predates the named commit and they
 reproduce again, which is the point of naming the commit rather than a date.
+
+**One does not belong to that family.** `sleep-vs-alloc.lisp` tracks issue
+**#639** and is open, so it is expected to reproduce. It is grouped here
+because the class is threads and interrupts, not because it shares a cause with
+the four above; nothing in the #597 work touches it.
 
 The Lisp half of #634 is **closed**. `*kernel-exception-lock*` and
 `*kernel-tcr-area-lock*` name the same memory as the C structures and Lisp
@@ -115,12 +124,56 @@ allocations in 619 s. We never captured a backtrace of our own stall, so we
 cannot claim `2c382468` explains it — only that the run is clean on a lisp that
 carries it (med).
 
+#### `sleep-vs-alloc.lisp` — issue #639, OPEN
+
+`(SLEEP n)` returns far too late while another thread allocates large objects.
+Each GC suspends the sleeping thread with a signal, which interrupts
+`#_nanosleep`; that returns EINTR, and `%nanosleep` then sleeps again for the
+remaining time **the kernel reported**. The kernel computes that remainder
+*before* it runs the handler, so the time the thread spends parked in
+`suspend_resume_handler` — waiting for the collection to finish — is never
+subtracted. Every world stop loses its own duration.
+
+The error is therefore not a fixed offset. It grows with the collection RATE,
+and the sleep converges only while it gains time faster than it loses it.
+
+| cell | a 10 s sleep took | ratio | allocations |
+|---|---|---|---|
+| linuxx8664, `v1.13-465-g6526e21c`, t3.small | 31.0 s | 3.1× | 781,882 |
+| linuxarm64, same pin, t4g.small | 168.0 s | 16.8× | 6,474,520 |
+| linuxx8664, released 1.12.2 | about 50 s | 5× | — |
+
+⚠ **It is not established that the sleep never returns.** The unbounded
+reading comes from runs that were KILLED (on an m9g.large, 3 of 3, at 90 s).
+On the slower cells above the same sleep did return, after 3× and 17× its
+requested time. What is measured is an overrun that grows with collection rate
+and that nobody has found a bound for — not an infinite one. The file reports
+the number it saw and does not decide that question.
+
+⚠ **A throttled or low-core machine reproduces this MORE WEAKLY**, not more
+strongly: fewer collections per second means less time lost per second. Both
+cells above are burstable instances, so both numbers are conservative.
+
+**The control that makes the red mean something.** The same file with one
+variable changed — the allocation cut from 160,016 bytes to 176 — returns on
+time on both architectures (10.6 s and 11.7 s) while allocating 30,297,490 and
+27,336,462 times, which is 39× and 4× MORE allocation events than the runs
+that fail. So the variable is object SIZE, and therefore how long a single
+collection takes, rather than whether another thread allocates at all.
+
+**The mechanism is not CCL-specific.** A small C program running the same
+EINTR-and-re-sleep loop under a signal storm converges when its handler returns
+at once, even at 124,553 interruptions, and diverges when the handler parks for
+as little as 16 µs. The blocking handler is the variable, not the signal rate.
+
 | file | what it reproduces | green at tip? | needs a widener? |
 |---|---|---|---|
 | `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — fixed by `04f1e0ac` and `088e706e` | yes — `wideners/widen-guard-spinlock-window.patch` |
 | `suspend-spinlock-static-cons.lisp` | the same `RECURSIVE_LOCK` as the row above, reached **from Lisp** rather than from an allocation trap. `static-cons` takes `*kernel-exception-lock*` on every call, so a worker can hold the guard word when the world stops. `suspend-spinlock-deadlock.lisp` reaches that lock through the C acquire path only, so until this file nothing here covered the other half of the defect. | yes — fixed by `2c382468` | **no** — the reds were measured unwidened; `wideners/widen-lisp-spin-release.patch` is optional |
 | `trylock-count-leak.lisp` | `recursive_lock_trylock` raises the recursion count on the already-owned path and *then* returns EBUSY, so the caller releases once for its one acquisition and the lock stays owned forever. Reached through the kernel-import vector, the idiom level-0 already uses. | yes — fixed by `b5a00d12` | **no** — runs on a stock build |
 | `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — fixed by `1606a83d`, and `53a509a6` for 32-bit ARM | yes — the four `sled-*` patches, one pair per architecture |
+
+| `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | **no — open, issue #639** | **no** — reproduces on a stock build, unwidened |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.
