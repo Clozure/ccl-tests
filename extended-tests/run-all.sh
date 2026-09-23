@@ -76,10 +76,9 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 # image, because a hung RT never reaches its report.
 expected_state () {   # <name> -> repro | clean
   case "$1" in
-    # All three flipped to `clean' on 2026-09-16, each MEASURED against a kernel
+    # Both flipped to `clean' on 2026-09-16, each MEASURED against a kernel
     # carrying the named commits, not inferred from them being merged.
     unbind-missed-suspend)     echo clean ;;   # 1606a83d + 53a509a6 (32-bit ARM)
-    trylock-count-leak)        echo clean ;;   # b5a00d12
     suspend-spinlock-deadlock) echo clean ;;   # 04f1e0ac + 088e706e
     #
     # Added by the maintainer as 17ec0a2 and MEASURED here before this row
@@ -154,7 +153,8 @@ for t in "$HERE"/threads/*.lisp; do
   timeout "$TIMEOUT_SECS" "$CCL" --no-init --batch -l "$t" </dev/null >"$HERE/.$name.out" 2>&1
   trc=$?
   # 0 = ran clean.  124 = external timeout, i.e. it wedged.  Anything else is
-  # the test's own non-zero verdict (trylock-count-leak exits 42 on a leak).
+  # the test's own non-zero verdict: a reproducer exits 42 when it observes
+  # the defect.
   #
   # ⚠ rc=0 IS NOT ENOUGH ON ITS OWN.  A lisp that fails to load its own
   # level-1 drops into the kernel debugger, prints a register dump, and still

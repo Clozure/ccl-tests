@@ -60,18 +60,20 @@ reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
 green — that is the `XPASS` half of the pair, and it is the point of tracking
 state rather than simply skipping these tests.
 
-That state describes the **lisp under test**, not the test file. Four of the
-five entries are `clean`, because the defects behind them are fixed on master,
+That state describes the **lisp under test**, not the test file. Three of the
+four entries are `clean`, because the defects behind them are fixed on master,
 and for those a reproduction is a real failure that fails `run-all.sh`.
 `sleep-vs-alloc` is `repro`: its defect is open upstream, so reproducing is the
 correct outcome and does not fail this script. It is the first `repro` row this
 directory has had, so it is also the first run that exercises the expected-state
 machinery in the direction the README has always described.
 
-`trylock-count-leak.lisp` is the one that does not wedge: it is bounded by a
-20-second wait and cleans up after itself. Its fix has now landed, so it is the
-natural first candidate to become an ordinary `deftest` in the main suite, with
-no `*expected-failures*` entry needed.
+One test has already left this directory. `trylock-count-leak` did not wedge
+the image, it was bounded by a 20-second wait, and its fix had landed, so it
+needed none of the machinery here. It is now
+`ccl.recursive-lock-trylock-count-leak` in `ansi-tests/ccl-stress.lsp`, an
+ordinary `deftest` that `make test-stress` runs. A test belongs here only while
+it needs an external timeout or its own process.
 
 ## What each test does
 
@@ -88,18 +90,18 @@ no `*expected-failures*` entry needed.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — four green at tip, one open
+### threads/  — three green at tip, one open
 
-**Four** of these track upstream issue **#597** and PR **#634**, which the
+**Three** of these track upstream issue **#597** and PR **#634**, which the
 maintainer closed on 2026-09-17. The C-side fixes and the Lisp half are both
-merged, so those four rows are green and `run-all.sh` expects each of them to
+merged, so those three rows are green and `run-all.sh` expects each of them to
 run **clean**. Run them against a lisp that predates the named commit and they
 reproduce again, which is the point of naming the commit rather than a date.
 
 **One does not belong to that family.** `sleep-vs-alloc.lisp` tracks issue
 **#639** and is open, so it is expected to reproduce. It is grouped here
 because the class is threads and interrupts, not because it shares a cause with
-the four above; nothing in the #597 work touches it.
+the three above; nothing in the #597 work touches it.
 
 The Lisp half of #634 is **closed**. `*kernel-exception-lock*` and
 `*kernel-tcr-area-lock*` name the same memory as the C structures and Lisp
@@ -170,7 +172,6 @@ as little as 16 µs. The blocking handler is the variable, not the signal rate.
 |---|---|---|---|
 | `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — fixed by `04f1e0ac` and `088e706e` | yes — `wideners/widen-guard-spinlock-window.patch` |
 | `suspend-spinlock-static-cons.lisp` | the same `RECURSIVE_LOCK` as the row above, reached **from Lisp** rather than from an allocation trap. `static-cons` takes `*kernel-exception-lock*` on every call, so a worker can hold the guard word when the world stops. `suspend-spinlock-deadlock.lisp` reaches that lock through the C acquire path only, so until this file nothing here covered the other half of the defect. | yes — fixed by `2c382468` | **no** — the reds were measured unwidened; `wideners/widen-lisp-spin-release.patch` is optional |
-| `trylock-count-leak.lisp` | `recursive_lock_trylock` raises the recursion count on the already-owned path and *then* returns EBUSY, so the caller releases once for its one acquisition and the lock stays owned forever. Reached through the kernel-import vector, the idiom level-0 already uses. | yes — fixed by `b5a00d12` | **no** — runs on a stock build |
 | `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — fixed by `1606a83d`, and `53a509a6` for 32-bit ARM | yes — the four `sled-*` patches, one pair per architecture |
 
 | `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | **no — open, issue #639** | **no** — reproduces on a stock build, unwidened |
@@ -190,9 +191,6 @@ The pre-fix sled holds open the window between the flags read and the
 window in the fixed order, with the same delay, so the two runs compare fairly.
 The pair for one architecture is mutually exclusive: apply one or the other,
 never both.
-
-`trylock-count-leak.lisp` needs none of them — it is an external-observable
-lock-count check, so it is the one to try first on an unmodified tree.
 
 Apply with `git apply`, run the reproducer, then revert.
 
