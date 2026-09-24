@@ -1,0 +1,34 @@
+From: R. Matthew Emerson <rme@acm.org>
+Subject: [PATCH] TEST ONLY: sled the post-fix unbind_interrupt_level window (32-bit ARM)
+
+Test instrumentation for the unbind_interrupt_level missed-suspend
+reproducer, POST-FIX form, 32-bit ARM.  Holds open the corresponding
+window in the fixed code, between the *INTERRUPT-LEVEL* restore and the
+flags poll: a suspend signal that lands here sees the restored level,
+parks normally, and must NOT be missed.  The same delay at the
+corresponding point makes the pre/post comparison fair.
+
+Contributed by the maintainer on the pull request that adds this
+directory, with the measurement: 2000 of 2000 world stops, no misses.
+
+Applies to the tree WITH the 32-bit ARM fix.  Mutually exclusive with
+the pre-fix sled.  NEVER MERGE.
+---
+
+diff --git a/lisp-kernel/arm-spentry.s b/lisp-kernel/arm-spentry.s
+index b6bde1e..0c64e4d 100644
+--- a/lisp-kernel/arm-spentry.s
++++ b/lisp-kernel/arm-spentry.s
+@@ -2690,6 +2690,12 @@ _spentry(unbind_interrupt_level)
+         __(ldr imm0,[imm0,#binding.link])
+         __(str temp1,[temp2,#INTERRUPT_LEVEL_BINDING_INDEX])   /* restore first */
+         __(str imm0,[rcontext,#tcr.db_link])
++        /* TEST ONLY, NEVER MERGE: hold the post-fix window (restore ->
++           flags poll) open, the same delay as the prefix sled so the
++           pre/post comparison is fair.  imm1 is dead here. */
++        __(mov imm1,#0x400000)
++9:      __(subs imm1,imm1,#1)
++        __(bne 9b)
+         __(cmp temp1,#-2<<fixnumshift)
+         __(ble 1f)                      /* restored level still defers */
+         __(ldr imm0,[rcontext,#tcr.flags])                     /* poll after restore */

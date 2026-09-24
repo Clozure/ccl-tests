@@ -1,0 +1,49 @@
+From: Mauro DiBenedetto <maurodibenedetto@gmail.com>
+Subject: [PATCH] TEST ONLY: env-gated widener for the guard-spinlock held window
+
+Test instrumentation for the suspend-vs-spinlock deadlock reproducer.
+With CCL_SPINLOCK_WIDEN_LOOPS=N in the environment, every successful
+get_spin_lock acquisition busy-waits N iterations before returning,
+which widens the held window from about ten instructions to tens of
+microseconds, so the race reproduces in seconds instead of months.
+Without the variable, the added cost is one test of a zero global per
+acquisition.
+
+NEVER DELIVER THIS PATCH.  It exists so the reproducer can be watched
+red without the fix and green with it, and it is withheld from every
+build that is not a reproducer run.
+---
+
+--- a/lisp-kernel/thread_manager.c
++++ b/lisp-kernel/thread_manager.c
+@@ -232,6 +232,14 @@
+ #ifndef USE_FUTEX
+ int spin_lock_tries = 1;
+ 
++/* TEST ONLY: with CCL_SPINLOCK_WIDEN_LOOPS=N in the environment, every
++   successful spin-lock acquisition busy-waits N iterations before it
++   returns, so the suspend-vs-spinlock race window is wide enough to
++   reproduce in seconds.  Never deliver this patch. */
++#include <stdlib.h>
++int spin_lock_widen_loops = 0;
++static int spin_lock_widen_init_done = 0;
++
+ void
+ get_spin_lock(signed_natural *p, TCR *tcr)
+ {
+@@ -240,6 +248,15 @@
+   while (1) {
+     for (i = 0; i < n; i++) {
+       if (atomic_swap(p,(signed_natural)tcr) == 0) {
++        if (!spin_lock_widen_init_done) {
++          char *ws = getenv("CCL_SPINLOCK_WIDEN_LOOPS");
++          spin_lock_widen_loops = ws ? atoi(ws) : 0;
++          spin_lock_widen_init_done = 1;
++        }
++        if (spin_lock_widen_loops > 0) {
++          volatile int w;
++          for (w = 0; w < spin_lock_widen_loops; w++);
++        }
+         return;
+       }
+     }

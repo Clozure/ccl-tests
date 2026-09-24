@@ -1,0 +1,39 @@
+From: Mauro DiBenedetto <maurodibenedetto@gmail.com>
+Subject: [PATCH] TEST ONLY: special-gated widener for the Lisp spin-word held window
+
+Test instrumentation for the Lisp-side suspend-vs-spin-word deadlock
+reproducer.  With CCL::*SPIN-RELEASE-WIDEN-LOOPS* set to a positive
+fixnum, every %RELEASE-SPIN-LOCK busy-waits that many iterations
+before it clears the word, widening the held window so the race is
+reproducible in seconds.  A special variable rather than an
+environment lookup, because level-0 code cannot call GETENV and a
+special read is safe at any interrupt level; the reproducer arms it
+at run time.  Inert at the default 0.
+
+NEVER DELIVER THIS PATCH.  It exists so the Lisp-side reproducer can
+be watched red without the level-0 deferral change and green with it,
+and it is withheld from every build that is not a reproducer run.
+---
+
+--- a/level-0/l0-misc.lisp
++++ b/level-0/l0-misc.lisp
+@@ -572,2 +572,15 @@
+ ;;; functions.
++;;; TEST ONLY: with CCL::*SPIN-RELEASE-WIDEN-LOOPS* set to a positive
++;;; fixnum, every spin-word release busy-waits that many iterations
++;;; first, widening the held window so the suspend-vs-spin-word race
++;;; is reproducible in seconds.  Inert while the value is 0.  A
++;;; special variable, not an environment lookup: level-0 code cannot
++;;; call GETENV, and a special read is safe at any interrupt level.
++;;; Never deliver this patch.
++(defparameter *spin-release-widen-loops* 0)
++(defun %spin-release-widen-delay ()
++  (let* ((n *spin-release-widen-loops*))
++    (declare (fixnum n))
++    (dotimes (i n))))
++
+ #-(or arm-target arm64-target)
+@@ -578,2 +591,3 @@
+   (defun %release-spin-lock (p)
++    (%spin-release-widen-delay)
+     (setf (%get-natural p 0) 0)))

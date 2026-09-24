@@ -1,0 +1,10 @@
+# Scoped to this directory only.
+#
+# The wideners are applied with `git apply', which needs the patch body to match
+# its target byte for byte -- a CRLF checkout makes every hunk fail.  The shell
+# drivers run on Linux, where a CRLF line ending produces the classic
+# "\r: command not found".  Both are silent-ish failures that look like a broken
+# test rather than a broken checkout, so pin the endings here.
+*.patch text eol=lf
+*.sh    text eol=lf
+*.lisp  text eol=lf

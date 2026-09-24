@@ -1,0 +1,33 @@
+From: Mauro DiBenedetto <maurodibenedetto@gmail.com>
+Subject: [PATCH] TEST ONLY 0242: sled the post-fix unbind_interrupt_level window
+
+Test instrumentation for the unbind_interrupt_level missed-suspend
+reproducer, POST-FIX form.  Holds open the corresponding window in the
+0239-reordered code, between the *INTERRUPT-LEVEL* restore and the
+flags poll: a suspend signal that lands here sees the restored level,
+parks normally, and must NOT be missed.  The same delay at the
+corresponding point makes the pre/post comparison fair.
+
+APPLIES ONLY ON TOP OF 0239, and is mutually exclusive with 0241.  It
+lives in tools/fixtures/, NEVER in the patch series, and is applied by
+hand to a scratch host tree for reproducer runs only.  NEVER DELIVER.
+---
+
+--- a/lisp-kernel/x86-spentry64.s
++++ b/lisp-kernel/x86-spentry64.s
+@@ -3703,6 +3703,15 @@
+ 	__(movq binding.link(%imm1),%imm1)
+ 	__(movq %temp0,INTERRUPT_LEVEL_BINDING_INDEX(%arg_x))
+  	__(movq %imm1,rcontext(tcr.db_link))
++        /* TEST ONLY: hold this window open so a suspend signal can
++           land inside it.  ~100us at current clocks.  imm1 is dead in
++           the pre-fix hole and live in the post-fix one; save it in
++           both so the two sleds stay byte-identical. */
++        __(pushq %imm1)
++        __(movq $300000,%imm1)
++9:      __(subq $1,%imm1)
++        __(jne 9b)
++        __(popq %imm1)
+         __(cmpq $-2<<fixnumshift,%temp0)
+         __(jle 0f)              /* restored level still defers */
+         __(btq $TCR_FLAG_BIT_PENDING_SUSPEND,rcontext(tcr.flags))
