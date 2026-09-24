@@ -2335,3 +2335,18 @@
       (list (funcall f #c(1.0f0 2.0f0) #c(3.0f0 4.0f0))
             (funcall f #c(0.0f0 1.0f0) #c(0.0f0 1.0f0))))
   (#c(-5.0f0 10.0f0) #c(-1.0f0 0.0f0)))
+
+;;; The by loop keyword value is supposed to be a positive number.
+;;; We only catch constant by values.
+;;; See https://github.com/Clozure/ccl/issues/300
+(deftest ccl.loop-by.1
+  (signals-error
+   (loop for i below 10 for j by 0 collect (list i j))
+   program-error)
+  t)
+
+(deftest ccl.loop-by.2
+  (signals-error
+   (loop for i below 10 for j by -1 collect (list i j))
+   program-error)
+  t)
