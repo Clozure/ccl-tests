@@ -125,6 +125,28 @@ allocations in 619 s. We never captured a backtrace of our own stall, so we
 cannot claim `2c382468` explains it — only that the run is clean on a lisp that
 carries it (med).
 
+#### `windows-pipe-read.lisp` — Windows pipe reads, interrupts and GC
+
+Windows only. It reads from `run-program` pipes while other threads interrupt
+the reader, run a GC, or call `listen` on the same stream, and it checks end
+of file and `run-program` output. Each child process is a second copy of the
+same lisp, so the test needs only a CCL release.
+
+The `interrupt-race` case reaches a kernel deadlock: `raise_thread_interrupt`
+called `CancelSynchronousIo` on the target while the target was suspended in
+`PeekNamedPipe`, inside `pipe_read`. The cancel waits for a thread that cannot
+run. That stops the whole lisp, so no in-image timeout can report it; the
+runner's external timeout does. Clozure/ccl PR #651 moves the cancel after
+`ResumeThread`.
+
+The case runs first, in 5 rounds of 100 interrupts, each round with a new
+child and a new reader. Runs of the whole file, each under a 300 s timeout:
+
+| kernel (Windows 11, x86-64, 1.13 image) | runs that hung |
+|---|---|
+| master `30f74b59` | 10 of 10 |
+| master plus PR #651 | 0 of 10 (15 of 15 PASS each) |
+
 #### `sleep-vs-alloc.lisp` — issue #639, fixed by `b3068522`
 
 `(SLEEP n)` returns far too late while another thread allocates large objects.
@@ -180,6 +202,7 @@ as little as 16 µs. The blocking handler is the variable, not the signal rate.
 | `suspend-spinlock-static-cons.lisp` | the same `RECURSIVE_LOCK` as the row above, reached **from Lisp** rather than from an allocation trap. `static-cons` takes `*kernel-exception-lock*` on every call, so a worker can hold the guard word when the world stops. `suspend-spinlock-deadlock.lisp` reaches that lock through the C acquire path only, so until this file nothing here covered the other half of the defect. | yes — fixed by `2c382468` | **no** — the reds were measured unwidened; `wideners/widen-lisp-spin-release.patch` is optional |
 | `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — fixed by `1606a83d`, and `53a509a6` for 32-bit ARM | yes — the four `sled-*` patches, one pair per architecture |
 
+| `windows-pipe-read.lisp` | Windows only. Reads from `run-program` pipes while other threads interrupt the reader, run a GC, or call `listen`; checks end of file and `run-program` output. The `interrupt-race` case reaches a kernel deadlock between `CancelSynchronousIo` and a thread suspended in `PeekNamedPipe`. | yes, with Clozure/ccl PR #651 | **no** |
 | `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | yes — fixed by `b3068522` (issue #639) | **no** — reproduced on a stock build, unwidened |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
