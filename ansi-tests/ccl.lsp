@@ -2350,3 +2350,103 @@
    (loop for i below 10 for j by -1 collect (list i j))
    program-error)
   t)
+
+;;; The 2-d/3-d aref/aset open-coders can compute the row-major index
+;;; at compile time when the subscripts are constants and the declared
+;;; dimensions are known.  That must not lose a displaced array's
+;;; offset.  See https://github.com/Clozure/ccl/issues/547 and
+;;; https://github.com/Clozure/ccl/pull/648
+(defun ccl.constidx-displaced-arrays ()
+  (let* ((base (make-array 40 :element-type '(unsigned-byte 8)))
+         (d2 (make-array '(2 3) :element-type '(unsigned-byte 8)
+                                :displaced-to base :displaced-index-offset 5))
+         (d3 (make-array '(2 3 4) :element-type '(unsigned-byte 8)
+                                  :displaced-to base :displaced-index-offset 5)))
+    (dotimes (i 40) (setf (aref base i) i))
+    (values base d2 d3)))
+
+(deftest ccl.constidx-displaced-aref
+    (multiple-value-bind (base d2 d3) (ccl.constidx-displaced-arrays)
+      (declare (ignore base))
+      (loop for safety in '(0 1)
+            collect (funcall (test-compile
+                              `(lambda (a)
+                                 (declare (optimize (speed 3) (safety ,safety))
+                                          (type (array (unsigned-byte 8) (2 3)) a))
+                                 (aref a 1 2)))
+                             d2)
+            collect (funcall (test-compile
+                              `(lambda (a)
+                                 (declare (optimize (speed 3) (safety ,safety))
+                                          (type (array (unsigned-byte 8) (2 3 4)) a))
+                                 (aref a 1 2 3)))
+                             d3)))
+  (10 28 10 28))
+
+(deftest ccl.constidx-displaced-aset
+    (loop for safety in '(0 1)
+          collect (multiple-value-bind (base d2) (ccl.constidx-displaced-arrays)
+                    (funcall (test-compile
+                              `(lambda (a)
+                                 (declare (optimize (speed 3) (safety ,safety))
+                                          (type (array (unsigned-byte 8) (2 3)) a))
+                                 (setf (aref a 1 2) 99)))
+                             d2)
+                    (position 99 base))
+          collect (multiple-value-bind (base d2 d3) (ccl.constidx-displaced-arrays)
+                    (declare (ignore d2))
+                    (funcall (test-compile
+                              `(lambda (a)
+                                 (declare (optimize (speed 3) (safety ,safety))
+                                          (type (array (unsigned-byte 8) (2 3 4)) a))
+                                 (setf (aref a 1 2 3) 99)))
+                             d3)
+                    (position 99 base)))
+  (10 28 10 28))
+
+;;; A partially-specified third dimension used to make the compiler
+;;; signal an error on arm64 and 32-bit ARM.
+(deftest ccl.constidx-aref3-unknown-dim2
+    (funcall (test-compile
+              '(lambda (a)
+                (declare (optimize (speed 3) (safety 0))
+                         (type (simple-array t (2 3 *)) a))
+                (aref a 0 0 0)))
+             (make-array '(2 3 4) :initial-element 7))
+  7)
+
+;;; Declared dimensions must not remove the bounds check on constant
+;;; subscripts unless we're compiling at safety 0.
+(deftest ccl.constidx-bounds-check
+    (flet ((out-of-bounds-p (type form dims)
+             (handler-case
+                 (progn
+                   (funcall (test-compile `(lambda (a)
+                                             (declare (optimize (safety 1))
+                                                      (type ,type a))
+                                             ,form))
+                            (make-array dims :initial-element 0))
+                   nil)
+               (error () t))))
+      (list (out-of-bounds-p '(simple-array t (3 3)) '(aref a 2 2) '(2 2))
+            (out-of-bounds-p '(simple-array t (3 3 3)) '(aref a 2 2 2) '(2 2 2))))
+  (t t))
+
+;;; When the value of a 2-d/3-d aref is ignored, the array and
+;;; subscript forms are still evaluated, but only once.
+(deftest ccl.ignored-aref-subscripts
+    (list (funcall (test-compile
+                    '(lambda (a)
+                      (declare (type (simple-array t (4 4)) a))
+                      (let ((n 0))
+                        (aref a (incf n) 0)
+                        n)))
+                   (make-array '(4 4)))
+          (funcall (test-compile
+                    '(lambda (a)
+                      (declare (type (simple-array t (4 4 4)) a))
+                      (let ((n 0))
+                        (aref a (incf n) 0 0)
+                        n)))
+                   (make-array '(4 4 4))))
+  (1 1))
