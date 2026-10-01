@@ -118,8 +118,9 @@
 ;;; arm64 this happened to nearly every process.
 ;;;
 ;;; Each process's initial function signals STARTED and then waits for
-;;; RELEASE, and each interrupt signals INTERRUPTED.  All waits are
-;;; bounded.  Returns a list of what went wrong.
+;;; RELEASE, and each interrupt signals INTERRUPTED.  Counting each
+;;; semaphore's signals takes at most TIMEOUT seconds, so the test takes
+;;; at most twice that.  Returns a list of what went wrong.
 (defun process-interrupt-at-start (&key (nprocs 100) (timeout 30))
   (let ((started (ccl:make-semaphore))
         (interrupted (ccl:make-semaphore))
@@ -127,9 +128,14 @@
         (procs ())
         (failures ()))
     (flet ((count-signals (sem)
-             (loop repeat nprocs
-                   while (ccl:timed-wait-on-semaphore sem timeout)
-                   count t)))
+             (let ((deadline (+ (get-internal-real-time)
+                                (* timeout internal-time-units-per-second))))
+               (loop repeat nprocs
+                     for remaining = (/ (- deadline (get-internal-real-time))
+                                        (float internal-time-units-per-second))
+                     while (and (plusp remaining)
+                                (ccl:timed-wait-on-semaphore sem remaining))
+                     count t))))
       (unwind-protect
            (progn
              (dotimes (i nprocs)
@@ -163,7 +169,9 @@
 ;;; still run where the process-reset handler and abort restarts that
 ;;; they rely on are in place; otherwise the process just carries on.
 ;;; Each process would sleep for TIMEOUT seconds, so it exits by itself
-;;; even if the kill is lost.  Returns a list of what went wrong.
+;;; even if the kill is lost.  Each of the two rounds waits at most half
+;;; of TIMEOUT, so the test takes at most TIMEOUT seconds.  Returns a
+;;; list of what went wrong.
 (defun process-kill-at-start (&key (nprocs 50) (timeout 30))
   (let ((failures ()))
     (dolist (how '(:kill :abort) (nreverse failures))
