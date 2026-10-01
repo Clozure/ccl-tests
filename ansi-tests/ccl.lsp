@@ -2450,3 +2450,29 @@
                         n)))
                    (make-array '(4 4 4))))
   (1 1))
+
+;;; A LET, or a lambda applied to arguments, that binds an unboxed value
+;;; must leave the nfp depth as it found it.  Otherwise a value that an
+;;; enclosing form saved on the nfp is reloaded from the wrong slot, and
+;;; these returned 2000.0 (on x86-64 for the LET, and on ARM32 and arm64
+;;; for the lambda).
+(deftest ccl.let-rebinds-nfp-depth
+    (funcall (test-compile
+              '(lambda ()
+                 (+ 255e0 (the single-float
+                               (let ((foo (the single-float (+ 1000e0 (random 1))))
+                                     (bar 0))
+                                 (declare (ignore bar))
+                                 foo))))))
+  1255.0)
+
+;;; The lambda needs a non-required parameter, or it's turned into a LET.
+(deftest ccl.lambda-bind-rebinds-nfp-depth
+    (funcall (test-compile
+              '(lambda ()
+                 (+ (the single-float (+ 255e0 (random 1)))
+                    (the single-float ((lambda (foo &optional (bar 0))
+                                         (declare (ignore bar))
+                                         foo)
+                                       (the single-float (+ 1000e0 (random 1)))))))))
+  1255.0)
