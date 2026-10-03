@@ -2476,3 +2476,27 @@
                                          foo)
                                        (the single-float (+ 1000e0 (random 1)))))))))
   1255.0)
+
+;;; FILE-POSITION on an input stream whose elements are wider than an
+;;; octet must count elements, not octets, after the buffer refills.
+;;; It used to jump back (to 65, for (UNSIGNED-BYTE 32)) after the
+;;; first refill.  (ccl#181)  32-bit lisps can't open an
+;;; (UNSIGNED-BYTE 64) stream (ccl#246).
+(deftest ccl.file-position-wide-elements
+    (loop for size in '(8 16 32 #+64-bit-target 64)
+          for type = `(unsigned-byte ,size)
+          for n = 20000
+          nconc (progn
+                  (with-open-file (out "temp.dat" :direction :output
+                                       :if-exists :supersede
+                                       :element-type type)
+                    (dotimes (i n)
+                      (write-byte (ldb (byte size 0) i) out)))
+                  (with-open-file (in "temp.dat" :element-type type)
+                    (loop for i below n
+                          for pos = (file-position in)
+                          for byte = (read-byte in)
+                          unless (and (eql pos i)
+                                      (eql byte (ldb (byte size 0) i)))
+                            return (list (list size i pos byte))))))
+  nil)
