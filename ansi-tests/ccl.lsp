@@ -2500,3 +2500,29 @@
                                       (eql byte (ldb (byte size 0) i)))
                             return (list (list size i pos byte))))))
   nil)
+
+;;; A simple-vector of 520 elements is 4176 bytes.  On arm64, a fixed-size
+;;; allocation over 4095 bytes moved allocptr with two immediate subs, and
+;;; the alloc trap decodes only the last one, so a trap sized the object
+;;; from its low 12 bits.  The GC then found a corrupt header and the lisp
+;;; went into the kernel debugger.  Each vector is checked when it is made
+;;; and again 63 allocations later.
+(deftest ccl.large-fixed-vector-allocation
+    (let ((make (test-compile
+                 `(lambda (x) (vector ,@(loop repeat 520 collect '(car x))))))
+          (ring (make-array 64 :initial-element nil)))
+      (flet ((ok (v tag)
+               (and (simple-vector-p v)
+                    (= (length v) 520)
+                    (every (lambda (e) (eql e tag)) v))))
+        (dotimes (i 20000)
+          (let ((v (funcall make (list i)))
+                (old (svref ring (mod (1+ i) 64))))
+            (unless (ok v i)
+              (return (list :new i)))
+            (setf (svref ring (mod i 64)) (cons i v))
+            (when (and old (not (ok (cdr old) (car old))))
+              (return (list :old (car old) :at i)))
+            (when (zerop (mod i 5000))
+              (ccl:gc))))))
+  nil)
