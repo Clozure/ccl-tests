@@ -196,3 +196,58 @@
 (deftest ccl.process-kill-at-start
     (process-kill-at-start)
   nil)
+
+;;; On arm64, misc_ref and misc_set, the subprims behind uvref and
+;;; (setf uvref) on a vector whose type isn't known at compile time,
+;;; used to form a pointer into the vector in an imm register and then
+;;; load or store through it.  The GC doesn't update imm registers, so a
+;;; thread suspended for a GC between those two instructions read from
+;;; or stored into the vector's old copy, and the store was lost.  With
+;;; 8 threads filling fresh vectors while consing, a few stores were
+;;; lost on nearly every run on darwinarm64 and linuxarm64.
+;;;
+;;; V is untyped in FILL-AND-CHECK, so both accesses go through the
+;;; subprims.  Each thread is waited for at most TIMEOUT seconds.
+;;; Returns a list of what went wrong.
+(defun generic-uvset-gc-race (&key (nthreads 8) (rounds 40000) (timeout 60))
+  (labels ((value (seed i)
+             (logand (+ seed (* i 2654435761)) #xffffffff))
+           (fill-and-check (v n seed)
+             (dotimes (i n)
+               (setf (ccl::uvref v i) (value seed i)))
+             (loop for i below n
+                   count (not (eql (ccl::uvref v i) (value seed i))))))
+    (let* ((lock (ccl:make-lock))
+           (wrong 0)
+           (done (ccl:make-semaphore))
+           (workers
+            (loop for k below nthreads
+                  collect (let ((k k))
+                            (ccl:process-run-function
+                             "generic-uvset-gc-race worker"
+                             (lambda ()
+                               (unwind-protect
+                                    (let ((junk nil))
+                                      (dotimes (r rounds)
+                                        (let* ((v (make-array
+                                                   64 :element-type
+                                                   '(unsigned-byte 32)))
+                                               (bad (fill-and-check
+                                                     v 64 (+ r (* k 7919)))))
+                                          ;; Cons, so that GCs happen.
+                                          (setq junk (make-list 50))
+                                          (when (plusp bad)
+                                            (ccl:with-lock-grabbed (lock)
+                                              (incf wrong bad)))))
+                                      junk)
+                                 (ccl:signal-semaphore done))))))))
+      (cond ((not (loop repeat nthreads
+                        always (ccl:timed-wait-on-semaphore done timeout)))
+             (mapc #'ccl:process-kill workers)
+             (list :timeout))
+            ((plusp wrong) (list :wrong wrong))
+            (t nil)))))
+
+(deftest ccl.generic-uvset-gc-race
+    (generic-uvset-gc-race)
+  nil)
