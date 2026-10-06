@@ -86,15 +86,17 @@ expected_state () {   # <name> -> repro | clean
     # 500000 of 500000 cycles in 1053 s with 1.787G allocations.
     suspend-spinlock-static-cons) echo clean ;;  # 2c382468
     #
-    # ⛔ THE ONLY `repro' ROW HERE, and the only file in threads/ that is not
-    # part of the #597 family.  OPEN upstream as issue #639, so reproducing is
-    # the CORRECT outcome and does not fail this script.  When it stops
-    # reproducing, that is the UNEXPECTED-OK signal: the fix has landed, and
-    # this row and the README move to green together.
+    # The only file in threads/ that is not part of the #597 family.  It was
+    # the first `repro' row here, for issue #639, and was flipped to `clean'
+    # on 2026-10-06 after its UNEXPECTED-OK signal.  MEASURED with this file
+    # against kernels carrying b3068522, not inferred from the merge:
     #
-    # MEASURED on stock builds at pin 6526e21c before this row was written --
-    # a row written from a merge or from a bug report, rather than from a run,
-    # is the defect the `*)' fall-through below exists to stop:
+    #   linuxx8664  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
+    #                                  rc=0, 3 of 3, 286,545-289,245 allocations
+    #   linuxarm64  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
+    #                                  rc=0, 3 of 3, 374,783-381,698 allocations
+    #
+    # Before the fix, MEASURED on stock builds at pin 6526e21c:
     #
     #   linuxx8664  t3.small, 2 vCPU   10 s sleep took  31.0 s  (ratio  3.1)
     #                                  rc=42,   781,882 allocations
@@ -114,8 +116,8 @@ expected_state () {   # <name> -> repro | clean
     #
     # ⚠ A THROTTLED OR LOW-CORE BOX REPRODUCES THIS MORE WEAKLY, not more
     # strongly: fewer collections per second means less time lost per second.
-    # Both cells above are burstable instances, so both are conservative.
-    sleep-vs-alloc)            echo repro ;;   # OPEN -- issue #639
+    # Both red cells above are burstable instances, so both are conservative.
+    sleep-vs-alloc)            echo clean ;;   # b3068522
     #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
