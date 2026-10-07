@@ -251,3 +251,52 @@
 (deftest ccl.generic-uvset-gc-race
     (generic-uvset-gc-race)
   nil)
+
+;;; On arm64, a catch frame saves the callee-saved node registers
+;;; (save0-save3) on the temp stack, and leaving the catch normally
+;;; restores them from there.  mkcatch used to store them while the
+;;; frame was still raw, which the GC doesn't scan.  If a GC from
+;;; another thread happened in between, the frame kept the registers'
+;;; old values, and leaving the catch restored them, so a variable
+;;; kept in one of those registers pointed at where its object used to
+;;; be.  With 8 threads, this happened several times per run on
+;;; darwinarm64.
+;;;
+;;; OBJ is live across the CATCH in HOLD, so it's kept in a callee-saved
+;;; register.  Each thread is waited for at most TIMEOUT seconds.
+;;; Returns a list of what went wrong.
+(defun catch-nvr-gc-race (&key (nthreads 8) (rounds 10000) (timeout 60))
+  (labels ((hold (obj copy n)
+             (let ((bad 0))
+               (dotimes (i n bad)
+                 ;; Cons, so that GCs happen.
+                 (catch 'catch-nvr-gc-race (make-list 20))
+                 (unless (eq obj (car copy))
+                   (incf bad)
+                   (setq obj (car copy)))))))
+    (let* ((lock (ccl:make-lock))
+           (wrong 0)
+           (done (ccl:make-semaphore))
+           (workers
+            (loop repeat nthreads
+                  collect (ccl:process-run-function
+                           "catch-nvr-gc-race worker"
+                           (lambda ()
+                             (unwind-protect
+                                  (dotimes (r rounds)
+                                    (let* ((obj (make-array 2))
+                                           (bad (hold obj (list obj) 100)))
+                                      (when (plusp bad)
+                                        (ccl:with-lock-grabbed (lock)
+                                          (incf wrong bad)))))
+                               (ccl:signal-semaphore done)))))))
+      (cond ((not (loop repeat nthreads
+                        always (ccl:timed-wait-on-semaphore done timeout)))
+             (mapc #'ccl:process-kill workers)
+             (list :timeout))
+            ((plusp wrong) (list :wrong wrong))
+            (t nil)))))
+
+(deftest ccl.catch-nvr-gc-race
+    (catch-nvr-gc-race)
+  nil)
