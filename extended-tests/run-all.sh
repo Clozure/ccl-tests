@@ -124,6 +124,19 @@ expected_state () {   # <name> -> repro | clean
     # case can wedge the lisp, and the external timeout reports repro.
     windows-pipe-read)         echo clean ;;
     #
+    # OPEN, both: an interrupt or a kill sent to a process that is preset
+    # but not yet enabled.  thread-interrupt's :reset arm enables the thread
+    # without activating it, so a later process-enable fails; process-kill
+    # sends its kill the same way, so the process never exits.  MEASURED,
+    # 3 of 3 each, rc=42:
+    #
+    #   linuxx8664  88d52f4d, stock
+    #   linuxarm64  88d52f4d plus two arm64 vinsn patches
+    #
+    # With the fix, each file passes 3 of 3 on both.
+    interrupt-before-enable)   echo repro ;;   # OPEN
+    kill-before-enable)        echo repro ;;   # OPEN
+    #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
     # one run of suspend-spinlock-deadlock stopped emitting heartbeats at
