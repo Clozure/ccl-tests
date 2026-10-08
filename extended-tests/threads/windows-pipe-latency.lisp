@@ -11,6 +11,8 @@
 ;;;; write.  The parent reads the lines and takes the counter again when
 ;;;; each read returns.  That counter is system-wide, so the difference is
 ;;;; the time that a line waited in the pipe before the read returned it.
+;;;; GET-INTERNAL-REAL-TIME does not do this: it counts from the start
+;;;; of each lisp, so the child and the parent use different origins.
 ;;;;
 ;;;; The child spins on the counter between lines and does not call SLEEP,
 ;;;; because a sleep ends on a timer tick and a polling reader also wakes
