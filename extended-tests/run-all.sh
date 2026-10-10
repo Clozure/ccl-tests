@@ -118,6 +118,11 @@ expected_state () {   # <name> -> repro | clean
     # strongly: fewer collections per second means less time lost per second.
     # Both red cells above are burstable instances, so both are conservative.
     sleep-vs-alloc)            echo clean ;;   # b3068522
+    # Windows only; on any other platform it prints its result line at once
+    # and exits 0.  Clean on a kernel that carries Clozure/ccl PR #651
+    # (CancelSynchronousIo after ResumeThread); without it the interrupt
+    # case can wedge the lisp, and the external timeout reports repro.
+    windows-pipe-read)         echo clean ;;
     #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
