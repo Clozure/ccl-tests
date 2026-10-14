@@ -60,9 +60,11 @@ reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
 green — that is the `XPASS` half of the pair, and it is the point of tracking
 state rather than simply skipping these tests.
 
-That state describes the **lisp under test**, not the test file. All four
+That state describes the **lisp under test**, not the test file. Four
 entries are `clean`, because the defects behind them are fixed on master, and
 for each a reproduction is a real failure that fails `run-all.sh`.
+`interrupt-before-enable` and `kill-before-enable` are `repro`, because
+their defects are open.
 `sleep-vs-alloc` was the first `repro` row this directory had. Its fix,
 `b3068522`, made it report UNEXPECTED-OK, which is the signal this machinery
 exists to give, and the row was then flipped to `clean` from measured runs.
@@ -89,7 +91,7 @@ it needs an external timeout or its own process.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — all four green at tip
+### threads/  — four green at tip, two open
 
 **Three** of these track upstream issue **#597** and PR **#634**, which the
 maintainer closed on 2026-09-17. The C-side fixes and the Lisp half are both
@@ -204,6 +206,8 @@ as little as 16 µs. The blocking handler is the variable, not the signal rate.
 
 | `windows-pipe-read.lisp` | Windows only. Reads from `run-program` pipes while other threads interrupt the reader, run a GC, or call `listen`; checks end of file and `run-program` output. The `interrupt-race` case reaches a kernel deadlock between `CancelSynchronousIo` and a thread suspended in `PeekNamedPipe`. | yes, with Clozure/ccl PR #651 | **no** |
 | `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | yes — fixed by `b3068522` (issue #639) | **no** — reproduced on a stock build, unwidened |
+| `interrupt-before-enable.lisp` | `process-interrupt` on a process that is preset but not yet enabled leaves `process-enable` unable to enable it. `thread-interrupt`'s `:reset` arm calls `thread-enable`, which takes the thread's one reset-completion token, but does not signal the thread's activation semaphore as `process-enable` does. So the thread never runs and never returns the token. One thread, no race. | **no — open** | **no** — reproduces on a stock build, unwidened |
+| `kill-before-enable.lisp` | `process-kill` on a process that is preset but not yet enabled returns T, but the process does not exit. `process-kill` sends the kill as an interrupt, and an interrupt to a `:reset` thread does not run until something enables the thread. So the termination semaphore is never signalled and the process stays in `all-processes`. One thread, no race. | **no — open** | **no** — reproduces on a stock build, unwidened |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.
