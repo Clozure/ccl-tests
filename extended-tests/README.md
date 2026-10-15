@@ -204,6 +204,7 @@ as little as 16 µs. The blocking handler is the variable, not the signal rate.
 
 | `windows-pipe-read.lisp` | Windows only. Reads from `run-program` pipes while other threads interrupt the reader, run a GC, or call `listen`; checks end of file and `run-program` output. The `interrupt-race` case reaches a kernel deadlock between `CancelSynchronousIo` and a thread suspended in `PeekNamedPipe`. | yes, with Clozure/ccl PR #651 | **no** |
 | `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | yes — fixed by `b3068522` (issue #639) | **no** — reproduced on a stock build, unwidened |
+| `windows-pipe-latency.lisp` | Windows only. A line written by a `run-program` child waits in the pipe until the parent's next poll: `pipe_read` sleeps with `SleepEx(1)`, which Windows rounds up to the 15.6 ms timer tick. The child stamps each line with `QueryPerformanceCounter`, and the case fails when the median wait is 3 ms or more. | yes, with Clozure/ccl PR #656 | **no** |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.

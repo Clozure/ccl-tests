@@ -123,6 +123,10 @@ expected_state () {   # <name> -> repro | clean
     # (CancelSynchronousIo after ResumeThread); without it the interrupt
     # case can wedge the lisp, and the external timeout reports repro.
     windows-pipe-read)         echo clean ;;
+    # Windows only; elsewhere it SKIPs and exits 0.  Clean on a kernel
+    # that carries Clozure/ccl PR #656 (blocking overlapped reads of
+    # run-program pipes); a reader that polls fails it.
+    windows-pipe-latency)      echo clean ;;
     #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
