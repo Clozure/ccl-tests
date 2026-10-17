@@ -54,18 +54,21 @@ belt-and-braces: a deadlock in the suspend/resume path stops every other thread
 in the image, so an in-image watchdog is stopped too and can never fire. Only a
 process-level timeout can observe it.
 
-Each one carries an **expected state** in `run-all.sh`. A reproducer for an open
-defect is expected to reproduce, and doing so is not a failure. When it stops
-reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
-green — that is the `XPASS` half of the pair, and it is the point of tracking
-state rather than simply skipping these tests.
+Each one carries an **expected state** in its own header, a line such as
+`;;; expected-state: clean`, with an optional per-platform line such as
+`;;; expected-state linuxx8664: repro`. `run-all.sh --list` prints them all.
+A reproducer for an open defect is expected to reproduce, and doing so is not
+a failure. When it stops reproducing the runner says `UNEXPECTED-OK` and tells
+you to flip its state — that is the `XPASS` half of the pair, and it is the
+point of tracking state rather than simply skipping these tests. Because the
+state lives in the test file, adding a reproducer changes no shared file.
 
-That state describes the **lisp under test**, not the test file. All four
-entries are `clean`, because the defects behind them are fixed on master, and
-for each a reproduction is a real failure that fails `run-all.sh`.
-`sleep-vs-alloc` was the first `repro` row this directory had. Its fix,
+That state describes the **lisp under test**, not the test file. A state of
+`clean` means the defect behind it is fixed on master, so a reproduction is a
+real failure that fails `run-all.sh`.
+`sleep-vs-alloc` was the first `repro` state this directory had. Its fix,
 `b3068522`, made it report UNEXPECTED-OK, which is the signal this machinery
-exists to give, and the row was then flipped to `clean` from measured runs.
+exists to give, and its state was then flipped to `clean` from measured runs.
 
 One test has already left this directory. `trylock-count-leak` did not wedge
 the image, it was bounded by a 20-second wait, and its fix had landed, so it
@@ -89,11 +92,11 @@ it needs an external timeout or its own process.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — all four green at tip
+### threads/
 
 **Three** of these track upstream issue **#597** and PR **#634**, which the
 maintainer closed on 2026-09-17. The C-side fixes and the Lisp half are both
-merged, so those three rows are green and `run-all.sh` expects each of them to
+merged, so those three are green and `run-all.sh` expects each of them to
 run **clean**. Run them against a lisp that predates the named commit and they
 reproduce again, which is the point of naming the commit rather than a date.
 
@@ -118,7 +121,7 @@ live threads for nine minutes. The stall began 73 seconds before the harness
 signalled the process, so the signal did not cause it. A later run on the same
 kernel and image completed all 500,000 with 282 million allocations, and the
 maintainer measured 500,000 clean on darwinarm64, linuxarm64 and darwinx8664.
-One observation in three runs is not a state, so the row stays green and a stall
+One observation in three runs is not a state, so the state stays clean and a stall
 now fails `run-all.sh`. It has not recurred: at pin `2b7422e6`, which carries
 `2c382468`, the reproducer ran 500,000 of 500,000 with 285.8 million
 allocations in 619 s. We never captured a backtrace of our own stall, so we
@@ -196,17 +199,12 @@ EINTR-and-re-sleep loop under a signal storm converges when its handler returns
 at once, even at 124,553 interruptions, and diverges when the handler parks for
 as little as 16 µs. The blocking handler is the variable, not the signal rate.
 
-| file | what it reproduces | green at tip? | needs a widener? |
-|---|---|---|---|
-| `suspend-spinlock-deadlock.lisp` | a thread suspended by a world-stop while holding a lock-guard spin word never releases it; the world-stopper then spins forever taking that same word. Workers cons so allocation traps keep crossing the exception lock. | yes — fixed by `04f1e0ac` and `088e706e` | yes — `wideners/widen-guard-spinlock-window.patch` |
-| `suspend-spinlock-static-cons.lisp` | the same `RECURSIVE_LOCK` as the row above, reached **from Lisp** rather than from an allocation trap. `static-cons` takes `*kernel-exception-lock*` on every call, so a worker can hold the guard word when the world stops. `suspend-spinlock-deadlock.lisp` reaches that lock through the C acquire path only, so until this file nothing here covered the other half of the defect. | yes — fixed by `2c382468` | **no** — the reds were measured unwidened; `wideners/widen-lisp-spin-release.patch` is optional |
-| `unbind-missed-suspend.lisp` | `unbind_interrupt_level` reads the pending-suspend flag *before* restoring `*INTERRUPT-LEVEL*`, so a signal landing in between is deferred against the old level. The observable differs by architecture. On arm64 and x86-64 it is an ACK-latency spike. On 32-bit ARM it is a permanent wedge, because the forced-suspend block there dereferenced a register the entry path never loaded: a worker takes SIGSEGV inside the subprimitive and then deadlocks on the exception lock while the suspending thread waits for its acknowledgement. | yes — fixed by `1606a83d`, and `53a509a6` for 32-bit ARM | yes — the four `sled-*` patches, one pair per architecture |
+There is no table of the files here. Each file's header says what it
+reproduces, which issue or PR it tracks, which widener it needs, and its
+expected state; `bash run-all.sh --list` prints the states. A table that every
+new reproducer appends a row to is a merge conflict between any two of them.
 
-| `windows-pipe-read.lisp` | Windows only. Reads from `run-program` pipes while other threads interrupt the reader, run a GC, or call `listen`; checks end of file and `run-program` output. The `interrupt-race` case reaches a kernel deadlock between `CancelSynchronousIo` and a thread suspended in `PeekNamedPipe`. | yes, with Clozure/ccl PR #651 | **no** |
-| `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | yes — fixed by `b3068522` (issue #639) | **no** — reproduced on a stock build, unwidened |
-| `windows-pipe-latency.lisp` | Windows only. A line written by a `run-program` child waits in the pipe until the parent's next poll: `pipe_read` sleeps with `SleepEx(1)`, which Windows rounds up to the 15.6 ms timer tick. The child stamps each line with `QueryPerformanceCounter`, and the case fails when the median wait is 3 ms or more. | yes, with Clozure/ccl PR #656 | **no** |
-
-`arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
+`arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* the
 reproducers on arm64; they are not tests and `run-all.sh` skips them.
 
 ## wideners/
@@ -289,8 +287,10 @@ timeout is then a result, not a hung suite.
 3. Load the harness relatively:
    `(load (merge-pathnames "../harness.lisp" *load-pathname*))`
 4. Watch it red (rule 2), then green.
-5. Add a row to the table in README.md: what it proves, and whether it is green
-   at the current tip.
+5. A suite test: add a row to its directory's table in README.md, saying what
+   it proves and whether it is green at the current tip. A reproducer in
+   `threads/`: say what it proves in its header, and add its
+   `;;; expected-state:` line there, `repro` while the defect is open.
 6. If it needs a widener, put the patch in `wideners/` with a name that says
    what it widens, and say in README.md that it is test-only and must never
    merge.
@@ -305,16 +305,21 @@ bash extended-tests/run-all.sh /path/to/ccl
 
 Then check the three things a reviewer will check:
 
-* **Every file in the tables.** A test not named in README.md is a test nobody
-  knows the purpose of. `ls extended-tests/*/ *.lisp` against the tables.
-* **Every expected-red test names its issue or PR.** When that merges, the row
-  moves to green and the file moves out of `threads/` if it no longer hangs.
+* **Every suite file in the tables, every reproducer with a state.** A test
+  whose purpose nobody wrote down is a test nobody can maintain.
+  `ls extended-tests/*/ *.lisp` against the tables, and
+  `run-all.sh --list` for the reproducers.
+* **Every expected-red test names its issue or PR.** When that merges, its
+  state moves to clean and the file moves out of `threads/` if it no longer
+  hangs.
 * **No new absolute paths or line numbers.** `grep -rnE '/(local|home|tmp)/|\.(lisp|c|h|s):[0-9]+' extended-tests/`
 
 ## When a fix merges upstream
 
 1. Re-run the test against the tip. It should now be green.
 2. Move it out of `threads/` if it no longer hangs, into its class directory.
-3. Update its README row: green at tip, and name the commit that fixed it.
+3. Set its state to clean and name the commit that fixed it: the
+   expected-state line in its header for a reproducer, its README row for a
+   suite test.
 4. Delete the widener if nothing else uses it. A widener outliving its
    reproducer is a patch nobody can explain.
