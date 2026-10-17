@@ -20,6 +20,12 @@
 ;;; Invocation (x86-64 host CCL, sled-patched scratch tree):
 ;;;   REPRO_ITERS=2000 <ccl> --no-init --batch --load this-file
 ;;; Result line: UNBIND-REPRO-RESULT :ITERS n :MISSES m :MAX-STOP-MS x
+;;;
+;;; EXPECTED STATE, read by ../run-all.sh.
+;;; Flipped to `clean' on 2026-09-16, MEASURED against a kernel carrying
+;;; 1606a83d + 53a509a6 (32-bit ARM), not inferred from them being merged.
+;;;
+;;; expected-state: clean
 
 (in-package :cl-user)
 

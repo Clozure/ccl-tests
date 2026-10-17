@@ -27,6 +27,13 @@
 ;;;;     XT-RESULT WINDOWS-PIPE-LATENCY TOTAL <n> FAILED <n>
 ;;;; and the exit status is 0 only if FAILED is 0.  On any other platform
 ;;;; the case is a SKIP.
+;;;;
+;;;; EXPECTED STATE, read by ../run-all.sh.
+;;;; Windows only; elsewhere it SKIPs and exits 0.  Clean on a kernel
+;;;; that carries Clozure/ccl PR #656 (blocking overlapped reads of
+;;;; run-program pipes); a reader that polls fails it.
+;;;;
+;;;; expected-state: clean
 
 (in-package :cl-user)
 
