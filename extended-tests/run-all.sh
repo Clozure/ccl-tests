@@ -4,6 +4,7 @@
 # Usage:
 #     bash extended-tests/run-all.sh /path/to/ccl
 #     CCL=/path/to/ccl bash extended-tests/run-all.sh
+#     bash extended-tests/run-all.sh --list   # expected states, runs nothing
 #
 # Works from any checkout: every path below is derived from this script's own
 # location, so there is nothing to install and nothing to configure.
@@ -21,10 +22,22 @@
 # reproduce -- that is, to fail -- on a lisp that does not yet carry the fix, so
 # their result is reported but does NOT set the exit status.  A reproducer whose
 # fix HAS landed is expected clean, and then a reproduction DOES fail this
-# script.  See README.md for the commit that closed each one.
+# script.  Each reproducer states its expected state, and the commit that
+# closed it, in its own header.
 
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --list prints the expected-state lines of every reproducer and runs nothing.
+if [ "${1:-}" = --list ]; then
+  for t in "$HERE"/threads/*.lisp; do
+    case "$(basename "$t")" in *prelude*) continue ;; esac
+    echo "$(basename "$t" .lisp)"
+    grep -E '^;+ *expected-state' "$t" | sed 's/^/    /' \
+      || echo "    (no expected-state line: unknown)"
+  done
+  exit 0
+fi
 CCL="${1:-${CCL:-ccl}}"
 # A TIMEOUT IS THE REPRODUCTION SIGNAL here, so this must comfortably exceed
 # the slowest GREEN run or a slow machine reports a fixed defect as open.
@@ -59,107 +72,58 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 # EXPECTED STATE PER REPRODUCER.  `repro' means the defect is still open, so
 # reproducing is the CORRECT outcome and does not fail this script.  When a fix
 # lands the test stops reproducing, and THAT is reported loudly as UNEXPECTED-OK
-# -- the signal to move the row to green in README.md and flip the state here.
+# -- the signal to flip the expected-state line in that test's header.
 #
 # The state is a property of the LISP UNDER TEST, not of the test file.  Run a
 # `clean' row against a lisp that predates the commit it names and it will
 # report UNEXPECTED FAILURE and fail this script -- correctly, because against
 # that lisp the defect is present.
 #
-# Do not flip a row from a merge alone.  Every `clean' below was measured on a
-# kernel built from the commits it names.  One row that LOOKED ready to flip
+# Do not flip a state from a merge alone.  Every `clean' was measured on a
+# kernel built from the commits it names.  One test that LOOKED ready to flip
 # still reproduces, and only running it showed that.
 #
 # This is the XFAIL/XPASS pair every mature suite has (DejaGnu XPASS, lit XFAIL,
 # pytest xfail(strict)).  RT's own *expected-failures* gives the XFAIL half but
 # not the XPASS half, and it cannot help at all for a test that wedges the
 # image, because a hung RT never reaches its report.
-expected_state () {   # <name> -> repro | clean
-  case "$1" in
-    # Both flipped to `clean' on 2026-09-16, each MEASURED against a kernel
-    # carrying the named commits, not inferred from them being merged.
-    unbind-missed-suspend)     echo clean ;;   # 1606a83d + 53a509a6 (32-bit ARM)
-    suspend-spinlock-deadlock) echo clean ;;   # 04f1e0ac + 088e706e
-    #
-    # Added by the maintainer as 17ec0a2 and MEASURED here before this row
-    # was written: pin 2b7422e6, unwidened, 24 workers on 2 cores,
-    # 500000 of 500000 cycles in 1053 s with 1.787G allocations.
-    suspend-spinlock-static-cons) echo clean ;;  # 2c382468
-    #
-    # The only file in threads/ that is not part of the #597 family.  It was
-    # the first `repro' row here, for issue #639, and was flipped to `clean'
-    # on 2026-10-06 after its UNEXPECTED-OK signal.  MEASURED with this file
-    # against kernels carrying b3068522, not inferred from the merge:
-    #
-    #   linuxx8664  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
-    #                                  rc=0, 3 of 3, 286,545-289,245 allocations
-    #   linuxarm64  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
-    #                                  rc=0, 3 of 3, 374,783-381,698 allocations
-    #
-    # Before the fix, MEASURED on stock builds at pin 6526e21c:
-    #
-    #   linuxx8664  t3.small, 2 vCPU   10 s sleep took  31.0 s  (ratio  3.1)
-    #                                  rc=42,   781,882 allocations
-    #   linuxarm64  t4g.small, 2 vCPU  10 s sleep took 168.0 s  (ratio 16.8)
-    #                                  rc=42, 6,474,520 allocations
-    #
-    # POSITIVE CONTROL, the same file with ONE variable changed -- the
-    # allocation cut from 160016 bytes to 176 -- so that a red here cannot be
-    # "this test always fails":
-    #
-    #   linuxx8664  rc=0, 10.6 s (ratio 1.1), 30,297,490 allocations
-    #   linuxarm64  rc=0, 11.7 s (ratio 1.2), 27,336,462 allocations
-    #
-    # The control allocates 39x and 4x MORE OFTEN than the runs that fail, and
-    # returns on time.  So the variable is object SIZE -- and therefore how
-    # long each collection takes -- not whether another thread allocates.
-    #
-    # ⚠ A THROTTLED OR LOW-CORE BOX REPRODUCES THIS MORE WEAKLY, not more
-    # strongly: fewer collections per second means less time lost per second.
-    # Both red cells above are burstable instances, so both are conservative.
-    sleep-vs-alloc)            echo clean ;;   # b3068522
-    # Windows only; on any other platform it prints its result line at once
-    # and exits 0.  Clean on a kernel that carries Clozure/ccl PR #651
-    # (CancelSynchronousIo after ResumeThread); without it the interrupt
-    # case can wedge the lisp, and the external timeout reports repro.
-    windows-pipe-read)         echo clean ;;
-    # Windows only; elsewhere it SKIPs and exits 0.  Clean on a kernel
-    # that carries Clozure/ccl PR #656 (blocking overlapped reads of
-    # run-program pipes); a reader that polls fails it.
-    windows-pipe-latency)      echo clean ;;
-    #
-    # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
-    # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
-    # one run of suspend-spinlock-deadlock stopped emitting heartbeats at
-    # 75,750 of 500,000 iterations and sat with 24 live threads for a further
-    # nine minutes.  The stall began 73 s before the harness signalled it, so
-    # the signal did not cause it.  A later run on the same kernel and image
-    # completed all 500,000 (282 M allocations), and the maintainer measured
-    # 500,000 clean on darwinarm64, linuxarm64 and darwinx8664.  So the state
-    # is `clean' -- a stall is now a real failure and fails this script, which
-    # is what we want if it recurs.
-    #
-    # UPDATE 2026-09-17: it has not recurred.  At pin 2b7422e6, which carries
-    # the lisp half (2c382468), this reproducer ran 500000 of 500000 with
-    # 285.8M allocations in 619 s.  We never captured a backtrace of OUR
-    # stall, so we cannot say 2c382468 explains it -- only that the run is
-    # clean on a lisp that carries it.
-    #
-    # A file with no row above has NO MEASURED STATE on this lisp.  Reporting
-    # it `clean' hands an unmeasured test the best available outcome by
-    # default, which contradicts the rule at the top of this function: the
-    # state is a property of the LISP UNDER TEST, and nobody has run this one
-    # here.  Measured 2026-09-17 -- suspend-spinlock-static-cons.lisp arrived
-    # in this directory and the runner reported it `clean, as expected'
-    # before anyone had run it once.
-    *)                         echo unknown ;;
+#
+# WHERE THE STATE LIVES.  Each reproducer carries it in its own header, so a
+# new test touches only its own file:
+#
+#     ;;; expected-state: clean
+#     ;;; expected-state linuxx8664: repro
+#
+# The first line is the default.  A line that names the backend of the lisp
+# under test (the PLATFORM below) overrides it.  The record of what was
+# measured, and against which commits, sits next to that line.
+#
+# A file with no expected-state line has NO MEASURED STATE on this lisp.
+# Reporting it `clean' hands an unmeasured test the best available outcome by
+# default, which contradicts the rule above: the state is a property of the
+# LISP UNDER TEST, and nobody has run this one here.  Measured 2026-09-17 --
+# suspend-spinlock-static-cons.lisp arrived in this directory and the runner
+# reported it `clean, as expected' before anyone had run it once.
+PLATFORM="$("$CCL" --no-init --batch --quiet \
+  -e '(progn (princ (string-downcase (ccl::backend-name ccl::*host-backend*))) (terpri) (quit))' \
+  </dev/null 2>&1 | tail -1)"
+echo "platform: $PLATFORM"
+expected_state () {   # <file> -> repro | clean | unknown, for $PLATFORM
+  local s=""
+  [ -n "$PLATFORM" ] &&
+    s="$(sed -nE "s/^;+ *expected-state $PLATFORM: *([a-z]+).*/\1/p" "$1" | head -1)"
+  [ -n "$s" ] ||
+    s="$(sed -nE 's/^;+ *expected-state: *([a-z]+).*/\1/p' "$1" | head -1)"
+  case "$s" in
+    repro|clean) echo "$s" ;;
+    *)           echo unknown ;;
   esac
 }
 unexpected=0
 for t in "$HERE"/threads/*.lisp; do
   case "$(basename "$t")" in *prelude*) continue ;; esac
   name="$(basename "$t" .lisp)"
-  want="$(expected_state "$name")"
+  want="$(expected_state "$t")"
   printf '  %-30s ' "$name"
   timeout "$TIMEOUT_SECS" "$CCL" --no-init --batch -l "$t" </dev/null >"$HERE/.$name.out" 2>&1
   trc=$?
@@ -191,10 +155,10 @@ for t in "$HERE"/threads/*.lisp; do
     continue
   fi
   if [ "$want" = unknown ]; then
-    echo "NO EXPECTED STATE -- it ran and reported '$got', but no row in"
-    echo "      expected_state() names this test, so nothing here has been"
-    echo "      measured against this lisp.  Add a row naming the commit that"
-    echo "      closes it, or 'repro' while the defect is open."
+    echo "NO EXPECTED STATE -- it ran and reported '$got', but its header"
+    echo "      has no expected-state line for $PLATFORM, so nothing here has"
+    echo "      been measured against this lisp.  Add one naming the commit"
+    echo "      that closes it, or 'repro' while the defect is open."
     unexpected=$((unexpected+1))
     rc=1
     continue
@@ -206,7 +170,7 @@ for t in "$HERE"/threads/*.lisp; do
     unexpected=$((unexpected+1))
     if [ "$got" = clean ]; then
       echo "UNEXPECTED-OK -- it no longer reproduces.  The fix has landed:"
-      echo "      move its row to green in README.md and set its state to clean."
+      echo "      set the expected-state line in its header to clean."
     else
       echo "UNEXPECTED FAILURE (rc=$trc) -- expected clean.  See .$name.out"
       rc=1
