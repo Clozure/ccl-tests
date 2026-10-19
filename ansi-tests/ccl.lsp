@@ -2526,3 +2526,19 @@
             (when (zerop (mod i 5000))
               (ccl:gc))))))
   nil)
+
+;;; DELETE :from-end on a vector with a fill pointer read index -1 when
+;;; nothing was deleted and the range started at 0.
+(deftest ccl.issue#661
+    (flet ((del (item contents &rest args)
+             (let ((v (make-array (+ (length contents) 2)
+                                  :fill-pointer (length contents)
+                                  :initial-contents (append contents '(9 9)))))
+               (coerce (apply #'delete item v :from-end t args) 'list))))
+      (values (del 1 '(0 0 0 0 0))
+              (del 1 '())
+              (del 1 '(0 2 3) :count 1)
+              (del 1 '(0 2 3) :end 0)
+              (del 1 '(0 1 2 1 3) :count 1)
+              (del 1 '(1 0 1))))
+  (0 0 0 0 0) nil (0 2 3) (0 2 3) (0 1 2 3) (0))
