@@ -76,6 +76,10 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 # image, because a hung RT never reaches its report.
 expected_state () {   # <name> -> repro | clean
   case "$1" in
+    # OPEN: CLRHASH of a lock-free table made for more than 1000 pairs
+    # installs a 1-pair vector that a concurrent GETHASH cannot probe.
+    lock-free-clrhash-temp-vector) echo repro ;;   # OPEN
+    #
     # Both flipped to `clean' on 2026-09-16, each MEASURED against a kernel
     # carrying the named commits, not inferred from them being merged.
     unbind-missed-suspend)     echo clean ;;   # 1606a83d + 53a509a6 (32-bit ARM)
