@@ -2542,3 +2542,16 @@
               (del 1 '(0 1 2 1 3) :count 1)
               (del 1 '(1 0 1))))
   (0 0 0 0 0) nil (0 2 3) (0 2 3) (0 1 2 3) (0))
+
+;;; GitHub issue #665
+(deftest ccl.issue#665
+    (list (substitute-if-not 1 'consp '(1 2) :key nil)
+          (substitute-if 1 'consp '(1 2) :key nil)
+          (substitute 1 'consp '(1 2) :key nil)
+          (substitute 1 2 #(1 2) :key nil)
+          (nsubstitute-if-not 1 'consp (list 1 2) :key nil)
+          (nsubstitute-if 1 'consp (list 1 2) :key nil)
+          (nsubstitute 1 'consp (list 1 2) :key nil)
+          (coerce (nsubstitute 1 2 (vector 1 2) :key nil) 'list)
+          (rassoc 1 '((a . 1)) :key nil))
+  ((1 1) (1 2) (1 2) #(1 1) (1 1) (1 2) (1 2) (1 1) (a . 1)))
