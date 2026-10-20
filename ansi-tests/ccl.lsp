@@ -2272,6 +2272,19 @@
             (aref a 0)))
   #c(1.0f0 2.0f0))
 
+;;; GitHub issue #664
+(deftest ccl.issue#664
+    (eval '(let* ((d (make-array 5 :initial-contents '(1 2 3 4 5)))
+                  (a (make-array 3 :displaced-to d :displaced-index-offset 1))
+                  (f (make-array 5 :element-type 'fixnum
+                                   :initial-contents '(1 2 3 4 5)))
+                  (b (make-array 3 :element-type 'fixnum :displaced-to f
+                                   :displaced-index-offset 1)))
+            (setf (aref a 0) -1 (aref b 0) -1)
+            (list (coerce a 'list) (coerce d 'list)
+                  (coerce b 'list) (coerce f 'list))))
+  ((-1 3 4) (1 -1 3 4 5) (-1 3 4) (1 -1 3 4 5)))
+
 ;;; GitHub issue #530
 (deftest sharpsign-dot.values.multiple
   (let ((*read-eval* t))
