@@ -2568,3 +2568,17 @@
           (coerce (nsubstitute 1 2 (vector 1 2) :key nil) 'list)
           (rassoc 1 '((a . 1)) :key nil))
   ((1 1) (1 2) (1 2) #(1 1) (1 1) (1 2) (1 2) (1 1) (a . 1)))
+
+(deftest ccl.issue#665-2
+    (funcall (test-compile
+              '(lambda (k)
+                (list (remove-if-not 'zerop '(0 1 0) :key nil)
+                      (remove-if 'zerop '(0 1 0) :key k)
+                      (find 2 '(0 1 2) :key k)
+                      (find 2 #(0 1 2) :key k)
+                      (find-if 'plusp '(0 1 2) :key k)
+                      (position 2 '(0 1 2) :key k)
+                      (position 2 #(0 1 2) :key k)
+                      (position-if 'plusp '(0 1 2) :key k))))
+             nil)
+  ((0 0) (1) 2 2 1 2 2 1))
