@@ -128,6 +128,29 @@ expected_state () {   # <name> -> repro | clean
     # run-program pipes); a reader that polls fails it.
     windows-pipe-latency)      echo clean ;;
     #
+    # OPEN: a process-interrupt function that takes a lock can deadlock
+    # against *callback-lock*.  %lookup-pascal-function takes that lock on
+    # every interrupt delivery, at the interrupted thread's level, and the
+    # unbind that ends the lock acquire polls for a pending interrupt, so an
+    # interrupt function can run while the thread holds *callback-lock*.  If
+    # it waits for a lock that a second, interrupted thread holds, the two
+    # threads wait for each other.  On linuxarm64 the same stall also comes
+    # from a lost interrupt: an interrupt that arrives while the thread
+    # unwinds is recorded in the slot that the unwind then restores.
+    # MEASURED with this file at master 4fbe167a, native CI-style builds:
+    #
+    #   linuxx8664  master                           rc=42, 10 of 10
+    #   linuxx8664  plus both commits                rc=0,  20 of 20
+    #   linuxarm64  master                           rc=42, 3 of 20
+    #   linuxarm64  plus both commits                rc=0,  20 of 20
+    #
+    # The arm64 rate is low.  At d44f3333: rc=42 in 8 of 87 on master,
+    # rc=0 in 96 of 96 with both commits.
+    #
+    # The fixes: every holder of *callback-lock* defers interrupts, and the
+    # arm64 kernel records a deferred interrupt in interrupt_pending.
+    interrupt-callback-lock-inversion) echo repro ;;   # OPEN
+    #
     # ⚠ ONE UNEXPLAINED STALL, recorded here because it is not reproducible
     # and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
     # one run of suspend-spinlock-deadlock stopped emitting heartbeats at
