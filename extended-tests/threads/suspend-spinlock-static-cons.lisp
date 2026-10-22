@@ -70,6 +70,13 @@
 ;;;
 ;;; Three reds is a thin sample next to that file's ten.  Raise the
 ;;; floor, never lower it, and only against measured reds.
+;;;
+;;; EXPECTED STATE, read by ../run-all.sh.
+;;; Added by the maintainer as 17ec0a2 and MEASURED before the state was
+;;; written: pin 2b7422e6, unwidened, 24 workers on 2 cores, 500000 of
+;;; 500000 cycles in 1053 s with 1.787G allocations.  Fixed by 2c382468.
+;;;
+;;; expected-state: clean
 
 (in-package :cl-user)
 

@@ -45,6 +45,30 @@
 ;;;   REPRO-THREADS <n>                  live workers after settle
 ;;;   HEARTBEAT <i> allocs=<n> live=<n>  every 250 world-stops
 ;;;   REPRO-COMPLETE <i>                 only when every iteration finished
+;;;
+;;; Widener: ../wideners/widen-guard-spinlock-window.patch.
+;;;
+;;; EXPECTED STATE, read by ../run-all.sh.
+;;; Flipped to `clean' on 2026-09-16, MEASURED against a kernel carrying
+;;; 04f1e0ac + 088e706e, not inferred from them being merged.
+;;;
+;;; ONE UNEXPLAINED STALL, recorded here because it is not reproducible
+;;; and therefore cannot be a state.  On linuxarm64, 24 workers on 2 cores,
+;;; one run stopped emitting heartbeats at 75,750 of 500,000 iterations and
+;;; sat with 24 live threads for a further nine minutes.  The stall began
+;;; 73 s before the harness signalled it, so the signal did not cause it.
+;;; A later run on the same kernel and image completed all 500,000 (282 M
+;;; allocations), and the maintainer measured 500,000 clean on darwinarm64,
+;;; linuxarm64 and darwinx8664.  So the state is `clean' -- a stall is now
+;;; a real failure and fails run-all.sh, which is what we want if it recurs.
+;;;
+;;; UPDATE 2026-09-17: it has not recurred.  At pin 2b7422e6, which carries
+;;; the lisp half (2c382468), this reproducer ran 500000 of 500000 with
+;;; 285.8M allocations in 619 s.  We never captured a backtrace of OUR
+;;; stall, so we cannot say 2c382468 explains it -- only that the run is
+;;; clean on a lisp that carries it.
+;;;
+;;; expected-state: clean
 
 (in-package :cl-user)
 
