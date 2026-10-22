@@ -2582,3 +2582,61 @@
                       (position-if 'plusp '(0 1 2) :key k))))
              nil)
   ((0 0) (1) 2 2 1 2 2 1))
+
+;;; The compiler macros for FIND, POSITION, and REMOVE-IF open-code
+;;; some calls as loops.  The argument forms must still be evaluated
+;;; exactly once, left to right, and a NIL :KEY means no key.  The old
+;;; expansions put the :KEY and predicate forms (and POSITION's vector
+;;; form) inside the loop, and funcalled a NIL key.
+
+;;; The :KEY form is evaluated once, not once per element.
+(deftest ccl.sequence-transform.1
+    (let* ((calls 0)
+           (f (test-compile
+               '(lambda (l k) (find 'c (the list l) :key (funcall k))))))
+      (values (funcall f '((a) (b) (c) (d))
+                       (lambda () (incf calls) #'car))
+              calls))
+  (c) 1)
+
+;;; The predicate form is evaluated once, not once per element.
+(deftest ccl.sequence-transform.2
+    (let ((f (test-compile
+              '(lambda (preds l)
+                (values (remove-if (pop preds) (the list l))
+                        (length preds))))))
+      (funcall f (list #'evenp #'oddp #'oddp #'oddp) '(1 2 3 4)))
+  (1 3) 3)
+
+;;; POSITION's vector form is evaluated once, not once per element.
+(deftest ccl.sequence-transform.3
+    (let ((f (test-compile
+              '(lambda (vs)
+                (values (position 3 (the simple-vector (pop vs)))
+                        (length vs))))))
+      (funcall f (list (vector 0 1 2 3) (vector 9 9 9 9) (vector 9 9 9 9)
+                       (vector 9 9 9 9) (vector 9 9 9 9))))
+  3 4)
+
+;;; The :KEY form is evaluated even when the sequence is empty.
+(deftest ccl.sequence-transform.4
+    (let* ((calls 0)
+           (f (test-compile
+               '(lambda (l k) (find 'x (the list l) :key (funcall k))))))
+      (values (funcall f '() (lambda () (incf calls) #'car))
+              calls))
+  nil 1)
+
+;;; A :KEY that is NIL at run time means no key.
+(deftest ccl.sequence-transform.5
+    (let ((f (test-compile
+              '(lambda (l &key key) (position 2 (the list l) :key key)))))
+      (values (funcall f '(1 2 3))
+              (funcall f '(1 2 3) :key #'1+)))
+  1 0)
+
+;;; A literal :KEY NIL means no key (GitHub issue #665).
+(deftest ccl.sequence-transform.6
+    (funcall (test-compile
+              '(lambda () (remove-if-not 'zerop '(0 0 0) :key nil))))
+  (0 0 0))
