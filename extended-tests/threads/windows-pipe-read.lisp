@@ -36,6 +36,14 @@
 ;;;; The last line is
 ;;;;     XT-RESULT WINDOWS-PIPE-READ TOTAL <n> FAILED <n>
 ;;;; and the exit status is 0 only if FAILED is 0.
+;;;;
+;;;; EXPECTED STATE, read by ../run-all.sh.
+;;;; Windows only; on any other platform it prints its result line at once
+;;;; and exits 0.  Clean on a kernel that carries Clozure/ccl PR #651
+;;;; (CancelSynchronousIo after ResumeThread); without it the interrupt
+;;;; case can wedge the lisp, and the external timeout reports repro.
+;;;;
+;;;; expected-state: clean
 
 (in-package :cl-user)
 
