@@ -76,9 +76,11 @@ echo "--- phase 2: reproducers, one process each, ${TIMEOUT_SECS}s external time
 # image, because a hung RT never reaches its report.
 expected_state () {   # <name> -> repro | clean
   case "$1" in
-    # OPEN: CLRHASH of a lock-free table made for more than 1000 pairs
-    # installs a 1-pair vector that a concurrent GETHASH cannot probe.
-    lock-free-clrhash-temp-vector) echo repro ;;   # OPEN
+    # CLRHASH of a lock-free table made for more than 1000 pairs
+    # installed a 1-pair vector that a concurrent GETHASH could not probe.
+    # Clean at 7aa04dc9, which carries the fix: 10 of 10 on linuxx8664
+    # and on linuxarm64.
+    lock-free-clrhash-temp-vector) echo clean ;;   # 94736219
     #
     # Both flipped to `clean' on 2026-09-16, each MEASURED against a kernel
     # carrying the named commits, not inferred from them being merged.
