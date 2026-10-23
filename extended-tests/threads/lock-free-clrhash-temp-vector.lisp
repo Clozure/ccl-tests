@@ -21,7 +21,9 @@
 ;;;   LOCK-FREE-CLRHASH-RESULT: FAIL ...   exit 42
 ;;; A crash ends the lisp with some other status, which is also a FAIL.
 ;;;
-;;; expected-state: repro
+;;; Fixed by 94736219: clean 10 of 10 on linuxx8664 and linuxarm64 at
+;;; 7aa04dc9.
+;;; expected-state: clean
 
 (in-package :cl-user)
 
