@@ -2746,3 +2746,31 @@
                               y (setq y x) y)))
              1 2)
   (2 1 1))
+
+;;; On x86, when a LET (or other lexical binding form) used as a
+;;; branch test ended in a constant, the compiler replaced the
+;;; constant load with a vstack discard and a jump, but didn't
+;;; update its compile-time model of the vstack.  Stack variables
+;;; bound later were then accessed at the wrong frame offset.
+;;; (GitHub issue #679)
+(deftest ccl.issue#679.stassats
+    (funcall
+     (test-compile '(lambda ()
+                     (labels ((f1 (a11)
+                                (if (if (let (v34) t)
+                                      0
+                                      (multiple-value-bind (r36) (a14)))
+                                  (check-type a11 integer))))
+                       (f1 200)))
+                   :hide-warnings t))
+  nil)
+
+(deftest ccl.issue#679
+    (funcall
+     (test-compile '(lambda (x f)
+                     (if (if (funcall f) 0 (let ((r (funcall f))) r nil))
+                       (let ((z x))
+                         (when (funcall f) (setq z (list z)))
+                         z))))
+     1 (constantly t))
+  (1))
