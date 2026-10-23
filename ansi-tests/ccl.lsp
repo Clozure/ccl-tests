@@ -2726,3 +2726,23 @@
 (deftest ccl.issue#677.masks
     (logand-constant-mask-failures)
   nil)
+
+;;; When a lambda's required parameter was bound to a lexical
+;;; variable that a later argument SETQs, the compiler replaced the
+;;; parameter with the variable and so saw the new value.  It decided
+;;; that the variable hadn't been assigned only after it had already
+;;; processed all the arguments.  (GitHub issue #678)
+(deftest ccl.issue#678.stassats
+    (funcall (test-compile '(lambda (in15 in16)
+                             (labels ((f0 (a1 rs3) (values a1 rs3)))
+                               (declare (inline f0))
+                               (f0 in16 (setq in16 in15)))))
+             65534 1)
+  1 65534)
+
+(deftest ccl.issue#678
+    (funcall (test-compile '(lambda (x y)
+                             ((lambda (a b c) (list a b c))
+                              y (setq y x) y)))
+             1 2)
+  (2 1 1))
