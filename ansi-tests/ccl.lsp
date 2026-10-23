@@ -2640,3 +2640,40 @@
     (funcall (test-compile
               '(lambda () (remove-if-not 'zerop '(0 0 0) :key nil))))
   (0 0 0))
+
+;;; FILL and MAKE-ARRAY :INITIAL-ELEMENT on sub-word specialized
+;;; vectors replicate the element across a machine word.  On ARM and
+;;; arm64, the sign bits of a negative element leaked into the other
+;;; elements of the word: filling a (signed-byte 16) vector with -2
+;;; gave #(-2 -1 -1 -1 -2 -1 -1 -1).  (GitHub issue #676)
+(defparameter *issue-676-cases*
+  '(((signed-byte 8) -128 -2 -1 0 1 127)
+    ((unsigned-byte 8) 0 1 #x80 #xff)
+    ((signed-byte 16) -32768 -11286 -1 0 1 32767)
+    ((unsigned-byte 16) 0 1 #x8000 #xffff)
+    ((signed-byte 32) #x-80000000 -11286 -1 0 1 #x7fffffff)
+    ((unsigned-byte 32) 0 1 #x80000000 #xffffffff)
+    ((signed-byte 64) -11286 -1 0 1)
+    (fixnum -11286 -1 0 1)
+    (bit 0 1)))
+
+(defun issue-676-failures (make)
+  (let ((failures ()))
+    (dolist (case *issue-676-cases* (nreverse failures))
+      (destructuring-bind (type &rest values) case
+        (dolist (value values)
+          (dolist (n '(1 2 3 7 8 9 15 16 17 65))
+            (let ((v (funcall make n type value)))
+              (unless (every (lambda (x) (eql x value)) v)
+                (push (list type value n) failures)))))))))
+
+(deftest ccl.issue#676.fill
+    (issue-676-failures (lambda (n type value)
+                          (fill (make-array n :element-type type) value)))
+  nil)
+
+(deftest ccl.issue#676.initial-element
+    (issue-676-failures (lambda (n type value)
+                          (make-array n :element-type type
+                                        :initial-element value)))
+  nil)
