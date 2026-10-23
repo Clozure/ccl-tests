@@ -2677,3 +2677,52 @@
                           (make-array n :element-type type
                                         :initial-element value)))
   nil)
+
+;;; On arm64, LOGAND with a constant 0 that the compiler learned
+;;; about through a LET binding (rather than a literal, which is
+;;; folded earlier) took the clear-a-bit-run path, which only
+;;; cleared the tag bits and so returned the other argument
+;;; unchanged.  (GitHub issue #677)
+(deftest ccl.issue#677.stassats
+    (funcall (test-compile '(lambda ()
+                             (let ((w 0)
+                                   (v 0))
+                               (logand v (lognot w))))))
+  0)
+
+(deftest ccl.issue#677
+    (let ((f1 (test-compile '(lambda (x) (let ((z 0)) (logand x z)))))
+          (f2 (test-compile '(lambda (x) (let ((z 0)) (logand z x))))))
+      (loop for x in (list 0 1 -1 12345 most-positive-fixnum
+                           most-negative-fixnum (expt 2 70))
+            collect (list (funcall f1 x) (funcall f2 x))))
+  ((0 0) (0 0) (0 0) (0 0) (0 0) (0 0) (0 0)))
+
+;;; Inline LOGAND with a constant fixnum mask picks its code by the
+;;; shape of the mask: a run of ones at the bottom (2^k-1), a run of
+;;; ones at the top (-2^k), some other encodable bit pattern, or one
+;;; that has to be loaded into a register.  Try all of these, with the
+;;; constant on either side, against fixnums and bignums.
+(defun logand-constant-mask-failures ()
+  (let ((masks (append (loop for k from 0 below (integer-length
+                                                 most-positive-fixnum)
+                             collect (1- (ash 1 k))
+                             collect (- (ash 1 k)))
+                       (list most-positive-fixnum most-negative-fixnum
+                             5 -3 #x5555 -12345 #xff00)))
+        (xs (list 0 1 -1 7 -8 12345 -12345
+                  most-positive-fixnum most-negative-fixnum
+                  (expt 2 70) (- (expt 2 70))))
+        (failures ()))
+    (dolist (m masks (nreverse failures))
+      (let ((f1 (test-compile `(lambda (x) (let ((m ,m)) (logand x m)))))
+            (f2 (test-compile `(lambda (x) (let ((m ,m)) (logand m x))))))
+        (dolist (x xs)
+          (let ((want (logand x m)))
+            (unless (and (eql (funcall f1 x) want)
+                         (eql (funcall f2 x) want))
+              (push (list m x) failures))))))))
+
+(deftest ccl.issue#677.masks
+    (logand-constant-mask-failures)
+  nil)
