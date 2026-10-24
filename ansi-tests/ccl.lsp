@@ -2774,3 +2774,21 @@
                          z))))
      1 (constantly t))
   (1))
+
+;;; On arm64, using an unboxed float local as a branch test
+;;; compared rnil with itself, so the float always looked like NIL.
+;;; (GitHub issue #685)
+(deftest ccl.issue#685.stassats
+    (funcall
+     (test-compile '(lambda (in16)
+                     (let ((u12 (if in16 1.0 2.0)))
+                       (if u12 128))))
+     t)
+  128)
+
+(deftest ccl.issue#685
+    (let ((fn (test-compile '(lambda (x)
+                              (let ((d (if x 1d0 2d0)))
+                                (list (if d :yes :no) (not d)))))))
+      (list (funcall fn t) (funcall fn nil)))
+  ((:yes nil) (:yes nil)))
