@@ -2861,3 +2861,18 @@
       (and (every #'functionp l)
            (= (length l) (length (remove-duplicates l)))))
   t)
+
+;;; The lisp kernel's printer (used by the kernel debugger) prints 64-bit
+;;; bignums correctly.  (Clozure/ccl a766aa6a, 7de6e4dd)
+#+x8664-target
+(deftest ccl.kernel-printer.bignums
+    (let ((printer (ccl::foreign-symbol-address "print_lisp_object")))
+      (when printer
+        (loop for n in (list (ash 1 60) (+ (ash 1 62) #x123456789) (- (ash 1 63) 5)
+                             (- -1 (ash 1 60)) (- (ash 1 62)) (- (ash 1 63))
+                             (ash 1 63) (+ (ash 1 63) #x0102030405060708) (1- (ash 1 64)))
+          for text = (ccl::%get-cstring
+                      (ccl::ff-call printer :unsigned-doubleword (ldb (byte 64 0) (ccl::%address-of n)) :address))
+          unless (equal text (prin1-to-string n))
+          collect (list n text))))
+  nil)
