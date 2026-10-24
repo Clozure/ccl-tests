@@ -56,6 +56,41 @@
 ;;;                                  :ALLOCATIONS n :VERDICT PASS | FAIL
 ;;; Exit 0 when the sleep returns within tolerance, 42 when it returns late,
 ;;; 43 when it had not returned by the watchdog deadline.
+;;;
+;;; EXPECTED STATE, read by ../run-all.sh.
+;;; The only file in threads/ that is not part of the #597 family.  It was
+;;; the first `repro' state here, for issue #639, and was flipped to `clean'
+;;; on 2026-10-06 after its UNEXPECTED-OK signal.  MEASURED with this file
+;;; against kernels carrying b3068522, not inferred from the merge:
+;;;
+;;;   linuxx8664  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
+;;;                                  rc=0, 3 of 3, 286,545-289,245 allocations
+;;;   linuxarm64  8d2b8d0e, 2 vCPU   10 s sleep took 10.0 s  (ratio 1.0)
+;;;                                  rc=0, 3 of 3, 374,783-381,698 allocations
+;;;
+;;; Before the fix, MEASURED on stock builds at pin 6526e21c:
+;;;
+;;;   linuxx8664  t3.small, 2 vCPU   10 s sleep took  31.0 s  (ratio  3.1)
+;;;                                  rc=42,   781,882 allocations
+;;;   linuxarm64  t4g.small, 2 vCPU  10 s sleep took 168.0 s  (ratio 16.8)
+;;;                                  rc=42, 6,474,520 allocations
+;;;
+;;; POSITIVE CONTROL, the same file with ONE variable changed -- the
+;;; allocation cut from 160016 bytes to 176 -- so that a red here cannot be
+;;; "this test always fails":
+;;;
+;;;   linuxx8664  rc=0, 10.6 s (ratio 1.1), 30,297,490 allocations
+;;;   linuxarm64  rc=0, 11.7 s (ratio 1.2), 27,336,462 allocations
+;;;
+;;; The control allocates 39x and 4x MORE OFTEN than the runs that fail, and
+;;; returns on time.  So the variable is object SIZE -- and therefore how
+;;; long each collection takes -- not whether another thread allocates.
+;;;
+;;; ⚠ A THROTTLED OR LOW-CORE BOX REPRODUCES THIS MORE WEAKLY, not more
+;;; strongly: fewer collections per second means less time lost per second.
+;;; Both red cells above are burstable instances, so both are conservative.
+;;;
+;;; expected-state: clean
 
 (in-package :cl-user)
 
