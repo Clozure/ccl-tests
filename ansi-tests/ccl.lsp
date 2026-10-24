@@ -2792,3 +2792,43 @@
                                 (list (if d :yes :no) (not d)))))))
       (list (funcall fn t) (funcall fn nil)))
   ((:yes nil) (:yes nil)))
+
+;;; scale-float with the FPU overflow trap disabled shouldn't signal overflow,
+;;; should return the appropriate infinity.  (Clozure/ccl f3d4e8a3)
+
+(defmacro ccl.with-overflow-trap (state &body body)
+  `(let ((old (ccl:get-fpu-mode :overflow)))
+     (unwind-protect
+          (progn (ccl:set-fpu-mode :overflow ,state) ,@body)
+       (ccl:set-fpu-mode :overflow old))))
+
+(defun ccl.infinity (float-type sign)
+  ;; The infinity that the hardware produces; (* x 2) of the largest float.
+  (declare (notinline *))
+  (ccl.with-overflow-trap nil
+    (let ((big (ecase float-type
+                 (double-float most-positive-double-float)
+                 (single-float most-positive-single-float))))
+      (* (* sign big) 2))))
+
+(deftest ccl.scale-float.overflow-masked
+    (ccl.with-overflow-trap nil
+      (let ((+d (ccl.infinity 'double-float 1)) (-d (ccl.infinity 'double-float -1))
+            (+s (ccl.infinity 'single-float 1)) (-s (ccl.infinity 'single-float -1)))
+        (list (eql +d (scale-float 1d0 5000))
+              (eql -d (scale-float -1d0 5000))
+              (eql +d (scale-float 1d300 100))
+              (eql +s (scale-float 1f0 500))
+              (eql -s (scale-float -2f0 500))
+              (eql +s (scale-float 1f30 100))
+              ;; an infinity stays as it is
+              (eql +d (scale-float +d 10))
+              (eql -s (scale-float -s 10)))))
+  (t t t t t t t t))
+
+(deftest ccl.scale-float.overflow-trapped
+    (ccl.with-overflow-trap t
+      (list (handler-case (scale-float 1d0 5000) (floating-point-overflow () :overflow))
+            (handler-case (scale-float 1f0 500) (floating-point-overflow () :overflow))
+            (scale-float 1d0 10)))
+  (:overflow :overflow 1024d0))
