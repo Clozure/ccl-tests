@@ -5,6 +5,36 @@
 
 (in-package :cl-test)
 
+;;; Under Rosetta 2, a signal sent to a thread while it is taking a
+;;; Mach exception can be lost, and the thread then never takes
+;;; another signal; or Rosetta aborts with "state update should occur
+;;; from waiters' queue".  CCL's runtime traps are Mach exceptions on
+;;; darwinx8664, and both GC suspension and process-interrupt are
+;;; signals, so tests with several threads consing or being
+;;; interrupted either wedge the suite in a GC that waits forever for
+;;; a suspend ack, or kill it.  Those tests carry this note, which is
+;;; disabled when running under Rosetta.  This is a Rosetta bug, not a
+;;; CCL one: a small C program does the same thing.
+(defun running-under-rosetta-p ()
+  #+darwin-target
+  (ccl:rlet ((value :signed-int 0)
+             (size :unsigned-long 4))
+    (ccl:with-cstrs ((name "sysctl.proc_translated"))
+      (and (eql 0 (ccl:external-call "sysctlbyname"
+                                     :address name :address value
+                                     :address size :address (ccl:%null-ptr)
+                                     :unsigned-long 0
+                                     :signed-int))
+           (eql 1 (ccl:%get-signed-long value)))))
+  #-darwin-target
+  nil)
+
+(defnote :rosetta-loses-signals
+    "Signals to threads taking Mach exceptions get lost under Rosetta 2.")
+
+(when (running-under-rosetta-p)
+  (disable-note :rosetta-loses-signals))
+
 ;;; Concurrent writers to a lock-free hash table.  lock-free-puthash
 ;;; used to treat any key it found in the slot that nhash.find-new
 ;;; returned as its own, so when another thread claimed that free slot
@@ -45,6 +75,7 @@
                   failures)))))))
 
 (deftest ccl.lock-free-puthash-race
+    :notes :rosetta-loses-signals
     (lock-free-puthash-race)
   nil)
 
@@ -161,6 +192,7 @@
     (nreverse failures)))
 
 (deftest ccl.process-interrupt-at-start
+    :notes :rosetta-loses-signals
     (process-interrupt-at-start)
   nil)
 
@@ -249,6 +281,7 @@
             (t nil)))))
 
 (deftest ccl.generic-uvset-gc-race
+    :notes :rosetta-loses-signals
     (generic-uvset-gc-race)
   nil)
 
@@ -298,5 +331,6 @@
             (t nil)))))
 
 (deftest ccl.catch-nvr-gc-race
+    :notes :rosetta-loses-signals
     (catch-nvr-gc-race)
   nil)
