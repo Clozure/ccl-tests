@@ -2832,3 +2832,32 @@
             (handler-case (scale-float 1f0 500) (floating-point-overflow () :overflow))
             (scale-float 1d0 10)))
   (:overflow :overflow 1024d0))
+
+;;; A byte order mark written before the first character of a UTF-32 or UTF-16
+;;; stream must be the same BOM that writing a string produces.
+;;; (Clozure/ccl e6f3bd2e)
+(deftest ccl.byte-order-mark.write-char-first
+    (flet ((first-bytes-written (external-format writer count)
+             (let ((path "temp.dat"))
+               (unwind-protect
+                    (progn
+                      (with-open-file (f path :direction :output :if-exists :supersede
+                                         :external-format external-format)
+                        (funcall writer f))
+                      (with-open-file (f path :element-type '(unsigned-byte 8))
+                        (let ((bytes (make-array count :element-type '(unsigned-byte 8))))
+                          (read-sequence bytes f)
+                          (coerce bytes 'list))))
+                 (ignore-errors (delete-file path))))))
+      (loop for (format size) in '((:utf-32 4) (:utf-16 2))
+            collect (equal (first-bytes-written format (lambda (s) (write-char #\a s)) size)
+                           (first-bytes-written format (lambda (s) (write-string "a" s)) size))))
+  (t t))
+
+;;; *lisp-system-pointer-functions* is a list of functions, with no duplicates.
+;;; (Clozure/ccl e6f3bd2e)
+(deftest ccl.lisp-system-pointer-functions.are-functions
+    (let ((l ccl::*lisp-system-pointer-functions*))
+      (and (every #'functionp l)
+           (= (length l) (length (remove-duplicates l)))))
+  t)
