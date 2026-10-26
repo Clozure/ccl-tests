@@ -2792,3 +2792,24 @@
                                 (list (if d :yes :no) (not d)))))))
       (list (funcall fn t) (funcall fn nil)))
   ((:yes nil) (:yes nil)))
+
+;;; On arm64, the unbound-variable trap offered USE-VALUE, but invoking
+;;; it signalled a second error, because the trap does not say where
+;;; the value goes.  A restart that is offered must work.
+(defvar *ccl-unbound-for-restart-test*)
+
+(deftest ccl.unbound-variable-offered-restart-works
+    ;; Either no USE-VALUE is offered and the error escapes, or it is
+    ;; offered and the reference returns 42.
+    (let* ((fn (test-compile '(lambda () *ccl-unbound-for-restart-test*)))
+           (r (handler-case
+                  (handler-bind ((unbound-variable
+                                   (lambda (c)
+                                     (let ((r (find-restart 'use-value c)))
+                                       (when r (invoke-restart r 42))))))
+                    (list :value (funcall fn)))
+                (error (e) (list :error (type-of e))))))
+      (or (equal r '(:value 42))
+          (equal r '(:error unbound-variable))
+          r))
+  t)
