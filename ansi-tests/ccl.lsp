@@ -2893,3 +2893,17 @@
           unless (equal text (prin1-to-string n))
           collect (list n text))))
   nil)
+
+;;; RECORD-LENGTH accepts a field reference, including one through nested
+;;; records, and returns the size of the field's type.  (Clozure/ccl b4a7254b)
+(deftest ccl.record-length.field-refs
+    (list (= (ccl::record-length :sockaddr_in.sin_addr) (ccl::record-length :in_addr))
+          (= (ccl::record-length :tm.tm_sec) (ccl::record-length :int))
+          ;; nested records
+          #-(or windows-target solaris-target) (= (ccl::record-length :sockaddr_in.sin_addr.s_addr) 4)
+          ;; library/sockets.lisp uses this one
+          #-windows-target
+          (= (ccl::record-length :sockaddr_un.sun_path)
+             (let ((field-type (nth-value 1 (ccl::get-field-offset :sockaddr_un.sun_path))))
+               (eval `(ccl::record-length ,field-type)))))
+  (t t  #-(or windows-target solaris-target) t #-windows-target t))
