@@ -2926,3 +2926,25 @@
                    :signed-doubleword 8 :void)
       *ccl-test-pair16-args*)
   (1 2 3 4 5 6 7 #x1111111111111111 #x2222222222222222 8))
+
+;;; A callback gets nine double-floats and then an integer.  On arm64
+;;; the ninth double goes on the stack and the integer goes in x0, so
+;;; the callback must read the ninth double from the stack.
+(defvar *ccl-test-nine-doubles-args* nil)
+
+(ccl:defcallback ccl-test-nine-doubles-callback
+    (:double-float d0 :double-float d1 :double-float d2 :double-float d3
+     :double-float d4 :double-float d5 :double-float d6 :double-float d7
+     :double-float d8 :signed-doubleword i :void)
+  (setq *ccl-test-nine-doubles-args* (list d0 d1 d2 d3 d4 d5 d6 d7 d8 i)))
+
+(deftest ccl.callback.integer-after-nine-doubles
+    (progn
+      (setq *ccl-test-nine-doubles-args* nil)
+      (ccl:ff-call ccl-test-nine-doubles-callback
+                   :double-float 1d0 :double-float 2d0 :double-float 3d0
+                   :double-float 4d0 :double-float 5d0 :double-float 6d0
+                   :double-float 7d0 :double-float 8d0 :double-float 9d0
+                   :signed-doubleword 10 :void)
+      *ccl-test-nine-doubles-args*)
+  (1d0 2d0 3d0 4d0 5d0 6d0 7d0 8d0 9d0 10))
