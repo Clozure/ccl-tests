@@ -2893,3 +2893,36 @@
           unless (equal text (prin1-to-string n))
           collect (list n text))))
   nil)
+
+;;; A callback gets a 16-byte record when only one integer argument
+;;; register is left.  On arm64 (AAPCS64 rule C.11) the caller puts the
+;;; whole record on the stack and leaves x7 unused, so the callback must
+;;; read the record, and every argument after it, from the stack.
+(ccl:def-foreign-type nil
+    (:struct :ccl-test-pair16
+      (:lo (:unsigned 64))
+      (:hi (:unsigned 64))))
+
+(defvar *ccl-test-pair16-args* nil)
+
+(ccl:defcallback ccl-test-pair16-callback
+    (:signed-doubleword a0 :signed-doubleword a1 :signed-doubleword a2
+     :signed-doubleword a3 :signed-doubleword a4 :signed-doubleword a5
+     :signed-doubleword a6 (:struct :ccl-test-pair16) p
+     :signed-doubleword a7 :void)
+  (setq *ccl-test-pair16-args*
+        (list a0 a1 a2 a3 a4 a5 a6
+              (ccl:pref p :ccl-test-pair16.lo)
+              (ccl:pref p :ccl-test-pair16.hi)
+              a7)))
+
+(deftest ccl.callback.record-arg-after-seven-integers
+    (ccl:rlet ((p :ccl-test-pair16 :lo #x1111111111111111 :hi #x2222222222222222))
+      (setq *ccl-test-pair16-args* nil)
+      (ccl:ff-call ccl-test-pair16-callback
+                   :signed-doubleword 1 :signed-doubleword 2 :signed-doubleword 3
+                   :signed-doubleword 4 :signed-doubleword 5 :signed-doubleword 6
+                   :signed-doubleword 7 (:struct :ccl-test-pair16) p
+                   :signed-doubleword 8 :void)
+      *ccl-test-pair16-args*)
+  (1 2 3 4 5 6 7 #x1111111111111111 #x2222222222222222 8))
