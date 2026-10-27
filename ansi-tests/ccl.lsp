@@ -2793,6 +2793,23 @@
       (list (funcall fn t) (funcall fn nil)))
   ((:yes nil) (:yes nil)))
 
+;;; On arm64, storing 0.0f0 or #\Nul into a bit vector stored 0
+;;; instead of signalling a type error: both are words below the
+;;; fixnum 1, and the store compared the word instead of masking it.
+(deftest ccl.bit-vector-store-non-bit
+    (flet ((try (fn x)
+             (let ((v (make-array 1 :element-type 'bit :initial-element 1)))
+               (list (handler-case (progn (funcall fn v x) :stored)
+                       (type-error () :type-error))
+                     (sbit v 0)))))
+      (let ((generic (test-compile '(lambda (v x) (setf (aref v 0) x))))
+            (declared (test-compile '(lambda (v x)
+                                      (declare (simple-bit-vector v))
+                                      (setf (sbit v 0) x)))))
+        (list (try generic 0.0f0) (try generic (code-char 0))
+              (try declared 0.0f0) (try declared (code-char 0)))))
+  ((:type-error 1) (:type-error 1) (:type-error 1) (:type-error 1)))
+
 ;;; scale-float with the FPU overflow trap disabled shouldn't signal overflow,
 ;;; should return the appropriate infinity.  (Clozure/ccl f3d4e8a3)
 
