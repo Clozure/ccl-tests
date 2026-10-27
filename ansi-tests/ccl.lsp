@@ -2809,3 +2809,87 @@
         (list (try generic 0.0f0) (try generic (code-char 0))
               (try declared 0.0f0) (try declared (code-char 0)))))
   ((:type-error 1) (:type-error 1) (:type-error 1) (:type-error 1)))
+
+;;; scale-float with the FPU overflow trap disabled shouldn't signal overflow,
+;;; should return the appropriate infinity.  (Clozure/ccl f3d4e8a3)
+
+(defmacro ccl.with-overflow-trap (state &body body)
+  `(let ((old (ccl:get-fpu-mode :overflow)))
+     (unwind-protect
+          (progn (ccl:set-fpu-mode :overflow ,state) ,@body)
+       (ccl:set-fpu-mode :overflow old))))
+
+(defun ccl.infinity (float-type sign)
+  ;; The infinity that the hardware produces; (* x 2) of the largest float.
+  (declare (notinline *))
+  (ccl.with-overflow-trap nil
+    (let ((big (ecase float-type
+                 (double-float most-positive-double-float)
+                 (single-float most-positive-single-float))))
+      (* (* sign big) 2))))
+
+(deftest ccl.scale-float.overflow-masked
+    (ccl.with-overflow-trap nil
+      (let ((+d (ccl.infinity 'double-float 1)) (-d (ccl.infinity 'double-float -1))
+            (+s (ccl.infinity 'single-float 1)) (-s (ccl.infinity 'single-float -1)))
+        (list (eql +d (scale-float 1d0 5000))
+              (eql -d (scale-float -1d0 5000))
+              (eql +d (scale-float 1d300 100))
+              (eql +s (scale-float 1f0 500))
+              (eql -s (scale-float -2f0 500))
+              (eql +s (scale-float 1f30 100))
+              ;; an infinity stays as it is
+              (eql +d (scale-float +d 10))
+              (eql -s (scale-float -s 10)))))
+  (t t t t t t t t))
+
+(deftest ccl.scale-float.overflow-trapped
+    (ccl.with-overflow-trap t
+      (list (handler-case (scale-float 1d0 5000) (floating-point-overflow () :overflow))
+            (handler-case (scale-float 1f0 500) (floating-point-overflow () :overflow))
+            (scale-float 1d0 10)))
+  (:overflow :overflow 1024d0))
+
+;;; A byte order mark written before the first character of a UTF-32 or UTF-16
+;;; stream must be the same BOM that writing a string produces.
+;;; (Clozure/ccl e6f3bd2e)
+(deftest ccl.byte-order-mark.write-char-first
+    (flet ((first-bytes-written (external-format writer count)
+             (let ((path "temp.dat"))
+               (unwind-protect
+                    (progn
+                      (with-open-file (f path :direction :output :if-exists :supersede
+                                         :external-format external-format)
+                        (funcall writer f))
+                      (with-open-file (f path :element-type '(unsigned-byte 8))
+                        (let ((bytes (make-array count :element-type '(unsigned-byte 8))))
+                          (read-sequence bytes f)
+                          (coerce bytes 'list))))
+                 (ignore-errors (delete-file path))))))
+      (loop for (format size) in '((:utf-32 4) (:utf-16 2))
+            collect (equal (first-bytes-written format (lambda (s) (write-char #\a s)) size)
+                           (first-bytes-written format (lambda (s) (write-string "a" s)) size))))
+  (t t))
+
+;;; *lisp-system-pointer-functions* is a list of functions, with no duplicates.
+;;; (Clozure/ccl e6f3bd2e)
+(deftest ccl.lisp-system-pointer-functions.are-functions
+    (let ((l ccl::*lisp-system-pointer-functions*))
+      (and (every #'functionp l)
+           (= (length l) (length (remove-duplicates l)))))
+  t)
+
+;;; The lisp kernel's printer (used by the kernel debugger) prints 64-bit
+;;; bignums correctly.  (Clozure/ccl a766aa6a, 7de6e4dd)
+#+x8664-target
+(deftest ccl.kernel-printer.bignums
+    (let ((printer (ccl::foreign-symbol-address "print_lisp_object")))
+      (when printer
+        (loop for n in (list (ash 1 60) (+ (ash 1 62) #x123456789) (- (ash 1 63) 5)
+                             (- -1 (ash 1 60)) (- (ash 1 62)) (- (ash 1 63))
+                             (ash 1 63) (+ (ash 1 63) #x0102030405060708) (1- (ash 1 64)))
+          for text = (ccl::%get-cstring
+                      (ccl::ff-call printer :unsigned-doubleword (ldb (byte 64 0) (ccl::%address-of n)) :address))
+          unless (equal text (prin1-to-string n))
+          collect (list n text))))
+  nil)
