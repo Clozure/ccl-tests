@@ -2962,3 +2962,28 @@
                    :signed-doubleword 10 :void)
       *ccl-test-nine-doubles-args*)
   (1d0 2d0 3d0 4d0 5d0 6d0 7d0 8d0 9d0 10))
+
+;;; AREF and (SETF AREF) of 2D and 3D simple arrays of complex floats compile
+;;; in safe code, and passing the wrong kind of array signals a TYPE-ERROR that
+;;; names the declared type. (Clozure/ccl 5f0c99cc)
+(deftest ccl.aref.complex-float-2d-3d
+    (loop for element-type in '((complex single-float) (complex double-float))
+          for value in '(#c(1f0 2f0) #c(1d0 2d0))
+          nconc (loop for rank in '(2 3)
+                      for indices = (make-list rank :initial-element 1)
+                      for type = `(simple-array ,element-type ,(make-list rank :initial-element '*))
+                      for reader = (compile nil `(lambda (a)
+                                                   (declare (optimize (safety 1)) (type ,type a))
+                                                   (aref a ,@indices)))
+                      for writer = (compile nil `(lambda (a v)
+                                                   (declare (optimize (safety 1)) (type ,type a))
+                                                   (setf (aref a ,@indices) v)))
+                      for array = (make-array (make-list rank :initial-element 2)
+                                              :element-type element-type)
+                      do (funcall writer array value)
+                      collect (and (eql (funcall reader array) value)
+                                   (eql (apply #'aref array indices) value)
+                                   (handler-case (progn (funcall reader (make-array (make-list rank :initial-element 2)))
+                                                        :no-error)
+                                     (type-error (c) (equal (type-error-expected-type c) type))))))
+  (t t t t))
