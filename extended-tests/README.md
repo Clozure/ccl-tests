@@ -60,9 +60,10 @@ reproducing the runner says `UNEXPECTED-OK` and tells you to move its row to
 green — that is the `XPASS` half of the pair, and it is the point of tracking
 state rather than simply skipping these tests.
 
-That state describes the **lisp under test**, not the test file. All four
+That state describes the **lisp under test**, not the test file. Four
 entries are `clean`, because the defects behind them are fixed on master, and
 for each a reproduction is a real failure that fails `run-all.sh`.
+`interrupt-callback-lock-inversion` is `repro`, because its defect is open.
 `sleep-vs-alloc` was the first `repro` row this directory had. Its fix,
 `b3068522`, made it report UNEXPECTED-OK, which is the signal this machinery
 exists to give, and the row was then flipped to `clean` from measured runs.
@@ -89,7 +90,7 @@ it needs an external timeout or its own process.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
-### threads/  — all four green at tip
+### threads/  — four green at tip, one open
 
 **Three** of these track upstream issue **#597** and PR **#634**, which the
 maintainer closed on 2026-09-17. The C-side fixes and the Lisp half are both
@@ -205,6 +206,7 @@ as little as 16 µs. The blocking handler is the variable, not the signal rate.
 | `windows-pipe-read.lisp` | Windows only. Reads from `run-program` pipes while other threads interrupt the reader, run a GC, or call `listen`; checks end of file and `run-program` output. The `interrupt-race` case reaches a kernel deadlock between `CancelSynchronousIo` and a thread suspended in `PeekNamedPipe`. | yes, with Clozure/ccl PR #651 | **no** |
 | `sleep-vs-alloc.lisp` | `(SLEEP n)` returns far too late, or had not returned when the test gave up, while another thread allocates large objects. Each GC suspends the sleeping thread with a signal; `#_nanosleep` returns EINTR and `%nanosleep` re-sleeps for the remaining time **the kernel reported**. The kernel computes that remainder *before* it runs the handler, so the time the thread spends parked in `suspend_resume_handler` is never subtracted, and every world stop loses its own duration. | yes — fixed by `b3068522` (issue #639) | **no** — reproduced on a stock build, unwidened |
 | `windows-pipe-latency.lisp` | Windows only. A line written by a `run-program` child waits in the pipe until the parent's next poll: `pipe_read` sleeps with `SleepEx(1)`, which Windows rounds up to the 15.6 ms timer tick. The child stamps each line with `QueryPerformanceCounter`, and the case fails when the median wait is 3 ms or more. | yes, with Clozure/ccl PR #656 | **no** |
+| `interrupt-callback-lock-inversion.lisp` | a `process-interrupt` function that takes a lock can deadlock against `*callback-lock*`. `%lookup-pascal-function` takes that lock on every interrupt delivery, at the interrupted thread's level, and the unbind that ends the lock acquire polls for a pending interrupt. So an interrupt function can run while the thread holds `*callback-lock*`; if it waits for a lock that a second, interrupted thread holds, the second thread's delivery waits for `*callback-lock*` and the two wait for each other. Sixteen workers, two interrupters, one lock. | **no — open** | **no** — reproduces on a stock build, unwidened |
 
 `arm64-red-prelude.lisp` and `arm64-widen-prelude.lisp` are loaded *by* those
 reproducers on arm64; they are not tests and `run-all.sh` skips them.
