@@ -2893,3 +2893,37 @@
           unless (equal text (prin1-to-string n))
           collect (list n text))))
   nil)
+
+;;; On arm64, a second control-stack overflow, inside a handler for the
+;;; first, made the trap return each time, and the thread recursed until
+;;; the process died with SIGSEGV.  The overflow runs in a child lisp,
+;;; which must exit, whatever its exit code, and not die by a signal.
+(deftest ccl.cstack-overflow-in-handler-exits
+    (let* ((form "(progn
+                    (defun deep (n) (if (zerop n) 0 (1+ (deep (1- n)))))
+                    (let ((p (process-run-function
+                              (string :overflow)
+                              (lambda ()
+                                (handler-case
+                                    (handler-bind ((storage-condition
+                                                     (lambda (c)
+                                                       (declare (ignore c))
+                                                       (deep most-positive-fixnum))))
+                                      (deep most-positive-fixnum))
+                                  (storage-condition () nil))))))
+                      (process-wait-with-timeout
+                       (string :join) (* 5 *ticks-per-second*)
+                       (lambda () (process-exhausted-p p))))
+                    (quit 0))")
+           (p (ccl:run-program (ccl::kernel-path)
+                               (list "-I" ccl::*heap-image-name* "-n" "-b"
+                                     "-Q" "-e" form)
+                               :wait nil :input nil :output nil :error nil)))
+      (loop repeat 600
+            while (eq (ccl:external-process-status p) :running)
+            do (sleep 0.1))
+      (when (eq (ccl:external-process-status p) :running)
+        (ccl:signal-external-process p 9))
+      (multiple-value-bind (status code) (ccl:external-process-status p)
+        (or (eq status :exited) (list status code))))
+  t)
