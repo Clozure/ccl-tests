@@ -92,6 +92,12 @@ it needs an external timeout or its own process.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
+### gc/
+
+| file | what it proves | green at tip? |
+|---|---|---|
+| `heap-relocated-at-load.lisp` | an image still works when its heap loads away from the saved address: weak objects and static conses survive the first ephemeral GC. A child lisp asks for this with `CCL_FORCE_HEAP_RELOC=1`; a kernel without that switch gives a SKIP. | SKIP until the switch merges |
+
 ### threads/
 
 **Three** of these track upstream issue **#597** and PR **#634**, which the
