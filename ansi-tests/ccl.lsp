@@ -2962,3 +2962,69 @@
                    :signed-doubleword 10 :void)
       *ccl-test-nine-doubles-args*)
   (1d0 2d0 3d0 4d0 5d0 6d0 7d0 8d0 9d0 10))
+
+;;; With static space above the dynamic heap, the EGC did not forward the
+;;; data of a tenured population that had once been empty, and the data
+;;; then pointed into free space.  A child lisp asks for relocated static
+;;; space.  Where static space is not above the heap (the port does not
+;;; relocate it, or puts it below the heap), the child prints :SKIP and
+;;; the test passes, so it fails only where the defect can occur.  The
+;;; result depends on where objects land, so the child tries 100
+;;; populations in compiled code.
+(deftest ccl.population-data-forwarded-with-static-space-above-heap
+    (let* ((forms "(unless (> (ccl::%address-of nil)
+                              (ccl::%address-of (cons nil nil)))
+                     (prin1 :skip)
+                     (quit 0))
+                   (egc t)
+                   (defvar *junk* nil)
+                   (defun egc-once ()
+                     (let ((n (ccl::%get-gc-count)))
+                       (loop while (= n (ccl::%get-gc-count))
+                             do (setq *junk* (make-list 100)))))
+                   (defun trial (n)
+                     (let ((keep (make-string 8))
+                           (pops (loop repeat n collect (make-population))))
+                       (gc)
+                       (egc-once)
+                       (setq *junk* (make-list 1000))
+                       (setq *junk* nil)
+                       (dolist (p pops)
+                         (setf (population-contents p) (list keep)))
+                       (egc-once)
+                       (egc-once)
+                       (gc)
+                       (count-if-not (lambda (p)
+                                       (equal (population-contents p)
+                                              (list keep)))
+                                     pops)))
+                   (prin1 (if (loop repeat 5 always (zerop (trial 20)))
+                            :ok
+                            :bad))
+                   (quit 0)")
+           (file "temp-population.lsp")
+           (stdin "temp-stdin.dat")
+           (p (progn
+                (with-open-file (s file :direction :output
+                                        :if-exists :supersede)
+                  (write-string forms s))
+                (close (open stdin :direction :output :if-exists :supersede))
+                (ccl:run-program (ccl::kernel-path)
+                                 (list "-I" ccl::*heap-image-name* "-n" "-b"
+                                       "-Q" "-l" (namestring (truename file)))
+                                 :wait nil :input stdin :output :stream
+                                 :error nil
+                                 :env '(("CCL_FORCE_STATIC_RELOC" . "1"))))))
+      (loop repeat 600
+            while (eq (ccl:external-process-status p) :running)
+            do (sleep 0.1))
+      (when (eq (ccl:external-process-status p) :running)
+        (ccl:signal-external-process p 9))
+      (let ((result (ignore-errors
+                     (read (ccl:external-process-output-stream p) nil :none))))
+        (ignore-errors (delete-file stdin))
+        (ignore-errors (delete-file file))
+        (if (member result '(:ok :skip))
+          t
+          (list result (multiple-value-list (ccl:external-process-status p))))))
+  t)
