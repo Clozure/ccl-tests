@@ -2987,3 +2987,39 @@
                                                         :no-error)
                                      (type-error (c) (equal (type-error-expected-type c) type))))))
   (t t t t))
+
+;;; Redefining a constant whose old and new values are different NaNs should obey
+;;; *cerror-on-constant-redefinition*. (Clozure/ccl be9883b3)
+(deftest ccl.define-constant.nan
+    (let ((nan1 (ccl::double-float-from-bits #x7ff80000 0))
+          (nan2 (ccl::double-float-from-bits #xfff80000 0))
+          (sym1 (gensym))
+          (sym2 (gensym)))
+      (ccl::define-constant sym1 nan1)
+      (ccl::define-constant sym2 nan1)
+      (list
+       ;; nil: redefines it without an error.
+       (let ((ccl::*cerror-on-constant-redefinition* nil))
+         (handler-case
+             (progn (ccl::define-constant sym1 nan2)
+                    (eq (symbol-value sym1) nan2))
+           (error (c) (type-of c))))
+       ;; true: signals a continuable error, and continuing redefines it.
+       (let ((ccl::*cerror-on-constant-redefinition* t)
+             (continued nil))
+         (block cerror
+           (handler-bind ((error (lambda (c)
+                                   (let ((redefine
+                                          (find-if (lambda (r)
+                                                     (and (eq (restart-name r) 'continue)
+                                                          (search (format nil "Redefine ~S to have new value" sym2)
+                                                                  (princ-to-string r))))
+                                                   (compute-restarts c))))
+                                     (if redefine
+                                       (progn (setq continued t) (invoke-restart redefine))
+                                       (return-from cerror (type-of c)))))))
+             (ccl::define-constant sym2 nan2)
+             (if continued
+               (eq (symbol-value sym2) nan2)
+               :no-error))))))
+  (t t))
