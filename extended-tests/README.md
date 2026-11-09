@@ -97,6 +97,7 @@ it needs an external timeout or its own process.
 | file | what it proves | green at tip? |
 |---|---|---|
 | `heap-relocated-at-load.lisp` | an image still works when its heap loads away from the saved address: weak objects and static conses survive the first ephemeral GC. A child lisp asks for this with `CCL_FORCE_HEAP_RELOC=1`; a kernel without that switch gives a SKIP. | SKIP until the switch merges |
+| `static-conses-full-relocated.lisp` | static conses that are all in use keep correct cars when the heap loads away from the saved address. A child lisp asks for this with `CCL_FORCE_HEAP_RELOC=1`; a kernel without that switch gives a SKIP. | SKIP until the switch merges |
 
 ### threads/
 
