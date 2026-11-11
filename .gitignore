@@ -1,0 +1,11 @@
+# Compiled files (CCL's fasl types vary by platform: .dx64fsl, .la64fsl, ...)
+*.*fsl
+*.fasl
+
+# Data files written by tests
+*.dat
+
+# Test output logs
+*.out
+
+.DS_Store

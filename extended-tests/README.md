@@ -73,7 +73,7 @@ exists to give, and its state was then flipped to `clean` from measured runs.
 One test has already left this directory. `trylock-count-leak` did not wedge
 the image, it was bounded by a 20-second wait, and its fix had landed, so it
 needed none of the machinery here. It is now
-`ccl.recursive-lock-trylock-count-leak` in `ansi-tests/ccl-stress.lsp`, an
+`ccl.recursive-lock-trylock-count-leak` in `ccl-tests/stress.lisp`, an
 ordinary `deftest` that `make test-stress` runs. A test belongs here only while
 it needs an external timeout or its own process.
 

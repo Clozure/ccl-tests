@@ -14,9 +14,10 @@
     (when ansi
       (load "gclload2.lsp"))
     (when ccl
-      (load "ccl.lsp"))
+      (load "ccl.lsp")
+      (load "tests:ccl-tests;tests.lisp"))
     (when stress
-      (load "ccl-stress.lsp"))))
+      (load "tests:ccl-tests;stress.lisp"))))
 
 (defun run-tests (&key verbose (compile t) exit (ansi t) (ccl t) (stress t))
   (load-tests :ansi ansi :ccl ccl :stress stress)
