@@ -334,3 +334,77 @@
     :notes :rosetta-loses-signals
     (catch-nvr-gc-race)
   nil)
+
+;;; A lock-free table with a user test function, during rehashes that
+;;; shrink it.  %hash-probe took the probe index and the table size from
+;;; one read of the hash vector and then probed a second read.  When
+;;; another thread installed a smaller vector between the two reads, the
+;;; probe read past the end of the new vector and handed the word it found
+;;; there to the test function as a key.  EQUAL then follows that word as
+;;; a pointer.  EQ and EQL tables do not use %hash-probe.
+;;;
+;;; The table is weak on its values, and every value dies at once, so the
+;;; GC empties the table and the next rehash makes a smaller vector.  One
+;;; thread allocates big arrays to make GCs frequent.  The keys are
+;;; fixnums from 1 to NKEYS, so the test function can see a word that is
+;;; not a key without following it.  The test function is a named
+;;; function with global state, because MAKE-HASH-TABLE wants a name.
+;;;
+;;; Returns NIL, or a list that says what went wrong.  The threads stop
+;;; after SECONDS, and each is waited for with a timeout.
+(defvar *probe-keys-limit* 0)
+(defvar *probe-keys-bad* nil)
+(defvar *probe-keys-sink* nil)
+
+(defun probe-keys-eql (a b)
+  (unless (and (typep b 'fixnum) (<= 1 b *probe-keys-limit*))
+    (setq *probe-keys-bad* (list :probe-saw (ccl::%address-of b))))
+  (eql a b))
+
+(defun lock-free-shrink-probe-keys (&key (seconds 10) (nkeys 100000)
+                                         (nthreads 6) (timeout 60))
+  (setq *probe-keys-limit* nkeys *probe-keys-bad* nil)
+  (let* ((bad nil)
+         (stop nil)
+         (h (make-hash-table :test 'probe-keys-eql :hash-function 'sxhash
+                             :weak :value :shared :lock-free))
+         (done (ccl:make-semaphore))
+         (threads
+          (cons (ccl:process-run-function
+                 "big allocator"
+                 (lambda ()
+                   (unwind-protect
+                        (loop until stop
+                              do (setq *probe-keys-sink* (make-array 200000)))
+                     (setq *probe-keys-sink* nil)
+                     (ccl:signal-semaphore done))))
+                (loop for i below nthreads
+                      collect (let ((i i))
+                                (ccl:process-run-function
+                                 "weak-value worker"
+                                 (lambda ()
+                                   (unwind-protect
+                                        (handler-case
+                                            (let ((rs (make-random-state t))
+                                                  (n 0))
+                                              (loop until stop
+                                                    do (let ((k (1+ (random nkeys rs))))
+                                                         (setf (gethash k h) (list k i))
+                                                         (when (zerop (mod (incf n) 7))
+                                                           (remhash k h)))))
+                                          (serious-condition (c)
+                                            (setq bad (list :worker (princ-to-string c))
+                                                  stop t)))
+                                     (ccl:signal-semaphore done)))))))))
+    (loop repeat (* 10 seconds) until (or stop *probe-keys-bad*) do (sleep 0.1))
+    (setq stop t)
+    (cond ((not (loop repeat (length threads)
+                      always (ccl:timed-wait-on-semaphore done timeout)))
+           (mapc #'ccl:process-kill threads)
+           (list :timeout))
+          (t (or bad *probe-keys-bad*)))))
+
+(deftest ccl.lock-free-shrink-probe-keys
+    :notes :rosetta-loses-signals
+    (lock-free-shrink-probe-keys)
+  nil)
