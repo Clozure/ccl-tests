@@ -92,6 +92,12 @@ it needs an external timeout or its own process.
 |---|---|---|
 | `negative-index-bound-check.lisp` | a negative index is rejected by `aref`/`uvref` on the paths that do **not** open-code, not only by `svref`. The bound check must be unsigned. | yes — fixed by `72c714b3` |
 
+### ffi/
+
+| file | what it proves | green at tip? |
+|---|---|---|
+| `windows-callback-xmm.lisp` | Windows x86-64 only. A Lisp callback returns with the caller's xmm6-xmm15 intact, as the Win64 convention requires; the C side is a machine-code stub in the file, so no compiler is needed. Before the fix the callback returned with xmm15 set to 0.0 (issue #657). | yes — fixed by `32c3f8e1` |
+
 ### threads/
 
 **Three** of these track upstream issue **#597** and PR **#634**, which the
