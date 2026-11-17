@@ -361,7 +361,7 @@
     (setq *probe-keys-bad* (list :probe-saw (ccl::%address-of b))))
   (eql a b))
 
-(defun lock-free-shrink-probe-keys (&key (seconds 10) (nkeys 100000)
+(defun lock-free-shrink-probe-keys (&key (seconds 2) (nkeys 100000)
                                          (nthreads 6) (timeout 60))
   (setq *probe-keys-limit* nkeys *probe-keys-bad* nil)
   (let* ((bad nil)

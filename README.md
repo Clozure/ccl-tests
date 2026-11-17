@@ -32,4 +32,6 @@ make CCL=/path/to/ccl test-stress
 
 A test in `ccl-tests/stress.lisp` should not hang or damage the lisp
 it runs in.  If it starts threads, it must wait for them with a
-timeout, and clean up after itself.
+timeout, and clean up after itself. Keep the time to 2 seconds or
+less.
+
