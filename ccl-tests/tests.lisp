@@ -56,3 +56,54 @@
                         (upgraded-array-element-type type))
             collect type)
   nil)
+
+;;; A closure that captures more values than arm64's STUR (simm9) reach from
+;;; the closure object (32 node slots) made the compiler signal "vinsn
+;;; immediate 260 (shift 0) out of range for operand class :SIMM9" while
+;;; storing the captured values into the new closure.
+(defun wide-closure-vars (n)
+  (loop for i below n collect (intern (format nil "V~d" i) :cl-test)))
+
+;;; Create heap closures over N values and read every captured value back,
+;;; with no arguments and with enough arguments that some are on the stack.
+(deftest ccl.closure.wide
+    (loop for n in '(31 32 33 40 100)
+          for vars = (wide-closure-vars n)
+          for maker = (compile nil `(lambda (base)
+                                      (let ,(loop for v in vars
+                                                  for i from 0
+                                                  collect `(,v (+ base ,i)))
+                                        (values (lambda () (list ,@vars))
+                                                (lambda (a b c d e)
+                                                  (list* a b c d e
+                                                         (list ,@vars)))))))
+          for expected = (loop for i below n collect (+ 100 i))
+          unless (multiple-value-bind (g h) (funcall maker 100)
+                   (and (equal (funcall g) expected)
+                        (equal (funcall h 1 2 3 4 5)
+                               (list* 1 2 3 4 5 expected))))
+            collect n)
+  nil)
+
+;;; Captured variables that are assigned live in value cells; the cells for
+;;; the high slots must be stored, shared, and readable too.
+(deftest ccl.closure.wide-setq
+    (loop for n in '(33 100)
+          for vars = (wide-closure-vars n)
+          for last-var = (car (last vars))
+          for maker = (compile nil `(lambda (base)
+                                      (let ,(loop for v in vars
+                                                  for i from 0
+                                                  collect `(,v (+ base ,i)))
+                                        (values (lambda (x)
+                                                  (setq ,last-var x
+                                                        ,(first vars) x))
+                                                (lambda () (list ,@vars))))))
+          unless (multiple-value-bind (setter getter) (funcall maker 0)
+                   (funcall setter :new)
+                   (equal (funcall getter)
+                          (append (list :new)
+                                  (loop for i from 1 below (1- n) collect i)
+                                  (list :new))))
+            collect n)
+  nil)
