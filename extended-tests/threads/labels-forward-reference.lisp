@@ -23,7 +23,8 @@
 ;;; closures, each of which refers to the next (the last to the first)
 ;;; and to the argument.  Each worker makes a ring, allocates a little
 ;;; so that GCs keep happening, and walks the ring twice round, checking
-;;; that each closure answers its neighbor and the argument.  A run ends
+;;; that each closure answers a function and the argument, and that the
+;;; walk is back at the first closure after every 200 steps.  A run ends
 ;;; one of three ways when the defect is present:
 ;;;   - a closure answers something else (another closure of the ring,
 ;;;     another thread's closure, NIL, a bogus object): the vacated
@@ -54,16 +55,34 @@
 ;;; 0 turns the ephemeral GC off).
 ;;; Result line: LABELS-FWD-REF-RESULT :RINGS n :SECONDS s
 ;;;
-;;; expected-state: repro
+;;; Fixed by 66d5d5c4, the merge of PR #727.  At that commit
+;;; (v1.14-51-g66d5d5c4) on darwinarm64, 12 CPUs, the defaults ran
+;;; clean 3 of 3, about 10 million rings each.
+;;;
+;;; On solarisx8664 and solarisx8632, 8 CPUs, at v1.14-57-g62df3a686,
+;;; the defaults ran clean (4.7 and 5.5 million rings).  With the x86
+;;; compiler of 66d5d5c4^ loaded into those same lisps (the vinsns
+;;; file and x862.lisp, with *WARN-IF-REDEFINE-KERNEL* nil), the
+;;; closures were again linked with a plain store instead of .SPgvset, and
+;;; the defaults exited 42 in 3 runs of 3 on each, within 15 s: on
+;;; x8664 always "Fault during write to memory address #xF", on x8632
+;;; twice a wrong answer and once "#<COMPILED-LEXICAL-CLOSURE ...> is
+;;; not of type (OR SYMBOL FUNCTION)".
+;;;
+;;; expected-state: clean
 
 (in-package :cl-user)
 
 (defun labels-fwd-ref-env (name default)
   (or (ignore-errors (parse-integer (ccl:getenv name))) default))
 
-(defvar *labels-fwd-ref-threads* (labels-fwd-ref-env "REPRO_THREADS" 16))
-(defvar *labels-fwd-ref-seconds* (labels-fwd-ref-env "REPRO_SECONDS" 60))
+;;; At least one worker for at least one second: with none, the run
+;;; would test nothing and still report clean.
+(defvar *labels-fwd-ref-threads* (max 1 (labels-fwd-ref-env "REPRO_THREADS" 16)))
+(defvar *labels-fwd-ref-seconds* (max 1 (labels-fwd-ref-env "REPRO_SECONDS" 60)))
 (defvar *labels-fwd-ref-counts* (make-array *labels-fwd-ref-threads* :initial-element 0))
+(defvar *labels-fwd-ref-stop* nil)
+(defvar *labels-fwd-ref-done* (ccl:make-semaphore))
 
 (defun labels-fwd-ref-exit (code)
   (finish-output)
@@ -85,26 +104,42 @@
 
 (defun labels-fwd-ref-worker (id)
   ;; A memory fault in a worker is signalled as an error in that thread.
-  ;; Handle it here: under --batch the debugger is not reached.
+  ;; Handle it here: under --batch the debugger is not reached.  The
+  ;; handler prints the fixed part of its line first, and prints the
+  ;; condition under a handler of its own: in a damaged heap, printing
+  ;; it can fault again, and that must not stop the exit with 42.
   (handler-bind ((serious-condition
                    (lambda (c)
-                     (format t "~&LABELS-FWD-REF: ~a in thread ~d after ~d rings~%"
-                             c id (labels-fwd-ref-rings))
+                     (format t "~&LABELS-FWD-REF: thread ~d after ~d rings: "
+                             id (labels-fwd-ref-rings))
+                     (finish-output)
+                     (handler-case (format t "~a~%" c)
+                       (serious-condition ()
+                         (format t "(condition could not be printed)~%")))
                      (labels-fwd-ref-exit 42))))
-    (labels-fwd-ref-loop id)))
+    (labels-fwd-ref-loop id))
+  (ccl:signal-semaphore *labels-fwd-ref-done*))
 
 (defun labels-fwd-ref-loop (id)
-  (loop
-    (let ((f (labels-fwd-ref-make-ring id)))
-      (dotimes (k 3) (make-array 32768 :element-type '(unsigned-byte 8)))
-      (dotimes (i 400)
-        (multiple-value-bind (next x) (funcall f)
-          (unless (and (eql x id) (functionp next))
-            (format t "~&LABELS-FWD-REF: thread ~d: closure ~d of a ring answered ~s and ~s~%"
-                    id (mod i 200) next x)
-            (labels-fwd-ref-exit 42))
-          (setq f next))))
-    (incf (svref *labels-fwd-ref-counts* id))))
+  (loop until *labels-fwd-ref-stop*
+        do (let* ((start (labels-fwd-ref-make-ring id))
+                  (f start))
+             (dotimes (k 3) (make-array 32768 :element-type '(unsigned-byte 8)))
+             (dotimes (i 400)
+               (multiple-value-bind (next x) (funcall f)
+                 (unless (and (eql x id) (functionp next))
+                   (format t "~&LABELS-FWD-REF: thread ~d: closure ~d of a ring answered ~s and ~s~%"
+                           id (mod i 200) next x)
+                   (labels-fwd-ref-exit 42))
+                 ;; A stale pointer to another closure (of this ring or
+                 ;; an older one) also answers a function and the
+                 ;; argument, but the walk then does not close after 200.
+                 (when (and (= (mod i 200) 199) (not (eq next start)))
+                   (format t "~&LABELS-FWD-REF: thread ~d: a ring did not close after ~d steps; at ~s~%"
+                           id (1+ i) next)
+                   (labels-fwd-ref-exit 42))
+                 (setq f next)))
+             (incf (svref *labels-fwd-ref-counts* id)))))
 
 (when (eql 0 (labels-fwd-ref-env "REPRO_EGC" 1))
   (ccl:egc nil))
@@ -119,10 +154,20 @@
     (ccl:process-run-function (format nil "labels-fwd-ref-~d" i)
                               (lambda () (labels-fwd-ref-worker i)))))
 
-(loop for elapsed from 5 to *labels-fwd-ref-seconds* by 5
-      do (sleep 5)
+(loop with elapsed = 0
+      while (< elapsed *labels-fwd-ref-seconds*)
+      do (let ((s (min 5 (- *labels-fwd-ref-seconds* elapsed))))
+           (sleep s)
+           (incf elapsed s))
          (format t "~&HEARTBEAT ~d s, ~d rings~%" elapsed (labels-fwd-ref-rings))
          (finish-output))
+
+;;; Stop the workers and wait for each to finish its ring before saying
+;;; clean.  A worker that finds the defect exits 42 instead, so the
+;;; process cannot exit 0 while a worker is reporting a failure.
+(setq *labels-fwd-ref-stop* t)
+(dotimes (i *labels-fwd-ref-threads*)
+  (ccl:wait-on-semaphore *labels-fwd-ref-done*))
 
 (format t "~&LABELS-FWD-REF-RESULT :RINGS ~d :SECONDS ~d~%"
         (labels-fwd-ref-rings) *labels-fwd-ref-seconds*)
