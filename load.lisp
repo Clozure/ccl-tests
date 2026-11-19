@@ -15,7 +15,8 @@
       (load "gclload2.lsp"))
     (when ccl
       (load "ccl.lsp")
-      (load "tests:ccl-tests;tests.lisp"))
+      (load "tests:ccl-tests;tests.lisp")
+      (load "tests:ccl-tests;compiler.lisp"))
     (when stress
       (load "tests:ccl-tests;stress.lisp"))))
 

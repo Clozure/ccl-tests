@@ -16,8 +16,9 @@ path to whatever ccl you want to run the tests in.
 The tests come in three groups:
 
 - `ansi-tests/gclload2.lsp` loads the ANSI compliance tests.
-- `ansi-tests/ccl.lsp` and `ccl-tests/tests.lisp` contain CCL-specific
-  tests.  New tests go in `ccl-tests/`.
+- `ansi-tests/ccl.lsp`, `ccl-tests/tests.lisp` and
+  `ccl-tests/compiler.lisp` contain CCL-specific tests.  New tests go
+  in `ccl-tests/`, compiler tests in `ccl-tests/compiler.lisp`.
 - `ccl-tests/stress.lisp` contains CCL-specific tests that take a
   while or use several threads.
 
