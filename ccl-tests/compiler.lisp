@@ -88,49 +88,80 @@
 
 ;;; %get-bit and %set-bit take a signed bit offset from the pointer, and
 ;;; bit 0 is the least significant bit of the byte at the pointer.  The
-;;; compiler open-codes constant and variable offsets differently, so
-;;; check negative offsets both ways.
-(deftest ccl.%get-bit.negative-offset
-    (let ((byte #b10100101)
-          (variable (compile nil '(lambda (p off) (ccl::%get-bit p off)))))
-      (ccl::%stack-block ((p 4))
-        (dotimes (i 4) (setf (ccl::%get-unsigned-byte p i) 0))
-        (setf (ccl::%get-unsigned-byte p 1) byte)
-        (let ((q (ccl::%inc-ptr p 2)))
-          (loop for off from -8 below 0
-                for expected = (ldb (byte 1 (+ 8 off)) byte)
-                for constant = (compile nil `(lambda (p) (ccl::%get-bit p ,off)))
-                unless (and (eql (funcall constant q) expected)
-                            (eql (funcall variable q off) expected))
-                  collect off))))
+;;; compiler open-codes constant and variable offsets and values
+;;; differently, so try each combination, at small offsets of both signs
+;;; and at byte offsets on either side of +/-4095, the largest immediate
+;;; offset some backends can encode.
+(defparameter *bit-test-offsets*
+  (append (loop for i from -16 below 16 collect i)
+          (loop for byte in '(4095 4096 5000 -4095 -4096 -5001)
+                collect (* 8 byte)
+                collect (+ 7 (* 8 byte)))))
+
+;;; The tests use a buffer of 16K bytes, and offsets relative to the
+;;; middle of it, initialized to this pattern.
+(defun bit-test-byte (i)
+  (logand #xff (* 37 (1+ i))))
+
+(defun call-with-bit-test-buffer (fn)
+  (ccl::%stack-block ((p 16384))
+    (dotimes (i 16384)
+      (setf (ccl::%get-unsigned-byte p i) (bit-test-byte i)))
+    (funcall fn p (ccl::%inc-ptr p 8192))))
+
+;;; Set the bit at OFF to the opposite of VAL, call SETTER, and check
+;;; that it returned VAL, set the bit to VAL, and changed nothing else
+;;; in the bytes around it.
+(defun bit-test-set-ok (p off val setter)
+  (let* ((target (+ 8192 (ash off -3)))
+         (bit (logand off 7)))
+    (loop for i from (- target 8) to (+ target 8)
+          do (setf (ccl::%get-unsigned-byte p i) (bit-test-byte i)))
+    (setf (ccl::%get-unsigned-byte p target)
+          (dpb (- 1 val) (byte 1 bit) (bit-test-byte target)))
+    (and (eql (funcall setter) val)
+         (loop for i from (- target 8) to (+ target 8)
+               always (eql (ccl::%get-unsigned-byte p i)
+                           (if (eql i target)
+                             (dpb val (byte 1 bit) (bit-test-byte i))
+                             (bit-test-byte i)))))))
+
+(deftest ccl.%get-bit
+    (let ((variable (compile nil '(lambda (p off) (ccl::%get-bit p off)))))
+      (call-with-bit-test-buffer
+       (lambda (p q)
+         (declare (ignore p))
+         (loop for off in *bit-test-offsets*
+               for expected = (ldb (byte 1 (logand off 7))
+                                   (bit-test-byte (+ 8192 (ash off -3))))
+               for constant = (compile nil `(lambda (p) (ccl::%get-bit p ,off)))
+               unless (and (eql (funcall constant q) expected)
+                           (eql (funcall variable q off) expected))
+                 collect off))))
   nil)
 
-(deftest ccl.%set-bit.negative-offset
-    (let ((variable (compile nil '(lambda (p off v)
-                                   (setf (ccl::%get-bit p off) v)))))
-      (ccl::%stack-block ((p 4))
-        (let ((q (ccl::%inc-ptr p 2)))
-          (loop for off from -8 below 0
-                for mask = (ash 1 (+ 8 off))
-                nconc (loop for v in '(0 1)
-                            for setters
-                              = (list (compile nil `(lambda (p)
-                                                      (setf (ccl::%get-bit p ,off) ,v)))
-                                      (compile nil `(lambda (p v)
-                                                      (setf (ccl::%get-bit p ,off) v)))
-                                      (lambda (p v) (funcall variable p off v)))
-                            nconc (loop for setter in setters
-                                        for k from 0
-                                        do (dotimes (i 4)
-                                             (setf (ccl::%get-unsigned-byte p i)
-                                                   (if (eql v 0) #xff 0)))
-                                           (if (eql k 0)
-                                             (funcall setter q)
-                                             (funcall setter q v))
-                                        unless (equal (loop for i below 4
-                                                            collect (ccl::%get-unsigned-byte p i))
-                                                      (if (eql v 0)
-                                                        (list #xff (logandc2 #xff mask) #xff #xff)
-                                                        (list 0 mask 0 0)))
-                                          collect (list off v k)))))))
+(deftest ccl.%set-bit
+    (let ((var-var (compile nil '(lambda (p off v)
+                                  (setf (ccl::%get-bit p off) v))))
+          (var-const (list (compile nil '(lambda (p off)
+                                          (setf (ccl::%get-bit p off) 0)))
+                           (compile nil '(lambda (p off)
+                                          (setf (ccl::%get-bit p off) 1))))))
+      (call-with-bit-test-buffer
+       (lambda (p q)
+         (loop for off in *bit-test-offsets*
+               for const-var = (compile nil `(lambda (p v)
+                                               (setf (ccl::%get-bit p ,off) v)))
+               nconc
+               (loop for val in '(0 1)
+                     for const-const = (compile nil `(lambda (p)
+                                                       (setf (ccl::%get-bit p ,off) ,val)))
+                     nconc
+                     (loop for (kind . setter)
+                             in (list (cons :const-const (lambda () (funcall const-const q)))
+                                      (cons :const-var (lambda () (funcall const-var q val)))
+                                      (cons :var-const (lambda () (funcall (nth val var-const) q off)))
+                                      (cons :var-var (lambda () (funcall var-var q off val))))
+                           unless (bit-test-set-ok p off val setter)
+                             collect (list kind off val)))))))
   nil)
