@@ -31,3 +31,24 @@
                         (upgraded-array-element-type type))
             collect type)
   nil)
+
+;;; TRUNCATE by a ratio whose numerator is 1 returned a temporary bignum
+;;; from the stack, so FLOOR, CEILING, ROUND, MOD and REM gave a bogus
+;;; object or a wrong value.
+(deftest ccl.issue#733
+    (let* ((tiny (/ (expt 2 70)))
+           (q (* 3 (expt 2 68)))
+           (big (expt 2 100))
+           (f (compile nil '(lambda (x y)
+                             (values nil (catch 'tag (truncate x y)))))))
+      (loop for (name got want)
+              in (list (list 'truncate (multiple-value-list (truncate 3/4 tiny)) (list q 0))
+                       (list 'floor (multiple-value-list (floor 3/4 tiny)) (list q 0))
+                       (list 'ceiling (multiple-value-list (ceiling 3/4 tiny)) (list q 0))
+                       (list 'round (multiple-value-list (round 3/4 tiny)) (list q 0))
+                       (list 'mod (mod 3/4 tiny) 0)
+                       (list 'rem (rem 3/4 tiny) 0)
+                       (list 'catch (nth-value 1 (funcall f big 1/10)) (* big 10)))
+            unless (equal got want)
+              collect name))
+  nil)
