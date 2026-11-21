@@ -37,18 +37,41 @@
 ;;; object or a wrong value.
 (deftest ccl.issue#733
     (let* ((tiny (/ (expt 2 70)))
-           (q (* 3 (expt 2 68)))
-           (big (expt 2 100))
-           (f (compile nil '(lambda (x y)
-                             (values nil (catch 'tag (truncate x y)))))))
+           (q (* 3 (expt 2 68))))
       (loop for (name got want)
-              in (list (list 'truncate (multiple-value-list (truncate 3/4 tiny)) (list q 0))
-                       (list 'floor (multiple-value-list (floor 3/4 tiny)) (list q 0))
-                       (list 'ceiling (multiple-value-list (ceiling 3/4 tiny)) (list q 0))
-                       (list 'round (multiple-value-list (round 3/4 tiny)) (list q 0))
+              in (list (list 'truncate
+                             (multiple-value-list (truncate 3/4 tiny))
+                             (list q 0))
+                       (list 'floor
+                             (multiple-value-list (floor 3/4 tiny))
+                             (list q 0))
+                       (list 'ceiling
+                             (multiple-value-list (ceiling 3/4 tiny))
+                             (list q 0))
+                       (list 'round
+                             (multiple-value-list (round 3/4 tiny))
+                             (list q 0))
                        (list 'mod (mod 3/4 tiny) 0)
-                       (list 'rem (rem 3/4 tiny) 0)
-                       (list 'catch (nth-value 1 (funcall f big 1/10)) (* big 10)))
+                       (list 'rem (rem 3/4 tiny) 0))
             unless (equal got want)
               collect name))
+  nil)
+
+;;; The same bug, for a bignum dividend (or MOST-NEGATIVE-FIXNUM, which is
+;;; handled as one).  A dangling quotient still has the right value until
+;;; something reuses its stack, so do every division before checking any
+;;; of them: each one lands where the previous one's temporary was.
+(deftest ccl.issue#733.bignum
+    (let* ((cases (list (list (expt 2 100) 10)
+                        (list (- (expt 3 70)) 7)
+                        (list (1+ (expt 2 64)) 3)
+                        (list most-negative-fixnum (expt 2 70))
+                        (list (- (expt 5 60)) 1000)
+                        (list (expt 11 40) 13)))
+           (quotients (loop for (x d) in cases
+                            collect (truncate x (/ d)))))
+      (loop for (x d) in cases
+            for got in quotients
+            unless (eql got (* x d))
+              collect x))
   nil)
