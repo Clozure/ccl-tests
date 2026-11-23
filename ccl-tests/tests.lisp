@@ -75,3 +75,16 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; CLASS-PROTOTYPE of a structure class signalled an error.
+(defstruct issue-640-a x y)
+(defstruct (issue-640-b (:include issue-640-a)) (z 3))
+
+(deftest ccl.issue#640
+    (loop for name in '(issue-640-a issue-640-b)
+          for class = (find-class name)
+          for proto = (ccl:class-prototype class)
+          collect (list (typep proto name)
+                        (eq (class-of proto) class)
+                        (eq proto (ccl:class-prototype class))))
+  ((t t t) (t t t)))
