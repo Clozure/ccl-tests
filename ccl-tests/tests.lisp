@@ -114,6 +114,40 @@
                         collect (list x y r)))
   nil)
 
+;;; Converting an integer just below 2^1024 to a double-float, or just
+;;; below 2^128 to a single-float, rounds up to 2^1024 or 2^128, which
+;;; is too big.  FLOAT returned an infinity without signaling an overflow
+;;; (it did signal one for the integer 2^1024 itself).  The integers that
+;;; round up are the ones at or above 2^1024 - 2^970 and 2^128 - 2^103;
+;;; those just below must still convert.
+(defun float-bignum-overflow-failures ()
+  (let ((mode (ccl:get-fpu-mode))
+        (failures nil))
+    (unwind-protect
+         (progn
+           (ccl:set-fpu-mode :overflow t)
+           (loop for (one digits emax) in '((1d0 53 1024) (1f0 24 128))
+                 do (let ((limit (- (expt 2 emax) (expt 2 (- emax digits 1))))
+                          (largest (- (expt 2 emax) (expt 2 (- emax digits)))))
+                      (dolist (delta (list 0 1 2 100 (expt 2 (- emax digits 2))))
+                        (progn
+                          (dolist (sign '(1 -1))
+                            (dolist (n (list (- limit delta) (+ limit delta)))
+                              (let* ((n (* sign n))
+                                     (overflow (>= (abs n) limit))
+                                     (got (handler-case (float n one)
+                                            (floating-point-overflow () :overflow))))
+                                (unless (if overflow
+                                            (eq got :overflow)
+                                            (eql got (* sign (float largest one))))
+                                  (push (list (type-of one) n got) failures))))))))))
+      (apply #'ccl:set-fpu-mode mode))
+    (nreverse failures)))
+
+(deftest ccl.float-bignum-overflow
+    (float-bignum-overflow-failures)
+  nil)
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
