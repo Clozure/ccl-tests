@@ -165,3 +165,85 @@
                            unless (bit-test-set-ok p off val setter)
                              collect (list kind off val)))))))
   nil)
+
+;;; A NaN is unordered with every number, so = is false and /= is true when
+;;; either argument is one, and ZEROP, MINUSP and PLUSP of a NaN are false.
+;;; Each is called generic and open-coded, with the NaN on either side.  The
+;;; invalid operation trap is masked, since CCL signals it for a NaN.  (The
+;;; compares of a NaN with an integer or a ratio are in
+;;; ccl.nan-rational-compare, and those with <, <=, > and >= in
+;;; ccl.nan-compare.)
+(defvar *nan-equality-zero* 0)
+
+;;; T or NIL, or :ERROR if the call signals an error.
+(defun nan-equality-value (fn &rest args)
+  (handler-case (and (apply fn args) t)
+    (error () :error)))
+
+(defun nan-equality-failures ()
+  (let* ((mode (ccl:get-fpu-mode)))
+    (unwind-protect
+         (let* ((failures nil))
+           (ccl:set-fpu-mode :invalid nil)
+           (dolist (type '(double-float single-float) failures)
+             (let* ((one (if (eq type 'double-float) 1d0 1f0))
+                    (zero (float *nan-equality-zero* one))
+                    (nan (/ zero zero))
+                    (other (list nan (- nan) one (- one) zero
+                                 (if (eq type 'double-float) 1f0 1d0))))
+               ;; (- nan) is a NaN with the opposite sign bit.
+               (dolist (n (list nan (- nan)))
+                 (dolist (y other)
+                   (dolist (op '(= /=))
+                     (let ((want (eq op '/=)))
+                       (unless (and (eq want (nan-equality-value op n y))
+                                    (eq want (nan-equality-value op y n)))
+                         (push (list type op :generic n y) failures))))))
+               (dolist (op '(= /=))
+                 (let* ((fn (compile nil
+                                     `(lambda (x y)
+                                        (declare (type ,type x y)
+                                                 (optimize (speed 3) (safety 0)))
+                                        (,op x y))))
+                        (self (compile nil
+                                       `(lambda (x)
+                                          (declare (type ,type x)
+                                                   (optimize (speed 3) (safety 0)))
+                                          (,op x x))))
+                        (want (eq op '/=)))
+                   (dolist (args (list (list nan one) (list one nan) (list nan nan)))
+                     (unless (eq want (apply #'nan-equality-value fn args))
+                       (push (list type op :open-coded) failures)))
+                   (unless (eq want (nan-equality-value self nan))
+                     (push (list type op :same-argument) failures))))
+               (dolist (n (list nan (- nan)))
+                 (when (or (nan-equality-value #'zerop n) (nan-equality-value #'minusp n)
+                           (nan-equality-value #'plusp n))
+                   (push (list type :predicate) failures))))))
+      (apply #'ccl:set-fpu-mode mode))))
+
+(deftest ccl.nan-equality
+    (nan-equality-failures)
+  nil)
+
+;;; Ordinary compares of a float with zero and with a number of another
+;;; type are the same as before.
+(deftest ccl.float-equality
+    (loop for (x y) in `((0d0 0) (-0d0 0) (0f0 0) (1d0 1) (1f0 1) (0.5d0 1/2)
+                         (1d20 ,(expt 10 20)) (-1d0 -1))
+          unless (and (= x y) (= y x) (not (/= x y)) (not (/= y x)))
+            collect (list x y))
+  nil)
+
+(deftest ccl.float-inequality
+    (loop for (x y) in `((1d0 0) (0d0 1) (1f0 2) (0.5d0 1/3) (1d0 ,(expt 10 30))
+                         (1d-300 0) (-1d0 1) (1f0 1/3))
+          unless (and (/= x y) (/= y x) (not (= x y)) (not (= y x)))
+            collect (list x y))
+  nil)
+
+(deftest ccl.float-zerop-minusp
+    (values (zerop 0d0) (zerop -0d0) (zerop 0f0) (zerop 1d-300) (zerop -1f0)
+          (minusp -1d0) (minusp -0d0) (minusp 1d0) (minusp -1f-30) (minusp -0f0)
+          (plusp 1d0) (plusp -0d0))
+  t t t nil nil t nil nil t nil t nil)
