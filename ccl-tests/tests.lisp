@@ -16,6 +16,53 @@
   character
   character)
 
+;;; (FLOAT ratio 1f0) and (FLOAT ratio 1d0) rounded the numerator and
+;;; the denominator to the format before dividing, which is not exact
+;;; when either has more bits than the format holds, and a quotient of
+;;; 2^24 or more was rounded to an integer first.  The result was off by
+;;; one ulp for a quarter of the ratios tried.  It should be the float
+;;; nearest to the ratio, which is computed here with integers.
+(defvar *float-ratio-state* 12345)
+
+(defun float-ratio-draw (bits)
+  (let ((n 0))
+    (loop while (< (integer-length n) (+ bits 8))
+          do (setq *float-ratio-state*
+                   (mod (+ (* *float-ratio-state* 6364136223846793005)
+                           1442695040888963407)
+                        (expt 2 64)))
+             (setq n (logior (ash n 32) (ldb (byte 32 32) *float-ratio-state*))))
+    (1+ (ldb (byte bits 0) n))))
+
+;;; The rational value of the float of DIGITS bits nearest to R, ties to
+;;; even, for an R in the range of normal floats.
+(defun float-ratio-nearest (r digits)
+  (let* ((a (abs r))
+         (e (- (integer-length (numerator a)) (integer-length (denominator a)))))
+    (loop while (>= a (expt 2 e)) do (incf e))
+    (loop while (< a (expt 2 (1- e))) do (decf e))
+    (let ((scale (expt 2 (- digits e))))
+      (* (signum r) (/ (round (* a scale)) scale)))))
+
+(defun float-ratio-failures ()
+  (let ((*float-ratio-state* 12345)
+        (failures nil))
+    (loop for (one digits) in '((1f0 24) (1d0 53))
+          do (loop for bits in '(20 25 30 40 60 100)
+                   do (loop repeat 300
+                            do (let ((r (/ (* (if (oddp (float-ratio-draw 8)) 1 -1)
+                                              (float-ratio-draw bits))
+                                           (float-ratio-draw bits))))
+                                 (when (and (typep r 'ratio)
+                                            (/= (rational (float r one))
+                                                (float-ratio-nearest r digits)))
+                                   (push (list (type-of one) r) failures))))))
+    (nreverse failures)))
+
+(deftest ccl.float-ratio-rounding
+    (float-ratio-failures)
+  nil)
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
