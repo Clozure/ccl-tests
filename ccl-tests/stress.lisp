@@ -408,3 +408,61 @@
     :notes :rosetta-loses-signals
     (lock-free-shrink-probe-keys)
   nil)
+
+;;; APPLY-IN-FRAME, given a backtrace context of another thread, calls
+;;; %APPLY-IN-FRAME there with PROCESS-INTERRUPT, and on x86-64
+;;; %APPLY-IN-FRAME signaled "has bitrotted".  The waiting thread is
+;;; in WAIT-TO-RETURN; the test takes the frame and context of that
+;;; function from the other thread's stack and returns 42 from it, so what
+;;; the waiting thread gets back from WAIT-TO-RETURN is 42, unless it timed
+;;; out waiting.  Each wait is at most TIMEOUT seconds.  Returns what
+;;; WAIT-TO-RETURN returned in the waiting thread, or :timeout.
+#+x8664-target
+(progn
+  (declaim (notinline wait-to-return))
+
+  (defun wait-to-return (waiting release timeout)
+    (ccl:signal-semaphore waiting)
+    (if (ccl:timed-wait-on-semaphore release timeout)
+        :released
+        :timed-out))
+
+  (defun apply-in-frame-from-second-thread (&key (timeout 2))
+    (let* ((waiting (ccl:make-semaphore))
+           (release (ccl:make-semaphore))
+           (done (ccl:make-semaphore))
+           (result :not-returned)
+           (thread (ccl:process-run-function
+                    "apply-in-frame target"
+                    (lambda ()
+                      (unwind-protect
+                           (setq result (wait-to-return waiting release timeout))
+                        (ccl:signal-semaphore done)))))
+           (frame nil)
+           (context nil))
+      (unwind-protect
+           (cond ((not (ccl:timed-wait-on-semaphore waiting timeout))
+                  :timeout)
+                 (t
+                  (ccl:map-call-frames
+                   (lambda (p c)
+                     (when (and (null frame)
+                                (eq (ccl::cfp-lfun p) #'wait-to-return))
+                       (setq frame p
+                             context c)))
+                   :process thread)
+                  (ccl:apply-in-frame frame (function values) (list 42) context)
+                  (if (ccl:timed-wait-on-semaphore done timeout)
+                      result
+                      :timeout)))
+        (ccl:signal-semaphore release)
+        (ccl:process-wait-with-timeout
+         "apply-in-frame target" (* timeout ccl:*ticks-per-second*)
+         (lambda () (ccl:process-exhausted-p thread)))
+        (unless (ccl:process-exhausted-p thread)
+          (ccl:process-kill thread)))))
+
+  (deftest ccl.issue#497.thread
+      :notes :rosetta-loses-signals
+      (apply-in-frame-from-second-thread)
+    42))
