@@ -75,3 +75,11 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; SIGNUM of a negative zero returned a positive zero.  For a zero,
+;;; SIGNUM returns its argument, so the sign of a float zero is kept.
+(deftest ccl.signum.negative-zero
+    (loop for x in (list -0.0f0 -0.0d0 0.0f0 0.0d0)
+          unless (eql (signum x) x)
+            collect x)
+  nil)
