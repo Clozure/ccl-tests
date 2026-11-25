@@ -75,3 +75,20 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; PRINC doubled a backslash in a symbol name when *PRINT-CASE* was not
+;;; the readtable case.
+(deftest ccl.issue#751
+    (flet ((pr (sym case)
+             (let ((*print-escape* nil)
+                   (*print-readably* nil)
+                   (*print-case* case))
+               (princ-to-string sym))))
+      (list (pr '|A\\b| :upcase)
+            (pr '|A\\b| :downcase)
+            (pr '|a\\b| :downcase)
+            (pr '|A\\B| :capitalize)
+            (pr '|a\\b| :capitalize)
+            (let ((*package* (symbol-package '|A\\b|)))
+              (prin1-to-string '|A\\b|))))
+  ("A\\b" "a\\b" "a\\b" "A\\B" "a\\b" "|A\\\\b|"))
