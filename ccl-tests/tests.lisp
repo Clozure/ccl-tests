@@ -204,3 +204,65 @@
                    :void)
       *issue#735-args*)
   (1 2 3 4 5 6 7 8 -9 -1000 100000 -10000000000 11 65000))
+
+;;; On darwinarm64 a single-float HFA that does not fit in the
+;;; remaining v registers goes on the stack at 4-byte alignment and its
+;;; own size, not in 8-byte slots as in AAPCS64.  The callback here
+;;; takes the same bytes as separate single-floats, which Darwin also
+;;; packs at 4 bytes each: p, the HFA's members and z land at stack
+;;; offsets 0, 4, 8, ... in both cases.
+#+darwinarm64-target
+(progn
+(ccl:def-foreign-type nil
+    (:struct :ccl-test-float3
+      (:a :float)
+      (:b :float)
+      (:c :float)))
+
+(defvar *ccl-test-stacked-float-args* nil)
+
+(ccl:defcallback ccl-test-stacked-floats-callback
+    (:single-float f0 :single-float f1 :single-float f2 :single-float f3
+     :single-float f4 :single-float f5 :single-float f6 :single-float f7
+     :single-float p :single-float a :single-float b :single-float c
+     :single-float z :void)
+  (setq *ccl-test-stacked-float-args*
+        (list f0 f1 f2 f3 f4 f5 f6 f7 p a b c z)))
+
+;;; Eight floats fill s0-s7, then p, the HFA and z go on the stack.
+(deftest ccl.ff-call.stacked-float-hfa
+    (ccl:rlet ((h :ccl-test-float3 :a 31f0 :b 32f0 :c 33f0))
+      (setq *ccl-test-stacked-float-args* nil)
+      (ccl:ff-call ccl-test-stacked-floats-callback
+                   :single-float 1f0 :single-float 2f0 :single-float 3f0
+                   :single-float 4f0 :single-float 5f0 :single-float 6f0
+                   :single-float 7f0 :single-float 8f0
+                   :single-float 9f0 (:struct :ccl-test-float3) h
+                   :single-float 10f0 :void)
+      *ccl-test-stacked-float-args*)
+  (1f0 2f0 3f0 4f0 5f0 6f0 7f0 8f0 9f0 31f0 32f0 33f0 10f0))
+
+;;; Six floats leave two v registers, too few for the three-member HFA,
+;;; so it goes on the stack, s6 and s7 are left unused (AAPCS64 C.3),
+;;; and z follows the HFA on the stack.  The callback names s6 and s7
+;;; as g6 and g7 and ignores them.
+(defvar *ccl-test-stacked-float-args-2* nil)
+
+(ccl:defcallback ccl-test-stacked-floats-callback-2
+    (:single-float f0 :single-float f1 :single-float f2 :single-float f3
+     :single-float f4 :single-float f5 :single-float g6 :single-float g7
+     :single-float a :single-float b :single-float c :single-float z :void)
+  (declare (ignore g6 g7))
+  (setq *ccl-test-stacked-float-args-2* (list f0 f1 f2 f3 f4 f5 a b c z)))
+
+(deftest ccl.ff-call.stacked-float-hfa-wastes-v-registers
+    (ccl:rlet ((h :ccl-test-float3 :a 31f0 :b 32f0 :c 33f0))
+      (setq *ccl-test-stacked-float-args-2* nil)
+      (ccl:ff-call ccl-test-stacked-floats-callback-2
+                   :single-float 1f0 :single-float 2f0 :single-float 3f0
+                   :single-float 4f0 :single-float 5f0 :single-float 6f0
+                   (:struct :ccl-test-float3) h
+                   :single-float 10f0 :void)
+      *ccl-test-stacked-float-args-2*)
+  (1f0 2f0 3f0 4f0 5f0 6f0 31f0 32f0 33f0 10f0))
+)
