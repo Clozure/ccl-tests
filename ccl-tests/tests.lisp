@@ -16,23 +16,13 @@
   character
   character)
 
-;;; (FLOAT ratio 1f0) and (FLOAT ratio 1d0) rounded the numerator and
-;;; the denominator to the format before dividing, which is not exact
-;;; when either has more bits than the format holds, and a quotient of
-;;; 2^24 or more was rounded to an integer first.  The result was off by
-;;; one ulp for a quarter of the ratios tried.  It should be the float
-;;; nearest to the ratio, which is computed here with integers.
-(defvar *float-ratio-state* 12345)
-
-(defun float-ratio-draw (bits)
-  (let ((n 0))
-    (loop while (< (integer-length n) (+ bits 8))
-          do (setq *float-ratio-state*
-                   (mod (+ (* *float-ratio-state* 6364136223846793005)
-                           1442695040888963407)
-                        (expt 2 64)))
-             (setq n (logior (ash n 32) (ldb (byte 32 32) *float-ratio-state*))))
-    (1+ (ldb (byte bits 0) n))))
+;;; (FLOAT ratio 1f0) and (FLOAT ratio 1d0) should return the float
+;;; nearest to the ratio, ties to even.  They rounded the numerator and
+;;; the denominator to the format before dividing, and rounded a large
+;;; quotient to an integer before converting it.  Each test below takes
+;;; one family of ratios aimed at one such mistake, and compares each
+;;; ratio and its negation with the nearest float computed with
+;;; integers.
 
 ;;; The rational value of the float of DIGITS bits nearest to R, ties to
 ;;; even, for an R in the range of normal floats.
@@ -44,23 +34,65 @@
     (let ((scale (expt 2 (- digits e))))
       (* (signum r) (/ (round (* a scale)) scale)))))
 
-(defun float-ratio-failures ()
-  (let ((*float-ratio-state* 12345)
-        (failures nil))
-    (loop for (one digits) in '((1f0 24) (1d0 53))
-          do (loop for bits in '(20 25 30 40 60 100)
-                   do (loop repeat 300
-                            do (let ((r (/ (* (if (oddp (float-ratio-draw 8)) 1 -1)
-                                              (float-ratio-draw bits))
-                                           (float-ratio-draw bits))))
-                                 (when (and (typep r 'ratio)
-                                            (/= (rational (float r one))
-                                                (float-ratio-nearest r digits)))
-                                   (push (list (type-of one) r) failures))))))
-    (nreverse failures)))
+;;; The ratios among RATIOS, and their negations, that (FLOAT r ONE)
+;;; does not convert to the nearest float of DIGITS bits.
+(defun float-ratio-failures (one digits ratios)
+  (loop for r in ratios
+        nconc (loop for x in (list r (- r))
+                    unless (= (rational (float x one))
+                              (float-ratio-nearest x digits))
+                      collect x)))
 
-(deftest ccl.float-ratio-rounding
-    (float-ratio-failures)
+;;; The case that was reported.
+(deftest ccl.float-ratio-rounding.reported
+    (float 6069/26411177 1f0)
+  2.2978908e-4)
+
+;;; A numerator and a denominator wider than the significand, which are
+;;; not exact in the format.  Rounding each of them and then the
+;;; quotient got about a quarter of these wrong.
+(deftest ccl.float-ratio-rounding.wide-parts
+    (append (float-ratio-failures 1f0 24
+                                  (loop for i from 1 to 200
+                                        collect (/ (+ (expt 2 24) i)
+                                                   (expt 3 17))))
+            (float-ratio-failures 1d0 53
+                                  (loop for i from 1 to 200
+                                        collect (/ (+ (expt 2 60) i)
+                                                   (expt 3 37)))))
+  nil)
+
+;;; Quotients near 2^70, each 1/3 above the halfway point between a
+;;; float with an even significand and the next float up, so that the
+;;; upper one is nearest.  Rounding to an integer first lands exactly
+;;; on the halfway point, and the tie then goes to the even one, which
+;;; is wrong for all of these.
+(defun float-ratio-above-ties (digits)
+  (let ((ulp (expt 2 (- 71 digits))))
+    (loop for m below 100
+          collect (+ (expt 2 70) (* 2 m ulp) (/ ulp 2) 1/3))))
+
+(deftest ccl.float-ratio-rounding.above-ties
+    (append (float-ratio-failures 1f0 24 (float-ratio-above-ties 24))
+            (float-ratio-failures 1d0 53 (float-ratio-above-ties 53)))
+  nil)
+
+;;; Ratios within a few units of a power of two over a power of two.
+;;; Rounding such a quotient can carry it into the next binade, as with
+;;; (2^61-1)/(2^60+1), whose nearest double is 2.0d0; a conversion that
+;;; doesn't allow for the carry gets 1.0d0.  The negations include
+;;; numerators that are negative powers of two, whose INTEGER-LENGTH is
+;;; one less than that of their absolute value.
+(defun float-ratio-near-powers-of-two ()
+  (loop for (a b) in '((31 30) (40 40) (61 60) (80 80) (120 50) (50 120))
+        nconc (loop for k from -2 to 2
+                    nconc (loop for j from -2 to 2
+                                collect (/ (+ (expt 2 a) k)
+                                           (+ (expt 2 b) j))))))
+
+(deftest ccl.float-ratio-rounding.boundary
+    (append (float-ratio-failures 1f0 24 (float-ratio-near-powers-of-two))
+            (float-ratio-failures 1d0 53 (float-ratio-near-powers-of-two)))
   nil)
 
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
