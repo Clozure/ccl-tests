@@ -75,3 +75,24 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; An integer that rounds up to 2^1024 (or 2^128) became an infinity
+;;; instead of signalling FLOATING-POINT-OVERFLOW.
+(deftest ccl.issue#748
+    (loop for (x proto) in (list (list (- (expt 2 1024) (expt 2 970)) 0d0)
+                                 (list (1- (expt 2 1024)) 0d0)
+                                 (list (- 1 (expt 2 1024)) 0d0)
+                                 (list (- (expt 2 1024) (/ (expt 2 970) 3)) 0d0)
+                                 (list (1- (expt 2 128)) 1f0)
+                                 (list (- 1 (expt 2 128)) 1f0))
+          unless (eq :overflow
+                     (handler-case (float x proto)
+                       (floating-point-overflow () :overflow)))
+            collect (list x proto))
+  nil)
+
+;;; The largest finite values must still convert.
+(deftest ccl.issue#748.finite
+    (list (float (+ 1 (- (expt 2 1024) (expt 2 971))) 0d0)
+          (float (- (expt 2 128) (expt 2 104)) 1f0))
+  (#.most-positive-double-float #.most-positive-single-float))
