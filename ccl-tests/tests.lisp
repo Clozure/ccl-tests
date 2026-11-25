@@ -75,3 +75,20 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; (MEMBER #c(1 2)) also held other complex numbers.
+(deftest ccl.issue#749
+    (list (typep #c(1 1) '(member #c(1 2)))
+          (typep #c(1 1) '(eql #c(1 2)))
+          (typep #c(2 1) '(member #c(1 2)))
+          (typep #c(1.0 1.0) '(member #c(1.0 2.0)))
+          (typep #c(1 2) '(member #c(1 2)))
+          (typep #c(1 1) '(and (member #c(1 1)) (not (member #c(1 2)))))
+          (multiple-value-list (subtypep '(member #c(1 1)) '(member #c(1 2))))
+          (funcall (compile nil '(lambda (x)
+                                  (declare (type (and (member #c(1 1))
+                                                      (not (member #c(1 2))))
+                                                 x))
+                                  (if (eql x #c(1 1)) 'yes 'no)))
+                   #c(1 1)))
+  (nil nil nil nil t t (nil t) yes))
