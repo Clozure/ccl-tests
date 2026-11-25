@@ -165,3 +165,65 @@
                            unless (bit-test-set-ok p off val setter)
                              collect (list kind off val)))))))
   nil)
+
+;;; SBIT and (SETF SBIT) at constant indices (#755).  A backend accesses
+;;; bits at small constant indices with an immediate offset, and at
+;;; larger ones by computing the offset of the containing word at
+;;; compile time; try indices on both sides of where each backend
+;;; switches, with the index loaded into a register (safety 1) and not
+;;; (safety 0), and compare against a variable index.
+(defparameter *sbit-test-indices*
+  (append (loop for i from 0 below 34 collect i)
+          (loop for i from 32760 below 32800 collect i)
+          (loop for i in '(130975 130976 130977 131103 131104 131105
+                           262143 262144 1048479 1048480 1048481)
+                collect i)))
+
+(defun sbit-test-vector ()
+  (let ((v (make-array 1048576 :element-type 'bit)))
+    (dotimes (i (length v) v)
+      (setf (sbit v i) (logand 1 (logcount (* 37 (1+ i))))))))
+
+(deftest ccl.sbit.constant-index
+    (let ((v (sbit-test-vector)))
+      (loop for k in *sbit-test-indices*
+            nconc
+            (loop for safety in '(0 1)
+                  for reader = (compile nil `(lambda (v)
+                                               (declare (simple-bit-vector v)
+                                                        (optimize (speed 3) (safety ,safety)))
+                                               (sbit v ,k)))
+                  nconc
+                  (loop for val in '(0 1)
+                        do (setf (sbit v k) val)
+                        unless (eql (funcall reader v) val)
+                          collect (list :read k safety val)))))
+  nil)
+
+(deftest ccl.setf-sbit.constant-index
+    (let* ((v (sbit-test-vector))
+           (expected (copy-seq v)))
+      (loop for k in *sbit-test-indices*
+            nconc
+            (loop for safety in '(0 1)
+                  nconc
+                  (loop for val in '(0 1)
+                        for const = (compile nil `(lambda (v)
+                                                    (declare (simple-bit-vector v)
+                                                             (optimize (speed 3) (safety ,safety)))
+                                                    (setf (sbit v ,k) ,val)))
+                        for var = (compile nil `(lambda (v x)
+                                                  (declare (simple-bit-vector v) (bit x)
+                                                           (optimize (speed 3) (safety ,safety)))
+                                                  (setf (sbit v ,k) x)))
+                        nconc
+                        (loop for (kind . setter)
+                                in (list (cons :const (lambda () (funcall const v)))
+                                         (cons :var (lambda () (funcall var v val))))
+                              do (setf (sbit v k) (- 1 val)
+                                       (sbit expected k) val)
+                              unless (and (eql (funcall setter) val)
+                                          (equal v expected))
+                                collect (list kind k safety val)
+                              do (replace v expected))))))
+  nil)
