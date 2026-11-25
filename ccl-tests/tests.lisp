@@ -75,3 +75,22 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; A local inline function was replaced by a global inline function of
+;;; the same name.
+(declaim (inline issue-750-foo))
+(defun issue-750-foo (x) (cons 'global x))
+
+(deftest ccl.issue#750
+    (list (funcall (compile nil '(lambda (x)
+                                  (flet ((issue-750-foo (y) (cons 'local y)))
+                                    (declare (inline issue-750-foo))
+                                    (issue-750-foo x))))
+                   1)
+          (funcall (compile nil '(lambda (x)
+                                  (labels ((issue-750-foo (y) (cons 'local y)))
+                                    (declare (inline issue-750-foo))
+                                    (issue-750-foo (issue-750-foo x)))))
+                   1)
+          (funcall (compile nil '(lambda (x) (issue-750-foo x))) 1))
+  ((local . 1) (local local . 1) (global . 1)))
