@@ -155,6 +155,130 @@
               collect x))
   nil)
 
+;;; ARGLIST of an ordinary function rebuilt the lambda list from the
+;;; compiled code: no defaults, no supplied-p variables, no &AUX, and
+;;; the keyword names for &KEY (:DEE for ((:dee d) 4)).  A macro's
+;;; lambda list was kept as written.  DEFUN now keeps it too, with the
+;;; function, so that it follows the function through COMPILE-FILE and
+;;; LOAD and goes away when the function is replaced.  The functions
+;;; below are all defined without *SAVE-DEFINITIONS*.
+
+;;; Defined by evaluating DEFUN, which compiles it in memory.
+(deftest ccl.defun-arglist.eval
+    (let ((ccl:*save-definitions* nil))
+      (eval '(defun ccl.defun-arglist.eval-fn
+              (a &optional (b 10 b-p) &rest r
+               &key (c 3) ((:dee d) 4) e &allow-other-keys &aux (z 1))
+              (list a b b-p r c d e z)))
+      (values (ccl:arglist 'ccl.defun-arglist.eval-fn)
+              (ccl:arglist #'ccl.defun-arglist.eval-fn)
+              (and (nth-value 1 (ccl:arglist 'ccl.defun-arglist.eval-fn)) t)))
+  (a &optional (b 10 b-p) &rest r
+   &key (c 3) ((:dee d) 4) e &allow-other-keys &aux (z 1))
+  (a &optional (b 10 b-p) &rest r
+   &key (c 3) ((:dee d) 4) e &allow-other-keys &aux (z 1))
+  t)
+
+;;; Defined in a file that is compiled and then loaded.
+(deftest ccl.defun-arglist.compile-file
+    (let* ((file (test-source-file "(in-package :cl-test)
+(defun ccl.defun-arglist.file-fn
+    (a &optional (b 10 b-p) &rest r
+     &key (c 3) ((:dee d) 4) e &allow-other-keys &aux (z 1))
+  (list a b b-p r c d e z))
+(defun ccl.defun-arglist.file-fn-2 () nil)
+(defun ccl.defun-arglist.file-fn-3 (&key x ((:why y)) (z 1 z-p))
+  (list x y z z-p))"))
+           (fasl (let ((ccl:*fasl-save-definitions* nil))
+                   (test-compile file :hide-warnings t))))
+      (load fasl)
+      (values (ccl:arglist 'ccl.defun-arglist.file-fn)
+              (ccl:arglist 'ccl.defun-arglist.file-fn-2)
+              (ccl:arglist 'ccl.defun-arglist.file-fn-3)))
+  (a &optional (b 10 b-p) &rest r
+   &key (c 3) ((:dee d) 4) e &allow-other-keys &aux (z 1))
+  nil
+  (&key x ((:why y)) (z 1 z-p)))
+
+(deftest ccl.defun-arglist.setf
+    (progn
+      (eval '(defun (setf ccl.defun-arglist.setf-fn)
+              (value object &optional (index 0 index-p) &key (test #'eql))
+              (list value object index index-p test)))
+      (values (ccl:arglist '(setf ccl.defun-arglist.setf-fn))))
+  (value object &optional (index 0 index-p) &key (test #'eql)))
+
+;;; The function is closed over a variable.
+(deftest ccl.defun-arglist.closure
+    (progn
+      (eval '(let ((n 5))
+              (defun ccl.defun-arglist.closure-fn (a &optional (b n b-p))
+                (list a b b-p n))))
+      (values (ccl:arglist 'ccl.defun-arglist.closure-fn)
+              (ccl.defun-arglist.closure-fn 1)))
+  (a &optional (b n b-p))
+  (1 5 nil 5))
+
+;;; The function is inline: the call is expanded, and ARGLIST still
+;;; answers.
+(deftest ccl.defun-arglist.inline
+    (progn
+      (eval '(declaim (inline ccl.defun-arglist.inline-fn)))
+      (eval '(defun ccl.defun-arglist.inline-fn (a &optional (b 2))
+              (list a b)))
+      (values (ccl:arglist 'ccl.defun-arglist.inline-fn)
+              (funcall (compile nil '(lambda (x)
+                                      (ccl.defun-arglist.inline-fn x)))
+                       1)))
+  (a &optional (b 2))
+  (1 2))
+
+;;; A new DEFUN replaces the lambda list, whether it is evaluated or
+;;; loaded from a file.
+(deftest ccl.defun-arglist.redefine
+    (let ((file (test-source-file "(in-package :cl-test)
+(defun ccl.defun-arglist.redefined-fn (p &optional (q 3 q-p))
+  (list p q q-p))"))
+          (name 'ccl.defun-arglist.redefined-fn))
+      (eval `(defun ,name (a) a))
+      (let ((first (values (ccl:arglist name))))
+        (load (test-compile file :hide-warnings t))
+        (let ((second (values (ccl:arglist name))))
+          (eval `(defun ,name (&key (m 1)) m))
+          (list first second (values (ccl:arglist name))))))
+  ((a) (p &optional (q 3 q-p)) (&key (m 1))))
+
+;;; A function that replaces a DEFUN some other way has no recorded
+;;; lambda list, so ARGLIST must rebuild it from the new function and
+;;; not return the old one.
+(deftest ccl.defun-arglist.replaced
+    (let ((name 'ccl.defun-arglist.replaced-fn))
+      (eval `(defun ,name (a &optional (b 1 b-p)) (list a b b-p)))
+      (let ((original (values (ccl:arglist name))))
+        (compile name '(lambda (p &optional q) (list p q)))
+        (let ((compiled (values (ccl:arglist name))))
+          (setf (fdefinition name)
+                (compile nil '(lambda (m &optional n) (list m n))))
+          (list original compiled (values (ccl:arglist name))))))
+  ((a &optional (b 1 b-p)) (p &optional q) (m &optional n)))
+
+;;; *SAVE-ARGLIST-INFO* turns it off.
+(deftest ccl.defun-arglist.save-arglist-info-nil
+    (let ((ccl:*save-arglist-info* nil))
+      (eval '(defun ccl.defun-arglist.unsaved-fn (a &optional (b 1 b-p))
+              (list a b b-p)))
+      (values (ccl:arglist 'ccl.defun-arglist.unsaved-fn)))
+  (a &optional b))
+
+;;; A generic function reports its own lambda list, as before.
+(deftest ccl.defun-arglist.generic-function
+    (progn
+      (eval '(defgeneric ccl.defun-arglist.gf (a &optional b)))
+      (eval '(defmethod ccl.defun-arglist.gf ((a integer) &optional (b 2))
+              (list a b)))
+      (values (ccl:arglist 'ccl.defun-arglist.gf)))
+  (a &optional b))
+
 ;;; A callback whose arguments do not all fit in registers reads the rest
 ;;; from its caller's stack.  Darwin/arm64 packs stack arguments at their
 ;;; natural size (4 bytes for a single-float, 1 for a char), but callbacks
