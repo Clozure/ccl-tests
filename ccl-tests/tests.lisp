@@ -266,3 +266,200 @@
       *ccl-test-stacked-float-args-2*)
   (1f0 2f0 3f0 4f0 5f0 6f0 31f0 32f0 33f0 10f0))
 )
+
+;;; The expander of a compiler macro, a type, a long-form DEFSETF or a
+;;; DEFINE-SETF-EXPANDER, and the expander of a long-form
+;;; DEFINE-METHOD-COMBINATION, are functions of fixed arguments
+;;; (WHOLE ENVIRONMENT, and so on), so ARGLIST of them gave the
+;;; names of those, and the lambda list the user wrote was lost.  Each
+;;; definer now keeps it with the expander, as DEFUN does for a function
+;;; (see ccl.defun-arglist.*).  Where to find each expander:
+;;;   compiler macro    (compiler-macro-function name)
+;;;   type              (ccl::%deftype-expander name)
+;;;   defsetf, define-setf-expander
+;;;                     (ccl::%setf-method name)
+;;;   method combination, long form
+;;;                     (cdr (ccl::mci.options (ccl::method-combination-info name)))
+
+(defun definer-arglists-forms (prefix)
+  "Definitions of the five kinds, with names starting with PREFIX, as a list of forms."
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    `((define-compiler-macro ,(name "cm")
+          (&whole form a &optional (b 2 b-p) &rest r &key (c 3) ((:dee d) 4)
+           &allow-other-keys &environment env &aux (z 1))
+        (list a b env b-p r c d z)
+        form)
+      (deftype ,(name "ty") (a &optional (b 3 b-p) &rest r &key (c 4) &aux (z 5))
+        (list b b-p r c z)
+        (list 'integer a))
+      (defsetf ,(name "acc") (a &optional (b 2) &key (c 3)) (v)
+        `(list ,a ,b ,c ,v))
+      (define-setf-expander ,(name "expander")
+          (a &optional (b 2 b-p) &key (c 3) &environment env)
+        (list a b b-p c env)
+        (values nil nil (list (gensym)) nil nil))
+      (define-method-combination ,(name "mc")
+          (&optional (order :most-specific-first order-p) &key (extra 1))
+          ((methods ()))
+        (list order order-p extra)
+        `(call-method ,(first methods))))))
+
+(defun definer-arglists-results (prefix)
+  "The lambda lists ARGLIST finds for the definitions made by DEFINER-ARGLISTS-FORMS."
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    (list (values (ccl:arglist (compiler-macro-function (name "cm"))))
+          (values (ccl:arglist (ccl::%deftype-expander (name "ty"))))
+          (values (ccl:arglist (ccl::%setf-method (name "acc"))))
+          (values (ccl:arglist (ccl::%setf-method (name "expander"))))
+          (values (ccl:arglist
+                   (cdr (ccl::mci.options
+                         (ccl::method-combination-info (name "mc")))))))))
+
+;;; Defined by evaluating the definitions.
+(deftest ccl.definer-arglists.eval
+    (progn
+      (dolist (form (definer-arglists-forms "ccl.definer-arglists.eval"))
+        (eval form))
+      (definer-arglists-results "ccl.definer-arglists.eval"))
+  ((&whole form a &optional (b 2 b-p) &rest r &key (c 3) ((:dee d) 4)
+    &allow-other-keys &environment env &aux (z 1))
+   (a &optional (b 3 b-p) &rest r &key (c 4) &aux (z 5))
+   (a &optional (b 2) &key (c 3))
+   (a &optional (b 2 b-p) &key (c 3) &environment env)
+   (&optional (order :most-specific-first order-p) &key (extra 1))))
+
+;;; Defined in a file that is compiled and then loaded.
+(deftest ccl.definer-arglists.compile-file
+    (let* ((file (test-source-file
+                  "(in-package :cl-test)~%~{~s~%~}"
+                  (definer-arglists-forms "ccl.definer-arglists.file")))
+           (fasl (let ((ccl:*fasl-save-definitions* nil))
+                   (test-compile file :hide-warnings t))))
+      (load fasl)
+      (definer-arglists-results "ccl.definer-arglists.file"))
+  ((&whole form a &optional (b 2 b-p) &rest r &key (c 3) ((:dee d) 4)
+    &allow-other-keys &environment env &aux (z 1))
+   (a &optional (b 3 b-p) &rest r &key (c 4) &aux (z 5))
+   (a &optional (b 2) &key (c 3))
+   (a &optional (b 2 b-p) &key (c 3) &environment env)
+   (&optional (order :most-specific-first order-p) &key (extra 1))))
+
+;;; The type, the setf expanders and the method combination still work.
+(deftest ccl.definer-arglists.expansions
+    (progn
+      (dolist (form (definer-arglists-forms "ccl.definer-arglists.use"))
+        (eval form))
+      (eval '(defgeneric ccl.definer-arglists.use.gf (x)
+              (:method-combination ccl.definer-arglists.use.mc)))
+      (eval '(defmethod ccl.definer-arglists.use.gf (x) (list x)))
+      (values
+       (list (typep 8 '(ccl.definer-arglists.use.ty 7))
+             (typep 6 '(ccl.definer-arglists.use.ty 7)))
+       (funcall (compile nil '(lambda ()
+                               (setf (ccl.definer-arglists.use.acc 1 2 :c 3) 4))))
+       (funcall (compile nil '(lambda ()
+                               (setf (ccl.definer-arglists.use.expander 1) 5))))
+       (ccl.definer-arglists.use.gf 6)))
+  (t nil)
+  (1 2 3 4)
+  nil
+  (6))
+
+;;; *SAVE-ARGLIST-INFO* turns it off, when the definition is expanded:
+;;; ARGLIST then rebuilds the lambda list of the expander, as before.
+(deftest ccl.definer-arglists.save-arglist-info-nil
+    (let ((ccl:*save-arglist-info* nil))
+      (dolist (form (definer-arglists-forms "ccl.definer-arglists.unsaved"))
+        (eval form))
+      (let ((results (definer-arglists-results "ccl.definer-arglists.unsaved")))
+        (every (lambda (lambda-list)
+                 (every (lambda (x) (and (symbolp x) (null (symbol-package x))))
+                        lambda-list))
+               results)))
+  t)
+
+;;; The short form of DEFINE-METHOD-COMBINATION has no lambda list; its
+;;; options are kept as written, and still are.
+(deftest ccl.definer-arglists.short-method-combination
+    (progn
+      (eval '(define-method-combination ccl.definer-arglists.short-mc
+              :operator + :identity-with-one-argument t
+              :documentation "A short method combination."))
+      (values (ccl::mci.options
+               (ccl::method-combination-info 'ccl.definer-arglists.short-mc))
+              (documentation 'ccl.definer-arglists.short-mc 'method-combination)))
+  (:operator + :identity-with-one-argument t
+   :documentation "A short method combination.")
+  "A short method combination.")
+
+;;; The docstring of a compiler macro and of a long-form DEFSETF was
+;;; dropped (DOCUMENTATION returned NIL for 'COMPILER-MACRO and for
+;;; 'SETF); those of DEFINE-SETF-EXPANDER and DEFTYPE were kept.
+
+(defun definer-docstrings-forms (prefix)
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    `((define-compiler-macro ,(name "cm") (a)
+        "Compiler macro doc."
+        a)
+      (define-compiler-macro (setf ,(name "cm")) (value a)
+        "Setf compiler macro doc."
+        (list value a))
+      (deftype ,(name "ty") (a)
+        "Type doc."
+        (list 'integer a))
+      (defsetf ,(name "acc") (a) (v)
+        "Long defsetf doc."
+        `(list ,a ,v))
+      (define-setf-expander ,(name "expander") (a)
+        "Expander doc."
+        (list a)
+        (values nil nil (list (gensym)) nil nil)))))
+
+(defun definer-docstrings-results (prefix)
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    (list (documentation (name "cm") 'compiler-macro)
+          (documentation `(setf ,(name "cm")) 'compiler-macro)
+          (documentation (name "ty") 'type)
+          (documentation (name "acc") 'setf)
+          (documentation (name "expander") 'setf))))
+
+(deftest ccl.definer-docstrings.eval
+    (progn
+      (dolist (form (definer-docstrings-forms "ccl.definer-docstrings.eval"))
+        (eval form))
+      (definer-docstrings-results "ccl.definer-docstrings.eval"))
+  ("Compiler macro doc." "Setf compiler macro doc." "Type doc."
+   "Long defsetf doc." "Expander doc."))
+
+(deftest ccl.definer-docstrings.compile-file
+    (let* ((file (test-source-file
+                  "(in-package :cl-test)~%~{~s~%~}"
+                  (definer-docstrings-forms "ccl.definer-docstrings.file")))
+           (fasl (test-compile file :hide-warnings t)))
+      (load fasl)
+      (definer-docstrings-results "ccl.definer-docstrings.file"))
+  ("Compiler macro doc." "Setf compiler macro doc." "Type doc."
+   "Long defsetf doc." "Expander doc."))
+
+;;; The docstring is not a form of the body: DEFSETF still returns the
+;;; name and the update form still works, and a body that is only a
+;;; string is not taken for a docstring.
+(deftest ccl.definer-docstrings.not-a-body-form
+    (progn
+      (eval '(defsetf ccl.definer-docstrings.body-acc (a) (v)
+              "Doc." `(list ,a ,v)))
+      (eval '(defsetf ccl.definer-docstrings.string-acc (a) (v) "just a string"))
+      (values (eval '(defsetf ccl.definer-docstrings.value-acc (a) (v) "Doc."
+                      `(list ,a ,v)))
+              (documentation 'ccl.definer-docstrings.body-acc 'setf)
+              (documentation 'ccl.definer-docstrings.string-acc 'setf)
+              (funcall (compile nil '(lambda ()
+                                      (setf (ccl.definer-docstrings.body-acc 1) 2))))))
+  ccl.definer-docstrings.value-acc
+  "Doc."
+  nil
+  (1 2))
