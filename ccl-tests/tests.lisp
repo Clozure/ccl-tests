@@ -95,6 +95,78 @@
             (float-ratio-failures 1d0 53 (float-ratio-near-powers-of-two)))
   nil)
 
+;;; The short form of DEFSETF recorded no source location, so
+;;; FIND-DEFINITION-SOURCES found nothing for its setf expander, though
+;;; the long form and DEFINE-SETF-EXPANDER did.
+(defun short-defsetf-source-forms (prefix)
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    `((defun ,(name "get") (x) (car x))
+      (defun ,(name "set") (x v) (setf (car x) v))
+      (defun ,(name "get2") (x) (car x))
+      (defsetf ,(name "get") ,(name "set"))
+      (defsetf ,(name "get2") ,(name "set") "Short doc.")
+      (defun ,(name "get3") (x) (car x))
+      (defsetf ,(name "get3") (x) (v) `(setf (car ,x) ,v))
+      (defun ,(name "get4") (x) (car x))
+      (define-setf-expander ,(name "get4") (x)
+        (declare (ignore x))
+        (values nil nil (list (gensym)) nil nil)))))
+
+(defun short-defsetf-source-results (prefix file)
+  "For each setf expander made by SHORT-DEFSETF-SOURCE-FORMS: the number of
+sources FIND-DEFINITION-SOURCES gives for it, and whether the first is FILE."
+  (flet ((name (suffix)
+           (intern (string-upcase (format nil "~a.~a" prefix suffix)) :cl-test)))
+    (loop for suffix in '("get" "get2" "get3" "get4")
+          for sources = (ccl:find-definition-sources (name suffix)
+                                                     'ccl::setf-expander)
+          collect (list (length sources)
+                        (and sources
+                             (equal (truename (ccl:source-note-filename
+                                               (cadar sources)))
+                                    file))))))
+
+;;; Defined in a file that is compiled and then loaded.
+(deftest ccl.short-defsetf-source.compile-file
+    (let* ((prefix "ccl.short-defsetf-source.file")
+           (file (test-source-file
+                  "(in-package :cl-test)~%~{~s~%~}"
+                  (short-defsetf-source-forms prefix)))
+           (fasl (test-compile file :hide-warnings t)))
+      (load fasl)
+      (short-defsetf-source-results prefix file))
+  ((1 t) (1 t) (1 t) (1 t)))
+
+;;; Defined by loading the source file.
+(deftest ccl.short-defsetf-source.load-source
+    (let* ((prefix "ccl.short-defsetf-source.src")
+           (file (test-source-file
+                  "(in-package :cl-test)~%~{~s~%~}"
+                  (short-defsetf-source-forms prefix))))
+      (load file)
+      (short-defsetf-source-results prefix file))
+  ((1 t) (1 t) (1 t) (1 t)))
+
+;;; The docstring of a short DEFSETF is kept, and the expanders work.
+(deftest ccl.short-defsetf-source.docstring-and-use
+    (let* ((prefix "ccl.short-defsetf-source.use")
+           (file (test-source-file
+                  "(in-package :cl-test)~%~{~s~%~}"
+                  (short-defsetf-source-forms prefix))))
+      (load (test-compile file :hide-warnings t))
+      (flet ((name (suffix)
+               (intern (string-upcase (format nil "~a.~a" prefix suffix))
+                       :cl-test)))
+        (values
+         (documentation (name "get") 'setf)
+         (documentation (name "get2") 'setf)
+         (let ((cell (list 1)))
+           (eval `(setf (,(name "get") ',cell) 2))
+           (eval `(setf (,(name "get2") ',cell) (1+ (,(name "get2") ',cell))))
+           cell))))
+  nil "Short doc." (3))
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
