@@ -205,6 +205,97 @@
       *issue#735-args*)
   (1 2 3 4 5 6 7 8 -9 -1000 100000 -10000000000 11 65000))
 
+;;; Parsing a type that combined a MEMBER type with (SATISFIES P) called
+;;; P on the members and kept the answers in the parsed type, which is
+;;; cached.  After P was redefined, TYPEP, UPGRADED-ARRAY-ELEMENT-TYPE
+;;; and compiled code still followed the old P.  Each test parses its
+;;; type while the old P is defined, then redefines P.  The types are in
+;;; variables so that TYPEP looks them up at run time.
+
+(defparameter *issue#754-type* '(and (or null bit) (satisfies issue#754-p1)))
+
+(deftest ccl.issue#754
+    (progn
+      (setf (fdefinition 'issue#754-p1) #'integerp)
+      (typep nil *issue#754-type*)
+      (setf (fdefinition 'issue#754-p1)
+            (lambda (x) (or (null x) (integerp x))))
+      (values (typep nil *issue#754-type*)
+              (upgraded-array-element-type *issue#754-type*)))
+  t
+  t)
+
+;;; The same, for a union: (OR NULL (SATISFIES P)) was parsed as
+;;; (SATISFIES P) when P accepted NIL.
+(defparameter *issue#754-union-type* '(or null (satisfies issue#754-p2)))
+
+(deftest ccl.issue#754.union
+    (progn
+      (setf (fdefinition 'issue#754-p2)
+            (lambda (x) (or (null x) (integerp x))))
+      (typep nil *issue#754-union-type*)
+      (setf (fdefinition 'issue#754-p2) #'integerp)
+      (typep nil *issue#754-union-type*))
+  t)
+
+;;; Code compiled while the old P was defined made a bit vector, which
+;;; can't hold NIL.
+(deftest ccl.issue#754.compiled
+    (progn
+      (setf (fdefinition 'issue#754-p3) #'integerp)
+      (let ((make (test-compile
+                   '(lambda ()
+                     (make-array 4 :element-type
+                                 '(and (or null bit) (satisfies issue#754-p3))
+                                 :initial-element 1)))))
+        (setf (fdefinition 'issue#754-p3)
+              (lambda (x) (or (null x) (integerp x))))
+        (let ((a (funcall make)))
+          (setf (aref a 0) nil)
+          (aref a 0))))
+  nil)
+
+;;; The fix must not keep run-time type checks from calling P.
+(defun issue#754-p4 (x) (eq x :ok))
+
+(deftest ccl.issue#754.require-type
+    (values (funcall 'ccl:require-type :ok '(satisfies issue#754-p4))
+            (handler-case (funcall 'ccl:require-type :bad
+                                   '(satisfies issue#754-p4))
+              (type-error () :type-error)))
+  :ok
+  :type-error)
+
+(defclass issue#754-class ()
+  ((slot :initarg :slot :type (satisfies issue#754-p4))))
+
+(deftest ccl.issue#754.slot-type
+    (values (slot-value (make-instance 'issue#754-class :slot :ok) 'slot)
+            (handler-case (progn (make-instance 'issue#754-class :slot :bad)
+                                 :no-error)
+              (error () :error)))
+  :ok
+  :error)
+
+;;; CL functions can't be redefined, so parsing still calls them.
+;;; (Numeric members become ranges before this, so use symbols.)
+(deftest ccl.issue#754.cl-predicate
+    (subtypep '(and (member :a :b foo) (satisfies keywordp)) '(member :a :b))
+  t
+  t)
+
+;;; Without calling P, SUBTYPEP can't tell whether this is a subtype, so
+;;; it mustn't say for sure that it isn't.  It did, because it compared
+;;; the intersections' parts instead of what they denote.
+(defun issue#754-p5 (x) (keywordp x))
+
+(deftest ccl.issue#754.subtypep
+    (multiple-value-bind (subtypep certain)
+        (subtypep '(and (member :a :b foo) (satisfies issue#754-p5))
+                  '(member :a :b))
+      (or subtypep (not certain)))
+  t)
+
 ;;; On darwinarm64 a single-float HFA that does not fit in the
 ;;; remaining v registers goes on the stack at 4-byte alignment and its
 ;;; own size, not in 8-byte slots as in AAPCS64.  The callback here
