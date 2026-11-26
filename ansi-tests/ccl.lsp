@@ -2987,3 +2987,45 @@
                                                         :no-error)
                                      (type-error (c) (equal (type-error-expected-type c) type))))))
   (t t t t))
+
+;;; On arm64, a second control-stack overflow, inside a handler for the
+;;; first, made the trap return each time, and the thread recursed until
+;;; the process died with SIGSEGV.  The overflow runs in a child lisp on a
+;;; thread with a small stack.  Once the handler has started, the child
+;;; gives the second overflow half a second, then exits.  The child must
+;;; exit, whatever its exit code, and not die by a signal.
+(deftest ccl.cstack-overflow-in-handler-exits
+    (let* ((form "(progn
+                    (defvar *entered* nil)
+                    (defun deep (n) (if (zerop n) 0 (1+ (deep (1- n)))))
+                    (let ((p (process-run-function
+                              (list :name (string :overflow)
+                                    :stack-size (* 256 1024))
+                              (lambda ()
+                                (handler-case
+                                    (handler-bind ((storage-condition
+                                                     (lambda (c)
+                                                       (declare (ignore c))
+                                                       (setq *entered* t)
+                                                       (deep most-positive-fixnum))))
+                                      (deep most-positive-fixnum))
+                                  (storage-condition () nil))))))
+                      (process-wait-with-timeout
+                       (string :first) (* 5 *ticks-per-second*)
+                       (lambda () *entered*))
+                      (process-wait-with-timeout
+                       (string :join) (floor *ticks-per-second* 2)
+                       (lambda () (process-exhausted-p p))))
+                    (quit 0))")
+           (p (ccl:run-program (ccl::kernel-path)
+                               (list "-I" ccl::*heap-image-name* "-n" "-b"
+                                     "-Q" "-e" form)
+                               :wait nil :input nil :output nil :error nil)))
+      (loop repeat 600
+            while (eq (ccl:external-process-status p) :running)
+            do (sleep 0.1))
+      (when (eq (ccl:external-process-status p) :running)
+        (ccl:signal-external-process p 9))
+      (multiple-value-bind (status code) (ccl:external-process-status p)
+        (or (eq status :exited) (list status code))))
+  t)
