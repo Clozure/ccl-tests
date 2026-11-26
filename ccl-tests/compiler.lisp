@@ -86,6 +86,48 @@
             collect n)
   nil)
 
+;;; LOOP recognizes its keywords by name, but the simple type specs
+;;; FIXNUM, FLOAT and T (as in "for x float in ...") were recognized by
+;;; identity, so a package that shadows FLOAT could not use them.  And
+;;; a package's own type COMPLEX was not seen as COMPLEX when SUM or
+;;; MAXIMIZE chose the initial value, which was NIL.
+(deftest ccl.loop.simple-type-spec-shadowed
+    (let* ((name "CCL-TEST-LOOP-SHADOWED")
+           (package (progn
+                      (when (find-package name) (delete-package name))
+                      (make-package name :use '("COMMON-LISP"))))
+           (failures '()))
+      (unwind-protect
+           (progn
+             (shadow '("FLOAT" "FIXNUM" "COMPLEX") package)
+             (flet ((sym (s) (find-symbol s package))
+                    (try (case-name form expected)
+                      (unless (equal expected
+                                     (handler-case (eval form)
+                                       (error () :error)))
+                        (push case-name failures))))
+               (try :float
+                    `(loop for x in '(1.0 2.0) sum x ,(sym "FLOAT"))
+                    3.0)
+               (try :fixnum
+                    `(loop for x in '(1 2) sum x ,(sym "FIXNUM"))
+                    3)
+               (try :destructuring
+                    `(loop for (a b) ,(sym "FIXNUM") in '((1 2) (3 4))
+                           sum (+ a b))
+                    10)
+               (try :t
+                    `(loop for x in '(1 2) collect x t)
+                    '(1 2))
+               ;; The user's own types are not simple type specs.
+               (eval `(deftype ,(sym "COMPLEX") () 'cl:complex))
+               (try :of-type-complex
+                    `(loop for x in '(1 2.5) sum x of-type ,(sym "COMPLEX"))
+                    3.5)))
+        (delete-package package))
+      (nreverse failures))
+  nil)
+
 ;;; %get-bit and %set-bit take a signed bit offset from the pointer, and
 ;;; bit 0 is the least significant bit of the byte at the pointer.  The
 ;;; compiler open-codes constant and variable offsets and values
