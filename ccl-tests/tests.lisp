@@ -267,6 +267,44 @@
             (try (- (expt 2 128) (/ (expt 2 103) 3)) 1f0)))
   (:overflow :overflow))
 
+;;; With the overflow trap masked, FLOAT of a bignum or a ratio that is
+;;; too big signaled FLOATING-POINT-OVERFLOW anyway.  It should return an
+;;; infinity of the same sign, as SCALE-FLOAT does, and still signal with
+;;; the trap enabled.
+(defun float-overflow-trap-failures ()
+  (let ((mode (ccl:get-fpu-mode))
+        (failures nil))
+    (unwind-protect
+         (dolist (masked '(nil t) (nreverse failures))
+           (ccl:set-fpu-mode :overflow (not masked))
+           (loop for (one digits emax inf)
+                   in (list (list 1d0 53 1024
+                                  ccl::double-float-positive-infinity)
+                            (list 1f0 24 128
+                                  ccl::single-float-positive-infinity))
+                 do (dolist (x (list (- (expt 2 emax)
+                                        (expt 2 (- emax digits 1)))
+                                     (expt 2 emax)
+                                     (expt 2 5000)
+                                     (- (expt 2 emax)
+                                        (/ (expt 2 (- emax digits 1)) 3))
+                                     (/ (expt 2 (+ emax 100)) 3)))
+                      (dolist (sign '(1 -1))
+                        (let* ((x (* sign x))
+                               (got (handler-case (float x one)
+                                      (floating-point-overflow () :overflow)
+                                      (error () :error))))
+                          (unless (if masked
+                                      (eql got (* sign inf))
+                                      (eq got :overflow))
+                            (push (list masked (type-of one) x got)
+                                  failures)))))))
+      (apply #'ccl:set-fpu-mode mode))))
+
+(deftest ccl.float-overflow-trap
+    (float-overflow-trap-failures)
+  nil)
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
