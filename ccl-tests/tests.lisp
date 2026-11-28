@@ -89,6 +89,148 @@
     (scale-float-failures)
   nil)
 
+;;; (FLOAT ratio 1f0) and (FLOAT ratio 1d0) should return the float
+;;; nearest to the ratio, ties to even.  They rounded the numerator and
+;;; the denominator to the format before dividing, and rounded a large
+;;; quotient to an integer before converting it.  Each test below takes
+;;; one family of ratios aimed at one such mistake, and compares each
+;;; ratio and its negation with the nearest float computed with
+;;; integers.
+
+;;; The rational value of the float of DIGITS bits nearest to R, ties to
+;;; even, for an R in the range of normal floats.
+(defun float-ratio-nearest (r digits)
+  (let* ((a (abs r))
+         (e (- (integer-length (numerator a)) (integer-length (denominator a)))))
+    (loop while (>= a (expt 2 e)) do (incf e))
+    (loop while (< a (expt 2 (1- e))) do (decf e))
+    (let ((scale (expt 2 (- digits e))))
+      (* (signum r) (/ (round (* a scale)) scale)))))
+
+;;; The ratios among RATIOS, and their negations, that (FLOAT r ONE)
+;;; does not convert to the nearest float of DIGITS bits.
+(defun float-ratio-failures (one digits ratios)
+  (loop for r in ratios
+        nconc (loop for x in (list r (- r))
+                    unless (= (rational (float x one))
+                              (float-ratio-nearest x digits))
+                      collect x)))
+
+;;; The case that was reported.
+(deftest ccl.float-ratio-rounding.reported
+    (float 6069/26411177 1f0)
+  2.2978908e-4)
+
+;;; A numerator and a denominator wider than the significand, which are
+;;; not exact in the format.  Rounding each of them and then the
+;;; quotient got about a quarter of these wrong.
+(deftest ccl.float-ratio-rounding.wide-parts
+    (append (float-ratio-failures 1f0 24
+                                  (loop for i from 1 to 200
+                                        collect (/ (+ (expt 2 24) i)
+                                                   (expt 3 17))))
+            (float-ratio-failures 1d0 53
+                                  (loop for i from 1 to 200
+                                        collect (/ (+ (expt 2 60) i)
+                                                   (expt 3 37)))))
+  nil)
+
+;;; Quotients near 2^70, each 1/3 above the halfway point between a
+;;; float with an even significand and the next float up, so that the
+;;; upper one is nearest.  Rounding to an integer first lands exactly
+;;; on the halfway point, and the tie then goes to the even one, which
+;;; is wrong for all of these.
+(defun float-ratio-above-ties (digits)
+  (let ((ulp (expt 2 (- 71 digits))))
+    (loop for m below 100
+          collect (+ (expt 2 70) (* 2 m ulp) (/ ulp 2) 1/3))))
+
+(deftest ccl.float-ratio-rounding.above-ties
+    (append (float-ratio-failures 1f0 24 (float-ratio-above-ties 24))
+            (float-ratio-failures 1d0 53 (float-ratio-above-ties 53)))
+  nil)
+
+;;; Ratios within a few units of a power of two over a power of two.
+;;; Rounding such a quotient can carry it into the next binade, as with
+;;; (2^61-1)/(2^60+1), whose nearest double is 2.0d0; a conversion that
+;;; doesn't allow for the carry gets 1.0d0.  The negations include
+;;; numerators that are negative powers of two, whose INTEGER-LENGTH is
+;;; one less than that of their absolute value.
+(defun float-ratio-near-powers-of-two ()
+  (loop for (a b) in '((31 30) (40 40) (61 60) (80 80) (120 50) (50 120))
+        nconc (loop for k from -2 to 2
+                    nconc (loop for j from -2 to 2
+                                collect (/ (+ (expt 2 a) k)
+                                           (+ (expt 2 b) j))))))
+
+(deftest ccl.float-ratio-rounding.boundary
+    (append (float-ratio-failures 1f0 24 (float-ratio-near-powers-of-two))
+            (float-ratio-failures 1d0 53 (float-ratio-near-powers-of-two)))
+  nil)
+
+;;; (FLOAT-SIGN X Y) took the sign of Y from MINUSP, which is false for
+;;; -0.0, so it got the sign wrong when Y was a negative zero:
+;;; (FLOAT-SIGN -1.0 -0.0) returned 0.0, and (FLOAT-SIGN 1.0 -0.0)
+;;; returned -0.0.  The result should have the sign of X, and the
+;;; format and magnitude of Y.  -0.0 and 0.0 are EQUALP, so the test
+;;; compares signs with one-argument FLOAT-SIGN.
+(defparameter *float-sign-args*
+  '(1.0 -1.0 0.0 -0.0 2.5 -2.5 1d0 -1d0 0d0 -0d0 2.5d0 -2.5d0))
+
+(deftest ccl.float-sign.negative-zero
+    (loop for x in *float-sign-args*
+          nconc (loop for y in *float-sign-args*
+                      for r = (float-sign x y)
+                      unless (and (= (float-sign r) (float-sign x))
+                                  (= (abs r) (abs y))
+                                  (eql (float-digits r) (float-digits y)))
+                        collect (list x y r)))
+  nil)
+
+;;; Converting an integer just below 2^1024 to a double-float, or just
+;;; below 2^128 to a single-float, rounds up to 2^1024 or 2^128, which
+;;; is too big.  FLOAT returned an infinity without signaling an overflow
+;;; (it did signal one for the integer 2^1024 itself).  The integers that
+;;; round up are the ones at or above 2^1024 - 2^970 and 2^128 - 2^103;
+;;; those just below must still convert.
+(defun float-bignum-overflow-failures ()
+  (let ((mode (ccl:get-fpu-mode))
+        (failures nil))
+    (unwind-protect
+         (progn
+           (ccl:set-fpu-mode :overflow t)
+           (loop for (one digits emax) in '((1d0 53 1024) (1f0 24 128))
+                 do (let ((limit (- (expt 2 emax) (expt 2 (- emax digits 1))))
+                          (largest (- (expt 2 emax) (expt 2 (- emax digits)))))
+                      (dolist (delta (list 0 1 2 100 (expt 2 (- emax digits 2))))
+                        (progn
+                          (dolist (sign '(1 -1))
+                            (dolist (n (list (- limit delta) (+ limit delta)))
+                              (let* ((n (* sign n))
+                                     (overflow (>= (abs n) limit))
+                                     (got (handler-case (float n one)
+                                            (floating-point-overflow () :overflow))))
+                                (unless (if overflow
+                                            (eq got :overflow)
+                                            (eql got (* sign (float largest one))))
+                                  (push (list (type-of one) n got) failures))))))))))
+      (apply #'ccl:set-fpu-mode mode))
+    (nreverse failures)))
+
+(deftest ccl.float-bignum-overflow
+    (float-bignum-overflow-failures)
+  nil)
+
+;;; A ratio whose quotient rounds up to 2^1024 or 2^128 must signal an
+;;; overflow too.  Ratios are converted by different code.
+(deftest ccl.float-bignum-overflow.ratio
+    (flet ((try (x one)
+             (handler-case (float x one)
+               (floating-point-overflow () :overflow))))
+      (list (try (- (expt 2 1024) (/ (expt 2 970) 3)) 1d0)
+            (try (- (expt 2 128) (/ (expt 2 103) 3)) 1f0)))
+  (:overflow :overflow))
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
@@ -148,3 +290,206 @@
             unless (eql got (* x d))
               collect x))
   nil)
+
+;;; A callback whose arguments do not all fit in registers reads the rest
+;;; from its caller's stack.  Darwin/arm64 packs stack arguments at their
+;;; natural size (4 bytes for a single-float, 1 for a char), but callbacks
+;;; read each one from an 8-byte slot, so they got the wrong values.
+(defvar *issue#735-args* nil)
+
+(ccl:defcallback issue#735-singles
+    (:single-float f0 :single-float f1 :single-float f2 :single-float f3
+     :single-float f4 :single-float f5 :single-float f6 :single-float f7
+     :single-float f8 :single-float f9 :single-float f10 :single-float f11
+     :void)
+  (setq *issue#735-args* (list f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11)))
+
+(deftest ccl.issue#735.singles
+    (progn
+      (setq *issue#735-args* nil)
+      (ccl:ff-call issue#735-singles
+                   :single-float 1f0 :single-float 2f0 :single-float 3f0
+                   :single-float 4f0 :single-float 5f0 :single-float 6f0
+                   :single-float 7f0 :single-float 8f0 :single-float 9f0
+                   :single-float 10f0 :single-float 11f0 :single-float 12f0
+                   :void)
+      *issue#735-args*)
+  (1f0 2f0 3f0 4f0 5f0 6f0 7f0 8f0 9f0 10f0 11f0 12f0))
+
+;;; Eight integers fill the integer argument registers, so everything after
+;;; them goes on the stack, in arguments of several sizes.
+(ccl:defcallback issue#735-mixed
+    (:signed-fullword a0 :signed-fullword a1 :signed-fullword a2
+     :signed-fullword a3 :signed-fullword a4 :signed-fullword a5
+     :signed-fullword a6 :signed-fullword a7
+     :signed-byte c :signed-halfword s :signed-fullword i
+     :signed-doubleword ll :signed-byte c2 :unsigned-halfword us
+     :void)
+  (setq *issue#735-args* (list a0 a1 a2 a3 a4 a5 a6 a7 c s i ll c2 us)))
+
+(deftest ccl.issue#735.mixed
+    (progn
+      (setq *issue#735-args* nil)
+      (ccl:ff-call issue#735-mixed
+                   :signed-fullword 1 :signed-fullword 2 :signed-fullword 3
+                   :signed-fullword 4 :signed-fullword 5 :signed-fullword 6
+                   :signed-fullword 7 :signed-fullword 8
+                   :signed-byte -9 :signed-halfword -1000
+                   :signed-fullword 100000 :signed-doubleword -10000000000
+                   :signed-byte 11 :unsigned-halfword 65000
+                   :void)
+      *issue#735-args*)
+  (1 2 3 4 5 6 7 8 -9 -1000 100000 -10000000000 11 65000))
+
+;;; Parsing a type that combined a MEMBER type with (SATISFIES P) called
+;;; P on the members and kept the answers in the parsed type, which is
+;;; cached.  After P was redefined, TYPEP, UPGRADED-ARRAY-ELEMENT-TYPE
+;;; and compiled code still followed the old P.  Each test parses its
+;;; type while the old P is defined, then redefines P.  The types are in
+;;; variables so that TYPEP looks them up at run time.
+
+(defparameter *issue#754-type* '(and (or null bit) (satisfies issue#754-p1)))
+
+(deftest ccl.issue#754
+    (progn
+      (setf (fdefinition 'issue#754-p1) #'integerp)
+      (typep nil *issue#754-type*)
+      (setf (fdefinition 'issue#754-p1)
+            (lambda (x) (or (null x) (integerp x))))
+      (values (typep nil *issue#754-type*)
+              (upgraded-array-element-type *issue#754-type*)))
+  t
+  t)
+
+;;; The same, for a union: (OR NULL (SATISFIES P)) was parsed as
+;;; (SATISFIES P) when P accepted NIL.
+(defparameter *issue#754-union-type* '(or null (satisfies issue#754-p2)))
+
+(deftest ccl.issue#754.union
+    (progn
+      (setf (fdefinition 'issue#754-p2)
+            (lambda (x) (or (null x) (integerp x))))
+      (typep nil *issue#754-union-type*)
+      (setf (fdefinition 'issue#754-p2) #'integerp)
+      (typep nil *issue#754-union-type*))
+  t)
+
+;;; Code compiled while the old P was defined made a bit vector, which
+;;; can't hold NIL.
+(deftest ccl.issue#754.compiled
+    (progn
+      (setf (fdefinition 'issue#754-p3) #'integerp)
+      (let ((make (test-compile
+                   '(lambda ()
+                     (make-array 4 :element-type
+                                 '(and (or null bit) (satisfies issue#754-p3))
+                                 :initial-element 1)))))
+        (setf (fdefinition 'issue#754-p3)
+              (lambda (x) (or (null x) (integerp x))))
+        (let ((a (funcall make)))
+          (setf (aref a 0) nil)
+          (aref a 0))))
+  nil)
+
+;;; The fix must not keep run-time type checks from calling P.
+(defun issue#754-p4 (x) (eq x :ok))
+
+(deftest ccl.issue#754.require-type
+    (values (funcall 'ccl:require-type :ok '(satisfies issue#754-p4))
+            (handler-case (funcall 'ccl:require-type :bad
+                                   '(satisfies issue#754-p4))
+              (type-error () :type-error)))
+  :ok
+  :type-error)
+
+(defclass issue#754-class ()
+  ((slot :initarg :slot :type (satisfies issue#754-p4))))
+
+(deftest ccl.issue#754.slot-type
+    (values (slot-value (make-instance 'issue#754-class :slot :ok) 'slot)
+            (handler-case (progn (make-instance 'issue#754-class :slot :bad)
+                                 :no-error)
+              (error () :error)))
+  :ok
+  :error)
+
+;;; CL functions can't be redefined, so parsing still calls them.
+;;; (Numeric members become ranges before this, so use symbols.)
+(deftest ccl.issue#754.cl-predicate
+    (subtypep '(and (member :a :b foo) (satisfies keywordp)) '(member :a :b))
+  t
+  t)
+
+;;; Without calling P, SUBTYPEP can't tell whether this is a subtype, so
+;;; it mustn't say for sure that it isn't.  It did, because it compared
+;;; the intersections' parts instead of what they denote.
+(defun issue#754-p5 (x) (keywordp x))
+
+(deftest ccl.issue#754.subtypep
+    (multiple-value-bind (subtypep certain)
+        (subtypep '(and (member :a :b foo) (satisfies issue#754-p5))
+                  '(member :a :b))
+      (or subtypep (not certain)))
+  t)
+
+;;; On darwinarm64 a single-float HFA that does not fit in the
+;;; remaining v registers goes on the stack at 4-byte alignment and its
+;;; own size, not in 8-byte slots as in AAPCS64.  The callback here
+;;; takes the same bytes as separate single-floats, which Darwin also
+;;; packs at 4 bytes each: p, the HFA's members and z land at stack
+;;; offsets 0, 4, 8, ... in both cases.
+#+darwinarm64-target
+(progn
+(ccl:def-foreign-type nil
+    (:struct :ccl-test-float3
+      (:a :float)
+      (:b :float)
+      (:c :float)))
+
+(defvar *ccl-test-stacked-float-args* nil)
+
+(ccl:defcallback ccl-test-stacked-floats-callback
+    (:single-float f0 :single-float f1 :single-float f2 :single-float f3
+     :single-float f4 :single-float f5 :single-float f6 :single-float f7
+     :single-float p :single-float a :single-float b :single-float c
+     :single-float z :void)
+  (setq *ccl-test-stacked-float-args*
+        (list f0 f1 f2 f3 f4 f5 f6 f7 p a b c z)))
+
+;;; Eight floats fill s0-s7, then p, the HFA and z go on the stack.
+(deftest ccl.ff-call.stacked-float-hfa
+    (ccl:rlet ((h :ccl-test-float3 :a 31f0 :b 32f0 :c 33f0))
+      (setq *ccl-test-stacked-float-args* nil)
+      (ccl:ff-call ccl-test-stacked-floats-callback
+                   :single-float 1f0 :single-float 2f0 :single-float 3f0
+                   :single-float 4f0 :single-float 5f0 :single-float 6f0
+                   :single-float 7f0 :single-float 8f0
+                   :single-float 9f0 (:struct :ccl-test-float3) h
+                   :single-float 10f0 :void)
+      *ccl-test-stacked-float-args*)
+  (1f0 2f0 3f0 4f0 5f0 6f0 7f0 8f0 9f0 31f0 32f0 33f0 10f0))
+
+;;; Six floats leave two v registers, too few for the three-member HFA,
+;;; so it goes on the stack, s6 and s7 are left unused (AAPCS64 C.3),
+;;; and z follows the HFA on the stack.  The callback names s6 and s7
+;;; as g6 and g7 and ignores them.
+(defvar *ccl-test-stacked-float-args-2* nil)
+
+(ccl:defcallback ccl-test-stacked-floats-callback-2
+    (:single-float f0 :single-float f1 :single-float f2 :single-float f3
+     :single-float f4 :single-float f5 :single-float g6 :single-float g7
+     :single-float a :single-float b :single-float c :single-float z :void)
+  (declare (ignore g6 g7))
+  (setq *ccl-test-stacked-float-args-2* (list f0 f1 f2 f3 f4 f5 a b c z)))
+
+(deftest ccl.ff-call.stacked-float-hfa-wastes-v-registers
+    (ccl:rlet ((h :ccl-test-float3 :a 31f0 :b 32f0 :c 33f0))
+      (setq *ccl-test-stacked-float-args-2* nil)
+      (ccl:ff-call ccl-test-stacked-floats-callback-2
+                   :single-float 1f0 :single-float 2f0 :single-float 3f0
+                   :single-float 4f0 :single-float 5f0 :single-float 6f0
+                   (:struct :ccl-test-float3) h
+                   :single-float 10f0 :void)
+      *ccl-test-stacked-float-args-2*)
+  (1f0 2f0 3f0 4f0 5f0 6f0 31f0 32f0 33f0 10f0))
+)
