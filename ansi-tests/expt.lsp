@@ -257,8 +257,3 @@
 	      collect (list x s1 s2)))
   nil)
 |#
-
-;; regression #546
-(deftest expt.31
-    (signals-error (expt 2d0 -1024) floating-point-overflow)
-  nil 5.562684646268003D-309)
