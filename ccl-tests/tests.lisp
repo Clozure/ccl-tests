@@ -567,3 +567,64 @@
       *ccl-test-stacked-float-args-2*)
   (1f0 2f0 3f0 4f0 5f0 6f0 31f0 32f0 33f0 10f0))
 )
+
+(deftest ccl.issue#546
+    (let* ((min-subnormal-exp
+             (nth-value 1 (integer-decode-float least-positive-double-float))) ;; -1074
+           (min-subnormal-exp-short
+             (- ccl::ieee-single-float-normal-exponent-min
+                ccl::ieee-single-float-bias
+                ccl::ieee-single-float-mantissa-width)) ;; -149
+           (cases (list
+                   ;; double-float
+                   '(expt 2d0 -1024) ;; issue
+                   `(expt 2d0 ,min-subnormal-exp)
+                   `(expt 2d0 (1- ,min-subnormal-exp))
+                   '(expt 1.8964981665016996d0 -1)
+                   '(expt 1d0 (- (expt 10 400)))
+                   '(expt -1d0 (- (expt 10 400)))
+                   '(expt -1d0 (- 1 (expt 10 400)))
+                   '(expt 1.8964981665016996d0 -21)
+                   '(expt 2d0 (ash 1 10))
+                   '(expt 0.20d0 (ash 1 10))
+
+                   ;; short-float
+                   `(expt 2.0s0 ,min-subnormal-exp-short)
+                   `(expt 2.0s0 (1- ,min-subnormal-exp-short))
+                   '(expt 1.55465411564779874s0 -1)
+                   '(expt 1s0 (- (expt 10 400)))
+                   '(expt -1s0 (- (expt 10 400)))
+                   '(expt -1s0 (- 1 (expt 10 400)))
+                   '(expt 1.55465411564779874s0 -21)
+                   '(expt 2s0 (ash 1 7))
+                   '(expt 0.20s0 (ash 1 7))))
+           (expects (list
+                     ;; double-float
+                     5.562684646268003d-309
+                     least-positive-double-float
+                     0.0D0
+                     (/ 1.8964981665016996d0)
+                     1d0
+                     1d0
+                     -1d0
+                     (/ (expt 1.8964981665016996d0 21))
+                     :floating-point-overflow
+                     0.0D0
+
+                     ;; short-float
+                     least-positive-short-float
+                     0.0s0
+                     (/ 1.55465411564779874s0)
+                     1.0s0
+                     1.0s0
+                     -1.0s0
+                     (/ (expt 1.55465411564779874s0 21))
+                     :floating-point-overflow
+                     0.0s0)))
+      (loop for x in cases
+            for got in expects
+            unless (eql got (handler-case (eval x)
+                              (floating-point-overflow (e)
+                                :floating-point-overflow)))
+              collect x))
+  nil)
