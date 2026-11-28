@@ -365,6 +365,14 @@
               collect x))
   nil)
 
+;;; SIGNUM of a negative zero returned a positive zero.  For a zero,
+;;; SIGNUM returns its argument, so the sign of a float zero is kept.
+(deftest ccl.signum.negative-zero
+    (loop for x in (list -0.0f0 -0.0d0 0.0f0 0.0d0)
+          unless (eql (signum x) x)
+            collect x)
+  nil)
+
 ;;; A callback whose arguments do not all fit in registers reads the rest
 ;;; from its caller's stack.  Darwin/arm64 packs stack arguments at their
 ;;; natural size (4 bytes for a single-float, 1 for a char), but callbacks
