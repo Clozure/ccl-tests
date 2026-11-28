@@ -95,6 +95,25 @@
             (float-ratio-failures 1d0 53 (float-ratio-near-powers-of-two)))
   nil)
 
+;;; (FLOAT-SIGN X Y) took the sign of Y from MINUSP, which is false for
+;;; -0.0, so it got the sign wrong when Y was a negative zero:
+;;; (FLOAT-SIGN -1.0 -0.0) returned 0.0, and (FLOAT-SIGN 1.0 -0.0)
+;;; returned -0.0.  The result should have the sign of X, and the
+;;; format and magnitude of Y.  -0.0 and 0.0 are EQUALP, so the test
+;;; compares signs with one-argument FLOAT-SIGN.
+(defparameter *float-sign-args*
+  '(1.0 -1.0 0.0 -0.0 2.5 -2.5 1d0 -1d0 0d0 -0d0 2.5d0 -2.5d0))
+
+(deftest ccl.float-sign.negative-zero
+    (loop for x in *float-sign-args*
+          nconc (loop for y in *float-sign-args*
+                      for r = (float-sign x y)
+                      unless (and (= (float-sign r) (float-sign x))
+                                  (= (abs r) (abs y))
+                                  (eql (float-digits r) (float-digits y)))
+                        collect (list x y r)))
+  nil)
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
