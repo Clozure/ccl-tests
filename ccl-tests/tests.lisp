@@ -148,6 +148,16 @@
     (float-bignum-overflow-failures)
   nil)
 
+;;; A ratio whose quotient rounds up to 2^1024 or 2^128 must signal an
+;;; overflow too.  Ratios are converted by different code.
+(deftest ccl.float-bignum-overflow.ratio
+    (flet ((try (x one)
+             (handler-case (float x one)
+               (floating-point-overflow () :overflow))))
+      (list (try (- (expt 2 1024) (/ (expt 2 970) 3)) 1d0)
+            (try (- (expt 2 128) (/ (expt 2 103) 3)) 1f0)))
+  (:overflow :overflow))
+
 ;;; UPGRADED-ARRAY-ELEMENT-TYPE and ARRAY-ELEMENT-TYPE got their answers
 ;;; from separate tables, which disagreed about strings (BASE-CHAR vs
 ;;; CHARACTER).  They should name the same type specifier.
