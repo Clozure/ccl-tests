@@ -89,6 +89,42 @@
     (scale-float-failures)
   nil)
 
+;;; SCALE-FLOAT treated an infinity or a NaN as a normal number with a
+;;; big exponent.  Scaling an infinity down gave a finite number or zero,
+;;; scaling one by 0 signaled an overflow, and a NaN scaled down came
+;;; back finite.  The argument should come back unchanged, whether or not
+;;; the overflow trap is enabled.  A NaN never compares equal, so the
+;;; test compares bits.
+(defun scale-float-inf-nan-failures ()
+  (flet ((bits (x)
+           (etypecase x
+             (double-float (multiple-value-list (ccl::double-float-bits x)))
+             (single-float (ccl::single-float-bits x)))))
+    (let ((mode (ccl:get-fpu-mode))
+          (failures nil)
+          (xs (list (ccl::double-float-from-bits #x7ff00000 0)
+                    (ccl::double-float-from-bits #xfff00000 0)
+                    (ccl::double-float-from-bits #x7ff80000 0)
+                    (ccl::host-single-float-from-unsigned-byte-32 #x7f800000)
+                    (ccl::host-single-float-from-unsigned-byte-32 #xff800000)
+                    (ccl::host-single-float-from-unsigned-byte-32 #x7fc00000)))
+          (ns (list 0 100 -100 5000 -5000 (expt 2 100) (- (expt 2 100)))))
+      (unwind-protect
+           (dolist (masked '(nil t) (nreverse failures))
+             (ccl:set-fpu-mode :overflow (not masked))
+             (dolist (x xs)
+               (dolist (n ns)
+                 (let ((got (handler-case (scale-float x n)
+                              (floating-point-overflow () :overflow)
+                              (error () :error))))
+                   (unless (and (floatp got) (equal (bits got) (bits x)))
+                     (push (list masked (bits x) n got) failures))))))
+        (apply #'ccl:set-fpu-mode mode)))))
+
+(deftest ccl.scale-float.inf-nan
+    (scale-float-inf-nan-failures)
+  nil)
+
 ;;; (FLOAT ratio 1f0) and (FLOAT ratio 1d0) should return the float
 ;;; nearest to the ratio, ties to even.  They rounded the numerator and
 ;;; the denominator to the format before dividing, and rounded a large
